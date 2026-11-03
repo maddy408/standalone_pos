@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: #ffffff;
+  --surface-alt: #f8fafc;
+}
+.dark {
+  --surface: #0f172a;
+  --surface-alt: #1e293b;
+}
+
+html, body, #root {
+  height: 100%;
+}

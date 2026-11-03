@@ -1,0 +1,8 @@
+node_modules/
+vendor/
+dist/
+dev-dist/
+.env
+backend/.env
+frontend/.env
+*.log
