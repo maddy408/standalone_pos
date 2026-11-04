@@ -184,7 +184,14 @@ export default function POS() {
   }, [customers, customerSearch]);
 
   const addToCart = (product, serial = null, variant = null, selectedAddons = []) => {
-    const unitPrice = getProductPrice(product) + (variant ? Number(variant.price_adjustment || 0) : 0);
+    let unitPrice = getProductPrice(product);
+    if (variant) {
+      if (variant.selling_price && Number(variant.selling_price) > 0) {
+        unitPrice = Number(variant.selling_price);
+      } else {
+        unitPrice = unitPrice + Number(variant.price_adjustment || 0);
+      }
+    }
     const taxPercent = Number(product.tax_percent || 0);
 
     if (serial) {
@@ -939,13 +946,15 @@ export default function POS() {
                           onChange={() => setCustomizer((c) => ({ ...c, variantId: v.id }))}
                           className="accent-amber-500"
                         />
-                        <span className="font-medium">{v.variant_name}</span>
+                        <span className="font-semibold text-slate-900 dark:text-white">{v.variant_name}</span>
                       </div>
-                      {Number(v.price_adjustment) !== 0 && (
-                        <span className="text-[11px] font-semibold text-amber-600">
-                          {Number(v.price_adjustment) > 0 ? '+' : ''}{currency}{Number(v.price_adjustment).toFixed(2)}
-                        </span>
-                      )}
+                      <span className="text-[11px] font-bold text-amber-600">
+                        {v.selling_price && Number(v.selling_price) > 0
+                          ? `${currency}${Number(v.selling_price).toFixed(2)}`
+                          : Number(v.price_adjustment) !== 0
+                          ? `${Number(v.price_adjustment) > 0 ? '+' : ''}${currency}${Number(v.price_adjustment).toFixed(2)}`
+                          : `${currency}${Number(customizer.product.selling_price || 0).toFixed(2)}`}
+                      </span>
                     </label>
                   ))}
                 </div>
