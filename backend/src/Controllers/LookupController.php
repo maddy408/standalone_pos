@@ -23,7 +23,7 @@ class LookupController
         'units' => ['table' => 'units', 'columns' => ['name', 'short_code']],
         'tax-rates' => ['table' => 'tax_rates', 'columns' => ['name', 'percent']],
         'payment-methods' => ['table' => 'payment_methods', 'columns' => ['code', 'name', 'is_active']],
-        'addons' => ['table' => 'addons', 'columns' => ['name', 'price', 'is_active']],
+        'addons' => ['table' => 'addons', 'columns' => ['name', 'price', 'is_active', 'group_name', 'is_mandatory']],
         'expense-categories' => ['table' => 'expense_categories', 'columns' => ['name']],
         'income-categories' => ['table' => 'income_categories', 'columns' => ['name']],
     ];

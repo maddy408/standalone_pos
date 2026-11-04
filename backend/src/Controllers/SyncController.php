@@ -26,6 +26,7 @@ class SyncController
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $operations = $body['operations'] ?? [];
 
+        $products = new ProductController($this->pdo);
         $invoices = new InvoiceController($this->pdo);
         $purchases = new PurchaseController($this->pdo);
         $customers = new CustomerController($this->pdo);
@@ -41,6 +42,7 @@ class SyncController
 
             try {
                 [$data, $status] = match ($type) {
+                    'product' => $products->createFromSync($payload, $claims),
                     'invoice' => $invoices->createFromSync($payload, $claims),
                     'purchase' => $purchases->createFromSync($payload, $claims),
                     'customer' => $customers->createFromSync($payload, $claims),

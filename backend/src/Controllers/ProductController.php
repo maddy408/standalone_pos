@@ -61,23 +61,21 @@ class ProductController
         $stmt->execute($params);
         $products = $stmt->fetchAll();
 
-        // Attach variants and available serials for each product
+        // Attach variants, images, serials, and format attributes
         foreach ($products as &$p) {
-            $p['attributes'] = json_decode((string) $p['attributes'], true) ?? (object) [];
+            $p['attributes'] = json_decode((string) ($p['attributes'] ?? '{}'), true) ?? (object) [];
+            $p['images'] = json_decode((string) ($p['images'] ?? '[]'), true) ?? [];
+
             $vStmt = $this->pdo->prepare('SELECT * FROM product_variants WHERE product_id = :pid AND is_active = 1');
             $vStmt->execute(['pid' => $p['id']]);
             $p['variants'] = $vStmt->fetchAll();
 
-            if (!empty($p['track_serial'])) {
-                $sStmt = $this->pdo->prepare(
-                    "SELECT id, imei1, imei2, serial_no FROM product_serials
-                     WHERE product_id = :pid AND status = 'in_stock'"
-                );
-                $sStmt->execute(['pid' => $p['id']]);
-                $p['available_serials'] = $sStmt->fetchAll();
-            } else {
-                $p['available_serials'] = [];
-            }
+            $sStmt = $this->pdo->prepare(
+                "SELECT id, imei1, imei2, serial_no, color, warranty_months, warranty_start, warranty_end, status 
+                 FROM product_serials WHERE product_id = :pid AND status = 'in_stock'"
+            );
+            $sStmt->execute(['pid' => $p['id']]);
+            $p['available_serials'] = $sStmt->fetchAll();
         }
 
         Response::json($products);
@@ -102,7 +100,8 @@ class ProductController
         try {
             $id = $this->saveProduct(null, $body);
             AuditLogger::log($this->pdo, $claims, 'create', 'products', $id, ['name' => $body['name'] ?? '']);
-            Response::json(['id' => $id], 201);
+            $product = $this->fetchProduct($id);
+            Response::json($product, 201);
         } catch (ValidationException $e) {
             Response::error($e->getMessage(), 422);
         }
@@ -116,7 +115,8 @@ class ProductController
         try {
             $this->saveProduct((int) $id, $body);
             AuditLogger::log($this->pdo, $claims, 'update', 'products', (int) $id, ['name' => $body['name'] ?? '']);
-            Response::json(['ok' => true]);
+            $product = $this->fetchProduct((int) $id);
+            Response::json($product);
         } catch (ValidationException $e) {
             Response::error($e->getMessage(), 422);
         }
@@ -132,7 +132,7 @@ class ProductController
         Response::json(['ok' => true]);
     }
 
-    private function fetchProduct(int $id): ?array
+    public function fetchProduct(int $id): ?array
     {
         $stmt = $this->pdo->prepare('SELECT * FROM products WHERE id = :id AND is_active = 1');
         $stmt->execute(['id' => $id]);
@@ -140,13 +140,17 @@ class ProductController
         if (!$p) {
             return null;
         }
-        $p['attributes'] = json_decode((string) $p['attributes'], true) ?? (object) [];
+        $p['attributes'] = json_decode((string) ($p['attributes'] ?? '{}'), true) ?? (object) [];
+        $p['images'] = json_decode((string) ($p['images'] ?? '[]'), true) ?? [];
 
         $vStmt = $this->pdo->prepare('SELECT * FROM product_variants WHERE product_id = :pid AND is_active = 1');
         $vStmt->execute(['pid' => $id]);
         $p['variants'] = $vStmt->fetchAll();
 
-        $sStmt = $this->pdo->prepare('SELECT * FROM product_serials WHERE product_id = :pid AND status = \'in_stock\'');
+        $sStmt = $this->pdo->prepare(
+            "SELECT id, imei1, imei2, serial_no, color, warranty_months, warranty_start, warranty_end, status 
+             FROM product_serials WHERE product_id = :pid AND status = 'in_stock'"
+        );
         $sStmt->execute(['pid' => $id]);
         $p['available_serials'] = $sStmt->fetchAll();
 
@@ -161,15 +165,18 @@ class ProductController
             Response::error('variant_name is required', 422);
         }
         $stmt = $this->pdo->prepare(
-            'INSERT INTO product_variants (product_id, variant_name, attributes, price_adjustment, barcode, stock_qty)
-             VALUES (:pid, :name, :attributes, :price_adjustment, :barcode, :stock_qty)'
+            'INSERT INTO product_variants (product_id, variant_name, sku, attributes, price_adjustment, selling_price, barcode, image, stock_qty)
+             VALUES (:pid, :name, :sku, :attributes, :price_adjustment, :selling_price, :barcode, :image, :stock_qty)'
         );
         $stmt->execute([
             'pid' => $productId,
             'name' => $body['variant_name'],
+            'sku' => $body['sku'] ?? null,
             'attributes' => isset($body['attributes']) ? json_encode($body['attributes'], JSON_UNESCAPED_UNICODE) : null,
             'price_adjustment' => (float) ($body['price_adjustment'] ?? 0),
+            'selling_price' => isset($body['selling_price']) ? (float) $body['selling_price'] : null,
             'barcode' => $body['barcode'] ?? null,
+            'image' => $body['image'] ?? null,
             'stock_qty' => (float) ($body['stock_qty'] ?? 0),
         ]);
         Response::json(['id' => (int) $this->pdo->lastInsertId()], 201);
@@ -180,15 +187,18 @@ class ProductController
         AuthMiddleware::authenticate();
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $stmt = $this->pdo->prepare(
-            'UPDATE product_variants SET variant_name = :name, attributes = :attributes,
-                price_adjustment = :price_adjustment, barcode = :barcode, stock_qty = :stock_qty
+            'UPDATE product_variants SET variant_name = :name, sku = :sku, attributes = :attributes,
+                price_adjustment = :price_adjustment, selling_price = :selling_price, barcode = :barcode, image = :image, stock_qty = :stock_qty
              WHERE id = :id AND product_id = :pid'
         );
         $stmt->execute([
             'name' => $body['variant_name'] ?? '',
+            'sku' => $body['sku'] ?? null,
             'attributes' => isset($body['attributes']) ? json_encode($body['attributes'], JSON_UNESCAPED_UNICODE) : null,
             'price_adjustment' => (float) ($body['price_adjustment'] ?? 0),
+            'selling_price' => isset($body['selling_price']) ? (float) $body['selling_price'] : null,
             'barcode' => $body['barcode'] ?? null,
+            'image' => $body['image'] ?? null,
             'stock_qty' => (float) ($body['stock_qty'] ?? 0),
             'id' => $variantId,
             'pid' => $productId,
@@ -216,7 +226,7 @@ class ProductController
             throw new ValidationException('business_type is required');
         }
 
-        foreach (['category_id', 'brand_id', 'unit_id', 'tax_rate_id', 'supplier_id', 'low_stock_threshold'] as $nullable) {
+        foreach (['category_id', 'brand_id', 'unit_id', 'tax_rate_id', 'supplier_id', 'low_stock_threshold', 'min_stock', 'max_stock'] as $nullable) {
             if (($body[$nullable] ?? null) === '') {
                 $body[$nullable] = null;
             }
@@ -227,61 +237,116 @@ class ProductController
 
         $attributes = $body['attributes'] ?? [];
         $attributesJson = json_encode($attributes, JSON_UNESCAPED_UNICODE);
+        
+        $images = $body['images'] ?? [];
+        $imagesJson = json_encode(is_array($images) ? $images : [], JSON_UNESCAPED_UNICODE);
+
         $trackSerial = !empty($body['track_serial']);
         $serials = $trackSerial ? ($body['serials'] ?? []) : [];
-        $stockQty = $trackSerial ? count($serials) : (float) ($body['stock_qty'] ?? 0);
+        $variants = $body['variants'] ?? [];
+
+        // Auto barcode generation if empty
+        $barcode = !empty($body['barcode']) ? trim($body['barcode']) : null;
+        if (empty($barcode)) {
+            $prefix = strtoupper(substr($body['business_type'], 0, 3));
+            $barcode = $prefix . mt_rand(10000000, 99999999);
+        }
 
         $retailPrice = (float) ($body['retail_price'] ?? $body['selling_price'] ?? 0);
         $wholesalePrice = (float) ($body['wholesale_price'] ?? 0);
         $customerPrice = (float) ($body['customer_price'] ?? 0);
         $sellingPrice = (float) ($body['selling_price'] ?? $retailPrice);
+        $purchasePrice = (float) ($body['purchase_price'] ?? 0);
+        $mrp = (float) ($body['mrp'] ?? 0);
+
+        $stockQty = $trackSerial ? count($serials) : (float) ($body['stock_qty'] ?? 0);
+        $openingStock = isset($body['opening_stock']) ? (float)$body['opening_stock'] : $stockQty;
 
         if ($id === null) {
             $stmt = $this->pdo->prepare(
                 'INSERT INTO products
-                    (uuid, business_type, name, category_id, brand_id, unit_id, tax_rate_id, supplier_id,
-                     barcode, sku, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
-                     stock_qty, low_stock_threshold, track_serial, attributes)
+                    (uuid, business_type, name, description, images, category_id, brand_id, unit_id, tax_rate_id, tax_inclusive, supplier_id,
+                     barcode, sku, hsn_code, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
+                     stock_qty, opening_stock, low_stock_threshold, min_stock, max_stock, track_serial, pos_enabled, online_enabled, is_returnable, attributes)
                  VALUES
-                    (:uuid, :business_type, :name, :category_id, :brand_id, :unit_id, :tax_rate_id, :supplier_id,
-                     :barcode, :sku, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
-                     :stock_qty, :low_stock_threshold, :track_serial, :attributes)'
+                    (:uuid, :business_type, :name, :description, :images, :category_id, :brand_id, :unit_id, :tax_rate_id, :tax_inclusive, :supplier_id,
+                     :barcode, :sku, :hsn_code, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
+                     :stock_qty, :opening_stock, :low_stock_threshold, :min_stock, :max_stock, :track_serial, :pos_enabled, :online_enabled, :is_returnable, :attributes)'
             );
             $stmt->execute([
                 'uuid' => $body['uuid'] ?? UuidHelper::v4(),
                 'business_type' => $body['business_type'],
                 'name' => $body['name'],
+                'description' => $body['description'] ?? null,
+                'images' => $imagesJson,
                 'category_id' => $body['category_id'] ?? null,
                 'brand_id' => $body['brand_id'] ?? null,
                 'unit_id' => $body['unit_id'] ?? null,
                 'tax_rate_id' => $body['tax_rate_id'] ?? null,
+                'tax_inclusive' => !empty($body['tax_inclusive']) ? 1 : 0,
                 'supplier_id' => $body['supplier_id'] ?? null,
-                'barcode' => $body['barcode'] ?? null,
+                'barcode' => $barcode,
                 'sku' => $body['sku'] ?? null,
-                'purchase_price' => (float) ($body['purchase_price'] ?? 0),
+                'hsn_code' => $body['hsn_code'] ?? null,
+                'purchase_price' => $purchasePrice,
                 'selling_price' => $sellingPrice,
-                'mrp' => (float) ($body['mrp'] ?? 0),
+                'mrp' => $mrp,
                 'retail_price' => $retailPrice,
                 'wholesale_price' => $wholesalePrice,
                 'customer_price' => $customerPrice,
                 'stock_qty' => $stockQty,
+                'opening_stock' => $openingStock,
                 'low_stock_threshold' => $body['low_stock_threshold'] ?? null,
+                'min_stock' => $body['min_stock'] ?? null,
+                'max_stock' => $body['max_stock'] ?? null,
                 'track_serial' => $trackSerial ? 1 : 0,
+                'pos_enabled' => isset($body['pos_enabled']) ? (!empty($body['pos_enabled']) ? 1 : 0) : 1,
+                'online_enabled' => isset($body['online_enabled']) ? (!empty($body['online_enabled']) ? 1 : 0) : 1,
+                'is_returnable' => isset($body['is_returnable']) ? (!empty($body['is_returnable']) ? 1 : 0) : 1,
                 'attributes' => $attributesJson,
             ]);
             $newId = (int) $this->pdo->lastInsertId();
 
-            if ($trackSerial) {
+            // Insert Serials / IMEIs
+            if ($trackSerial && !empty($serials)) {
                 $insertSerial = $this->pdo->prepare(
-                    'INSERT INTO product_serials (product_id, imei1, imei2, serial_no, status) VALUES (:pid, :imei1, :imei2, :serial_no, \'in_stock\')'
+                    'INSERT INTO product_serials (product_id, imei1, imei2, serial_no, color, warranty_months, warranty_start, warranty_end, status) 
+                     VALUES (:pid, :imei1, :imei2, :serial_no, :color, :w_months, :w_start, :w_end, \'in_stock\')'
                 );
                 foreach ($serials as $s) {
-                    $insertSerial->execute([
-                        'pid' => $newId,
-                        'imei1' => $s['imei1'] ?? null,
-                        'imei2' => $s['imei2'] ?? null,
-                        'serial_no' => $s['serial_no'] ?? null,
-                    ]);
+                    if (!empty($s['imei1']) || !empty($s['serial_no'])) {
+                        $insertSerial->execute([
+                            'pid' => $newId,
+                            'imei1' => !empty($s['imei1']) ? trim($s['imei1']) : null,
+                            'imei2' => !empty($s['imei2']) ? trim($s['imei2']) : null,
+                            'serial_no' => !empty($s['serial_no']) ? trim($s['serial_no']) : null,
+                            'color' => $s['color'] ?? ($attributes['color'] ?? null),
+                            'w_months' => !empty($s['warranty_months']) ? (int)$s['warranty_months'] : (!empty($attributes['warranty_period']) ? (int)$attributes['warranty_period'] : null),
+                            'w_start' => $s['warranty_start'] ?? ($attributes['warranty_start'] ?? null),
+                            'w_end' => $s['warranty_end'] ?? ($attributes['warranty_end'] ?? null),
+                        ]);
+                    }
+                }
+            }
+
+            // Insert Variants
+            if (!empty($variants) && is_array($variants)) {
+                $insVariant = $this->pdo->prepare(
+                    'INSERT INTO product_variants (product_id, variant_name, sku, price_adjustment, selling_price, barcode, stock_qty)
+                     VALUES (:pid, :name, :sku, :price_adj, :sell_price, :barcode, :stock)'
+                );
+                foreach ($variants as $v) {
+                    if (!empty($v['variant_name'])) {
+                        $insVariant->execute([
+                            'pid' => $newId,
+                            'name' => trim($v['variant_name']),
+                            'sku' => $v['sku'] ?? null,
+                            'price_adj' => (float)($v['price_adjustment'] ?? 0),
+                            'sell_price' => isset($v['selling_price']) ? (float)$v['selling_price'] : ($sellingPrice + (float)($v['price_adjustment'] ?? 0)),
+                            'barcode' => !empty($v['barcode']) ? trim($v['barcode']) : null,
+                            'stock' => (float)($v['stock_qty'] ?? 0),
+                        ]);
+                    }
                 }
             }
 
@@ -295,45 +360,120 @@ class ProductController
             return $newId;
         }
 
-        // On edit, update stock_qty directly as requested, and record a movement if changed
+        // On edit update
         $curStockStmt = $this->pdo->prepare('SELECT stock_qty FROM products WHERE id = :id');
         $curStockStmt->execute(['id' => $id]);
         $oldStock = (float) ($curStockStmt->fetchColumn() ?? 0);
-
         $newStock = isset($body['stock_qty']) ? (float) $body['stock_qty'] : $oldStock;
 
         $stmt = $this->pdo->prepare(
             'UPDATE products SET
-                business_type = :business_type, name = :name, category_id = :category_id, brand_id = :brand_id,
-                unit_id = :unit_id, tax_rate_id = :tax_rate_id, supplier_id = :supplier_id, barcode = :barcode,
-                sku = :sku, purchase_price = :purchase_price, selling_price = :selling_price, mrp = :mrp,
+                business_type = :business_type, name = :name, description = :description, images = :images,
+                category_id = :category_id, brand_id = :brand_id, unit_id = :unit_id, tax_rate_id = :tax_rate_id,
+                tax_inclusive = :tax_inclusive, supplier_id = :supplier_id, barcode = :barcode, sku = :sku,
+                hsn_code = :hsn_code, purchase_price = :purchase_price, selling_price = :selling_price, mrp = :mrp,
                 retail_price = :retail_price, wholesale_price = :wholesale_price, customer_price = :customer_price,
-                stock_qty = :stock_qty, low_stock_threshold = :low_stock_threshold, track_serial = :track_serial,
+                stock_qty = :stock_qty, opening_stock = :opening_stock, low_stock_threshold = :low_stock_threshold,
+                min_stock = :min_stock, max_stock = :max_stock, track_serial = :track_serial,
+                pos_enabled = :pos_enabled, online_enabled = :online_enabled, is_returnable = :is_returnable,
                 attributes = :attributes
              WHERE id = :id'
         );
         $stmt->execute([
             'business_type' => $body['business_type'],
             'name' => $body['name'],
+            'description' => $body['description'] ?? null,
+            'images' => $imagesJson,
             'category_id' => $body['category_id'] ?? null,
             'brand_id' => $body['brand_id'] ?? null,
             'unit_id' => $body['unit_id'] ?? null,
             'tax_rate_id' => $body['tax_rate_id'] ?? null,
+            'tax_inclusive' => !empty($body['tax_inclusive']) ? 1 : 0,
             'supplier_id' => $body['supplier_id'] ?? null,
-            'barcode' => $body['barcode'] ?? null,
+            'barcode' => $barcode,
             'sku' => $body['sku'] ?? null,
-            'purchase_price' => (float) ($body['purchase_price'] ?? 0),
+            'hsn_code' => $body['hsn_code'] ?? null,
+            'purchase_price' => $purchasePrice,
             'selling_price' => $sellingPrice,
-            'mrp' => (float) ($body['mrp'] ?? 0),
+            'mrp' => $mrp,
             'retail_price' => $retailPrice,
             'wholesale_price' => $wholesalePrice,
             'customer_price' => $customerPrice,
             'stock_qty' => $newStock,
+            'opening_stock' => $openingStock,
             'low_stock_threshold' => $body['low_stock_threshold'] ?? null,
+            'min_stock' => $body['min_stock'] ?? null,
+            'max_stock' => $body['max_stock'] ?? null,
             'track_serial' => !empty($body['track_serial']) ? 1 : 0,
+            'pos_enabled' => isset($body['pos_enabled']) ? (!empty($body['pos_enabled']) ? 1 : 0) : 1,
+            'online_enabled' => isset($body['online_enabled']) ? (!empty($body['online_enabled']) ? 1 : 0) : 1,
+            'is_returnable' => isset($body['is_returnable']) ? (!empty($body['is_returnable']) ? 1 : 0) : 1,
             'attributes' => $attributesJson,
             'id' => $id,
         ]);
+
+        // If new serials provided in edit mode, insert any missing ones
+        if ($trackSerial && !empty($serials)) {
+            $insertSerial = $this->pdo->prepare(
+                'INSERT INTO product_serials (product_id, imei1, imei2, serial_no, color, warranty_months, warranty_start, warranty_end, status) 
+                 VALUES (:pid, :imei1, :imei2, :serial_no, :color, :w_months, :w_start, :w_end, \'in_stock\')'
+            );
+            foreach ($serials as $s) {
+                if (!empty($s['imei1']) || !empty($s['serial_no'])) {
+                    // Check if already exists for this product
+                    $chk = $this->pdo->prepare("SELECT id FROM product_serials WHERE product_id = :pid AND (imei1 = :im1 OR serial_no = :sn)");
+                    $chk->execute(['pid' => $id, 'im1' => $s['imei1'] ?? '', 'sn' => $s['serial_no'] ?? '']);
+                    if (!$chk->fetch()) {
+                        $insertSerial->execute([
+                            'pid' => $id,
+                            'imei1' => !empty($s['imei1']) ? trim($s['imei1']) : null,
+                            'imei2' => !empty($s['imei2']) ? trim($s['imei2']) : null,
+                            'serial_no' => !empty($s['serial_no']) ? trim($s['serial_no']) : null,
+                            'color' => $s['color'] ?? ($attributes['color'] ?? null),
+                            'w_months' => !empty($s['warranty_months']) ? (int)$s['warranty_months'] : (!empty($attributes['warranty_period']) ? (int)$attributes['warranty_period'] : null),
+                            'w_start' => $s['warranty_start'] ?? ($attributes['warranty_start'] ?? null),
+                            'w_end' => $s['warranty_end'] ?? ($attributes['warranty_end'] ?? null),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // If variants provided in edit mode
+        if (isset($body['variants']) && is_array($body['variants'])) {
+            $insVariant = $this->pdo->prepare(
+                'INSERT INTO product_variants (product_id, variant_name, sku, price_adjustment, selling_price, barcode, stock_qty)
+                 VALUES (:pid, :name, :sku, :price_adj, :sell_price, :barcode, :stock)'
+            );
+            $updVariant = $this->pdo->prepare(
+                'UPDATE product_variants SET variant_name = :name, sku = :sku, price_adjustment = :price_adj,
+                 selling_price = :sell_price, barcode = :barcode, stock_qty = :stock WHERE id = :id AND product_id = :pid'
+            );
+            foreach ($body['variants'] as $v) {
+                if (!empty($v['id'])) {
+                    $updVariant->execute([
+                        'name' => trim($v['variant_name'] ?? ''),
+                        'sku' => $v['sku'] ?? null,
+                        'price_adj' => (float)($v['price_adjustment'] ?? 0),
+                        'sell_price' => isset($v['selling_price']) ? (float)$v['selling_price'] : null,
+                        'barcode' => !empty($v['barcode']) ? trim($v['barcode']) : null,
+                        'stock' => (float)($v['stock_qty'] ?? 0),
+                        'id' => $v['id'],
+                        'pid' => $id,
+                    ]);
+                } else if (!empty($v['variant_name'])) {
+                    $insVariant->execute([
+                        'pid' => $id,
+                        'name' => trim($v['variant_name']),
+                        'sku' => $v['sku'] ?? null,
+                        'price_adj' => (float)($v['price_adjustment'] ?? 0),
+                        'sell_price' => isset($v['selling_price']) ? (float)$v['selling_price'] : ($sellingPrice + (float)($v['price_adjustment'] ?? 0)),
+                        'barcode' => !empty($v['barcode']) ? trim($v['barcode']) : null,
+                        'stock' => (float)($v['stock_qty'] ?? 0),
+                    ]);
+                }
+            }
+        }
 
         if (abs($newStock - $oldStock) > 0.0001) {
             $diff = $newStock - $oldStock;
@@ -344,6 +484,23 @@ class ProductController
         }
 
         return $id;
+    }
+
+    /**
+     * Safe sync creation endpoint for offline product push
+     */
+    public function createFromSync(array $body, array $claims): array
+    {
+        PermissionMiddleware::requireOrThrow($claims, 'products.manage');
+        $uuid = $body['uuid'] ?? UuidHelper::v4();
+        $existing = $this->pdo->prepare('SELECT * FROM products WHERE uuid = :uuid');
+        $existing->execute(['uuid' => $uuid]);
+        if ($row = $existing->fetch()) {
+            return [$this->fetchProduct((int)$row['id']), 200];
+        }
+
+        $id = $this->saveProduct(null, $body);
+        return [$this->fetchProduct($id), 201];
     }
 
     private function assertCategoryMatchesBusinessType(mixed $categoryId, string $businessType): void
