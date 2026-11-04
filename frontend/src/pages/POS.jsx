@@ -247,8 +247,10 @@ export default function POS() {
       return;
     }
     const hasVariants = product.variants?.length > 0;
-    const canAddon = settings?.business_type === 'food' && addons.length > 0;
-    if (hasVariants || canAddon) {
+    // Check if product specifically has addons attached, or if variants exist
+    const productAddons = Array.isArray(product.attributes?.addons) ? product.attributes.addons : [];
+    const hasProductAddons = settings?.business_type === 'food' && productAddons.length > 0;
+    if (hasVariants || hasProductAddons) {
       setCustomizer({ product, variantId: product.variants?.[0]?.id ?? null, addonIds: [] });
       return;
     }
@@ -950,42 +952,49 @@ export default function POS() {
               </div>
             )}
 
-            {settings?.business_type === 'food' && addons.length > 0 && (
-              <div className="space-y-1.5 text-xs pt-1">
-                <span className="font-semibold text-slate-700 dark:text-slate-300 block">Extra Add-ons</span>
-                <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
-                  {addons.map((a) => (
-                    <label
-                      key={a.id}
-                      className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer transition-colors ${
-                        customizer.addonIds.includes(a.id)
-                          ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30'
-                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={customizer.addonIds.includes(a.id)}
-                          onChange={(e) =>
-                            setCustomizer((c) => ({
-                              ...c,
-                              addonIds: e.target.checked
-                                ? [...c.addonIds, a.id]
-                                : c.addonIds.filter((id) => id !== a.id),
-                            }))
-                          }
-                          className="accent-amber-500 rounded"
-                        />
-                        <span className="font-medium">{a.name}</span>
-                      </div>
-                      <span className="text-[11px] font-semibold text-amber-600">
-                        +{currency}{Number(a.price).toFixed(2)}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+            {settings?.business_type === 'food' && (
+              (() => {
+                const productAddonNames = Array.isArray(customizer.product.attributes?.addons) ? customizer.product.attributes.addons : [];
+                const availableAddons = addons.filter((a) => productAddonNames.length === 0 || productAddonNames.includes(a.name));
+                if (availableAddons.length === 0) return null;
+                return (
+                  <div className="space-y-1.5 text-xs pt-1">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 block">Extra Add-ons</span>
+                    <div className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                      {availableAddons.map((a) => (
+                        <label
+                          key={a.id}
+                          className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer transition-colors ${
+                            customizer.addonIds.includes(a.id)
+                              ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30'
+                              : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={customizer.addonIds.includes(a.id)}
+                              onChange={(e) =>
+                                setCustomizer((c) => ({
+                                  ...c,
+                                  addonIds: e.target.checked
+                                    ? [...c.addonIds, a.id]
+                                    : c.addonIds.filter((id) => id !== a.id),
+                                }))
+                              }
+                              className="accent-amber-500 rounded"
+                            />
+                            <span className="font-medium">{a.name}</span>
+                          </div>
+                          <span className="text-[11px] font-semibold text-amber-600">
+                            +{currency}{Number(a.price).toFixed(2)}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()
             )}
 
             <div className="pt-2 flex gap-2 text-xs">
