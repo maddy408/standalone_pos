@@ -6,16 +6,29 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50: '#F7F5FC',
+          100: '#EDE7F7',
+          200: '#DDD2F0',
+          300: '#C5B3E6',
+          400: '#A98ADB',
+          500: '#7652B5', // Primary Royal Purple
+          600: '#5B3B91', // Hover Purple
+          700: '#482D75',
+          800: '#341E57',
+          900: '#21133B',
+          DEFAULT: '#7652B5',
+        },
+        surface: {
+          DEFAULT: 'var(--card-bg)',
+          bg: 'var(--bg-main)',
+          card: 'var(--card-bg)',
+          secondary: 'var(--secondary-surface)',
+          border: 'var(--border-color)',
+        },
+        themeText: {
+          DEFAULT: 'var(--text-main)',
+          main: 'var(--text-main)',
+          muted: 'var(--text-secondary)',
         },
       },
     },

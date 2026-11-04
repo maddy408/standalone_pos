@@ -81,23 +81,23 @@ export default function Users() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-amber-500" />
+              <UserCheck className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
               {t('users.title')}
             </h1>
-            <p className="text-xs text-slate-500">Manage cashier, manager & admin credentials</p>
+            <p className="text-xs text-[#716B7C]">Manage cashier, manager & admin credentials</p>
           </div>
           <Link
             to="/users/roles"
-            className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800"
+            className="text-xs font-semibold text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] flex items-center gap-1.5 bg-[#EDE7F7] dark:bg-[#2B2536] px-3 py-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244]"
           >
             <ShieldCheck className="w-4 h-4" />
             {t('users.manage_roles_link')}
           </Link>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
           <table className="min-w-full text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800 text-left font-semibold text-slate-600 dark:text-slate-300">
+            <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
               <tr>
                 <th className="px-3.5 py-2.5">{t('users.username')}</th>
                 <th className="px-3.5 py-2.5">{t('common.name')}</th>
@@ -106,13 +106,13 @@ export default function Users() {
                 <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                <tr key={u.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
                   <td className="px-3.5 py-2.5 font-medium">{u.username}</td>
                   <td className="px-3.5 py-2.5">{u.full_name}</td>
                   <td className="px-3.5 py-2.5">
-                    <span className="capitalize font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                    <span className="capitalize font-semibold text-[#282431] dark:text-[#B8B0C4] bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded">
                       {u.role}
                     </span>
                   </td>
@@ -123,8 +123,8 @@ export default function Users() {
                         {t('common.active')}
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      <span className="inline-flex items-center gap-1 text-[#716B7C] dark:text-[#B8B0C4] font-medium bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#716B7C]"></span>
                         {t('common.inactive')}
                       </span>
                     )}
@@ -134,7 +134,7 @@ export default function Users() {
                       <button
                         onClick={() => startEdit(u)}
                         title="Edit User"
-                        className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors"
+                        className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -159,10 +159,10 @@ export default function Users() {
       </div>
 
       {/* User Form */}
-      <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4 self-start">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+      <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
+        <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
           <h2 className="font-bold text-sm flex items-center gap-2">
-            <UserPlus className="w-4 h-4 text-amber-500" />
+            <UserPlus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
             {isEditing ? t('users.edit_user') : t('users.add_user')}
           </h2>
           {isEditing && (
@@ -172,7 +172,7 @@ export default function Users() {
                 setIsEditing(false);
                 setError('');
               }}
-              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+              className="text-xs text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
             >
               <X className="w-3 h-3" /> Cancel
             </button>
@@ -187,48 +187,48 @@ export default function Users() {
 
         <form onSubmit={submit} className="space-y-3 text-xs">
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               {t('users.username')}
             </label>
             <input
               disabled={!!form.id}
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 disabled:opacity-60 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 disabled:opacity-60 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               {t('common.name')}
             </label>
             <input
               value={form.full_name}
               onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
-              {t('auth.password')} {form.id && <span className="text-[10px] text-slate-400 font-normal">({t('users.leave_blank_password')})</span>}
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+              {t('auth.password')} {form.id && <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] font-normal">({t('users.leave_blank_password')})</span>}
             </label>
             <input
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               {t('users.role')}
             </label>
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             >
               <option value="cashier">{t('users.role_cashier')}</option>
               <option value="manager">{t('users.role_manager')}</option>
@@ -238,13 +238,13 @@ export default function Users() {
 
           {form.id && (
             <div>
-              <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+              <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                 Account Status
               </label>
               <select
                 value={form.is_active ? 1 : 0}
                 onChange={(e) => setForm({ ...form, is_active: Number(e.target.value) })}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
               >
                 <option value={1}>Active</option>
                 <option value={0}>Inactive (Deactivated)</option>
@@ -255,7 +255,7 @@ export default function Users() {
           <div className="pt-2 flex gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 transition-colors shadow-sm"
+              className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 transition-colors shadow-sm"
             >
               {form.id ? 'Save Changes' : t('common.save')}
             </button>
@@ -266,7 +266,7 @@ export default function Users() {
                 setIsEditing(false);
                 setError('');
               }}
-              className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] px-4 py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
             >
               Reset
             </button>

@@ -5,6 +5,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { changeLanguage } from '../i18n';
 import { getAllOutboxItems, retryOutboxItem, discardOutboxItem } from '../db/db';
 import { syncNow, subscribeSyncStatus, refreshPendingCount } from '../db/syncService';
+import { Settings, Building, Receipt, Globe, Printer, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 const BUSINESS_TYPES = ['mobile', 'furniture', 'food'];
 
@@ -47,7 +48,7 @@ export default function MasterSettings() {
     if (settings) setForm(settings);
   }, [settings]);
 
-  if (!form) return <div>{t('common.loading')}</div>;
+  if (!form) return <div className="p-8 text-sm font-medium text-[#716B7C] dark:text-[#B8B0C4]">{t('common.loading')}</div>;
 
   const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
@@ -59,9 +60,6 @@ export default function MasterSettings() {
 
   const handleBusinessTypeChange = (newType) => {
     if (newType === form.business_type) return;
-    // Switching never deletes existing products of the previous type — they
-    // simply stop appearing in the (now-filtered) Product Creation list for
-    // the new type, so historical data and past invoices stay intact.
     setConfirmSwitch(newType);
   };
 
@@ -72,20 +70,44 @@ export default function MasterSettings() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-bold">{t('settings.title')}</h1>
+    <div className="max-w-3xl space-y-6 font-sans">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-[#282431] dark:text-[#F5F2F9] tracking-tight flex items-center gap-2">
+            <Settings className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
+            {t('settings.title')}
+          </h1>
+          <p className="text-xs text-[#716B7C] dark:text-[#B8B0C4] mt-0.5">
+            Configure enterprise parameters, printer connectors & appearance
+          </p>
+        </div>
+        {saved && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-sm">
+            <CheckCircle2 className="w-4 h-4" />
+            <span>{t('settings.saved')}</span>
+          </div>
+        )}
+      </div>
 
-      <section className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800">
-        <h2 className="mb-3 font-semibold">{t('settings.business_type')}</h2>
+      {/* Business Type Mode */}
+      <section className="rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4">
+        <div>
+          <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">
+            {t('settings.business_type')}
+          </h2>
+          <p className="text-xs text-[#716B7C] dark:text-[#B8B0C4] mt-0.5">
+            Select standard business vertical profile
+          </p>
+        </div>
         <div className="grid grid-cols-3 gap-3">
           {BUSINESS_TYPES.map((bt) => (
             <button
               key={bt}
               onClick={() => handleBusinessTypeChange(bt)}
-              className={`rounded-lg border px-3 py-3 text-sm font-medium ${
+              className={`rounded-xl border px-4 py-3 text-xs font-bold transition-all ${
                 form.business_type === bt
-                  ? 'border-brand-600 bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
-                  : 'border-slate-300 dark:border-slate-600'
+                  ? 'border-[#7652B5] bg-[#EDE7F7] text-[#7652B5] dark:border-[#A98ADB] dark:bg-[#2B2536] dark:text-[#A98ADB] shadow-sm'
+                  : 'border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#17151D] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#F7F5FC] dark:hover:bg-[#2B2536]'
               }`}
             >
               {t(`settings.${bt}`)}
@@ -93,15 +115,21 @@ export default function MasterSettings() {
           ))}
         </div>
         {confirmSwitch && (
-          <div className="mt-3 rounded-md bg-amber-50 dark:bg-amber-900/30 p-3 text-sm">
-            <p className="mb-2">
+          <div className="mt-3 rounded-xl bg-[#EDE7F7] dark:bg-[#2B2536] p-4 text-xs space-y-2 border border-[#E8E3EF] dark:border-[#393244]">
+            <p className="font-medium text-[#282431] dark:text-[#F5F2F9]">
               {t('settings.business_switch_confirm', { type: t(`settings.${confirmSwitch}`) })}
             </p>
-            <div className="flex gap-2">
-              <button onClick={confirmBusinessTypeSwitch} className="rounded-md bg-brand-600 px-3 py-1 text-white text-xs">
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={confirmBusinessTypeSwitch}
+                className="rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold px-4 py-2 text-xs shadow-sm"
+              >
                 {t('common.confirm')}
               </button>
-              <button onClick={() => setConfirmSwitch(null)} className="rounded-md border px-3 py-1 text-xs">
+              <button
+                onClick={() => setConfirmSwitch(null)}
+                className="rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-4 py-2 text-xs font-semibold hover:bg-[#F7F5FC] dark:hover:bg-[#2B2536]"
+              >
                 {t('common.cancel')}
               </button>
             </div>
@@ -109,157 +137,200 @@ export default function MasterSettings() {
         )}
       </section>
 
-      <section className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
-        <h2 className="font-semibold">{t('settings.company_profile')}</h2>
-        {['company_name', 'company_address', 'company_phone', 'company_gstin'].map((field) => (
-          <div key={field}>
-            <label className="mb-1 block text-sm font-medium">{t(`settings.${field}`)}</label>
+      {/* Company Profile */}
+      <section className="rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <Building className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">{t('settings.company_profile')}</h2>
+        </div>
+        <div className="space-y-3 text-xs">
+          {['company_name', 'company_address', 'company_phone', 'company_gstin'].map((field) => (
+            <div key={field}>
+              <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">{t(`settings.${field}`)}</label>
+              <input
+                value={form[field] || ''}
+                onChange={(e) => set(field, e.target.value)}
+                className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2 focus:ring-2 focus:ring-[#7652B5]/30 focus:border-[#7652B5] focus:outline-none"
+              />
+            </div>
+          ))}
+          <button
+            onClick={() => save(form)}
+            className="rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold px-5 py-2.5 text-xs shadow-sm transition-colors"
+          >
+            {t('common.save')}
+          </button>
+        </div>
+      </section>
+
+      {/* Invoice Settings */}
+      <section className="rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <Receipt className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">{t('settings.invoice_settings')}</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">{t('settings.invoice_prefix')}</label>
             <input
-              value={form[field] || ''}
-              onChange={(e) => set(field, e.target.value)}
-              className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
+              value={form.invoice_prefix || ''}
+              onChange={(e) => set('invoice_prefix', e.target.value)}
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             />
           </div>
-        ))}
-        <button onClick={() => save(form)} className="rounded-md bg-brand-600 px-4 py-2 text-white text-sm">
-          {t('common.save')}
-        </button>
-        {saved && <span className="ml-3 text-sm text-emerald-600">{t('settings.saved')}</span>}
-      </section>
-
-      <section className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
-        <h2 className="font-semibold">{t('settings.invoice_settings')}</h2>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('settings.invoice_prefix')}</label>
-          <input
-            value={form.invoice_prefix || ''}
-            onChange={(e) => set('invoice_prefix', e.target.value)}
-            className="w-40 rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          />
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">{t('settings.currency_symbol')}</label>
+            <input
+              value={form.currency_symbol || ''}
+              onChange={(e) => set('currency_symbol', e.target.value)}
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">{t('settings.low_stock_threshold')}</label>
+            <input
+              type="number"
+              value={form.low_stock_threshold || 0}
+              onChange={(e) => set('low_stock_threshold', e.target.value)}
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+            />
+          </div>
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('settings.currency_symbol')}</label>
-          <input
-            value={form.currency_symbol || ''}
-            onChange={(e) => set('currency_symbol', e.target.value)}
-            className="w-24 rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('settings.low_stock_threshold')}</label>
-          <input
-            type="number"
-            value={form.low_stock_threshold || 0}
-            onChange={(e) => set('low_stock_threshold', e.target.value)}
-            className="w-32 rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          />
-        </div>
-        <button onClick={() => save(form)} className="rounded-md bg-brand-600 px-4 py-2 text-white text-sm">
+        <button
+          onClick={() => save(form)}
+          className="rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold px-5 py-2.5 text-xs shadow-sm transition-colors"
+        >
           {t('common.save')}
         </button>
       </section>
 
-      <section className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
-        <h2 className="font-semibold">{t('settings.language')} &amp; {t('settings.theme')}</h2>
-        <div className="flex gap-4">
-          <select
-            value={i18n.language}
-            onChange={(e) => changeLanguage(e.target.value)}
-            className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          >
-            <option value="en">English</option>
-            <option value="ta">தமிழ்</option>
-          </select>
-          <select
-            value={theme}
-            onChange={(e) => setTheme(e.target.value)}
-            className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          >
-            <option value="light">{t('settings.light')}</option>
-            <option value="dark">{t('settings.dark')}</option>
-          </select>
+      {/* Language & Theme Configuration */}
+      <section className="rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <Globe className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">
+            {t('settings.language')} &amp; {t('settings.theme')}
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">Language</label>
+            <select
+              value={i18n.language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2.5 focus:ring-1 focus:ring-[#7652B5]"
+            >
+              <option value="en">English (EN)</option>
+              <option value="ta">தமிழ் (TA)</option>
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">Color Theme</label>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2.5 focus:ring-1 focus:ring-[#7652B5]"
+            >
+              <option value="light">Light Mode (White + Soft Royal Purple)</option>
+              <option value="dark">Dark Mode (Deep Dark + Soft Purple)</option>
+            </select>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
-        <h2 className="font-semibold">{t('settings.printer_scanner')}</h2>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('settings.receipt_paper_width')}</label>
-          <select
-            value={form.receipt_paper_width || '80mm'}
-            onChange={(e) => set('receipt_paper_width', e.target.value)}
-            className="w-40 rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          >
-            <option value="58mm">{t('settings.paper_58mm')}</option>
-            <option value="80mm">{t('settings.paper_80mm')}</option>
-            <option value="a5">{t('settings.paper_a5')}</option>
-          </select>
+      {/* Printer & Scanner Setup */}
+      <section className="rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <Printer className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">{t('settings.printer_scanner')}</h2>
         </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={!!Number(form.auto_print_on_sale)}
-            onChange={(e) => set('auto_print_on_sale', e.target.checked ? 1 : 0)}
-          />
-          {t('settings.auto_print')}
-        </label>
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('settings.barcode_scanner_mode')}</label>
-          <select
-            value={form.barcode_scanner_mode || 'keyboard_wedge'}
-            onChange={(e) => set('barcode_scanner_mode', e.target.value)}
-            className="w-56 rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">{t('settings.receipt_paper_width')}</label>
+            <select
+              value={form.receipt_paper_width || '80mm'}
+              onChange={(e) => set('receipt_paper_width', e.target.value)}
+              className="w-44 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2 focus:ring-1 focus:ring-[#7652B5]"
+            >
+              <option value="58mm">{t('settings.paper_58mm')}</option>
+              <option value="80mm">{t('settings.paper_80mm')}</option>
+              <option value="a5">{t('settings.paper_a5')}</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 font-medium cursor-pointer">
+            <input
+              type="checkbox"
+              checked={!!Number(form.auto_print_on_sale)}
+              onChange={(e) => set('auto_print_on_sale', e.target.checked ? 1 : 0)}
+              className="rounded accent-[#7652B5]"
+            />
+            <span>{t('settings.auto_print')}</span>
+          </label>
+          <div>
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">{t('settings.barcode_scanner_mode')}</label>
+            <select
+              value={form.barcode_scanner_mode || 'keyboard_wedge'}
+              onChange={(e) => set('barcode_scanner_mode', e.target.value)}
+              className="w-64 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2 focus:ring-1 focus:ring-[#7652B5]"
+            >
+              <option value="keyboard_wedge">{t('settings.scanner_keyboard')}</option>
+              <option value="camera">{t('settings.scanner_camera')}</option>
+            </select>
+            <p className="mt-1 text-[11px] text-[#716B7C] dark:text-[#B8B0C4]">
+              {t('settings.scanner_hint')}
+            </p>
+          </div>
+          <button
+            onClick={() => save(form)}
+            className="rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold px-5 py-2.5 text-xs shadow-sm transition-colors"
           >
-            <option value="keyboard_wedge">{t('settings.scanner_keyboard')}</option>
-            <option value="camera">{t('settings.scanner_camera')}</option>
-          </select>
-          <p className="mt-1 text-xs text-slate-400">
-            {t('settings.scanner_hint')}
-          </p>
+            {t('common.save')}
+          </button>
         </div>
-        <button onClick={() => save(form)} className="rounded-md bg-brand-600 px-4 py-2 text-white text-sm">
-          {t('common.save')}
-        </button>
       </section>
 
-      <section className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">{t('settings.offline_sync')}</h2>
+      {/* Offline Sync & Outbox */}
+      <section className="rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+            <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">{t('settings.offline_sync')}</h2>
+          </div>
           <button
             onClick={() => syncNow({ silent: true })}
             disabled={syncStatus?.syncing || !syncStatus?.online}
-            className="rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1 text-xs font-medium disabled:opacity-50"
+            className="rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#17151D] px-3.5 py-1.5 text-xs font-bold text-[#7652B5] dark:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] disabled:opacity-50 transition-colors shadow-sm"
           >
             {syncStatus?.syncing ? t('sync.syncing') : t('sync.sync_now')}
           </button>
         </div>
-        <div className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="text-xs text-[#716B7C] dark:text-[#B8B0C4]">
           {t('sync.last_synced')}: {syncStatus?.lastSyncAt ? new Date(syncStatus.lastSyncAt).toLocaleString() : t('sync.never')}
         </div>
 
         {outbox.length === 0 ? (
-          <div className="text-sm text-slate-400">{t('settings.no_queued_changes')}</div>
+          <div className="text-xs text-[#716B7C] dark:text-[#B8B0C4] italic">{t('settings.no_queued_changes')}</div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {outbox.map((item) => (
               <div
                 key={item.client_id}
-                className={`flex items-center justify-between rounded-md border px-3 py-2 text-xs ${
+                className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-xs ${
                   item.status === 'failed'
-                    ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
-                    : 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+                    ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/20'
+                    : 'border-[#E8E3EF] dark:border-[#393244] bg-[#EDE7F7]/60 dark:bg-[#2B2536]'
                 }`}
               >
                 <div>
-                  <div className="font-medium capitalize">{item.type} &middot; {item.status}</div>
-                  <div className="text-slate-400">{new Date(item.created_at).toLocaleString()}</div>
-                  {item.error && <div className="mt-0.5 text-red-500">{item.error}</div>}
+                  <div className="font-bold text-[#282431] dark:text-[#F5F2F9] capitalize">{item.type} &middot; {item.status}</div>
+                  <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">{new Date(item.created_at).toLocaleString()}</div>
+                  {item.error && <div className="mt-0.5 text-red-500 font-semibold">{item.error}</div>}
                 </div>
                 <div className="flex gap-2">
                   {item.status === 'failed' && (
-                    <button onClick={() => retryItem(item.client_id)} className="text-brand-600 hover:underline">{t('common.retry')}</button>
+                    <button onClick={() => retryItem(item.client_id)} className="text-[#7652B5] dark:text-[#A98ADB] font-bold hover:underline">{t('common.retry')}</button>
                   )}
-                  <button onClick={() => discardItem(item.client_id)} className="text-red-500 hover:underline">{t('common.discard')}</button>
+                  <button onClick={() => discardItem(item.client_id)} className="text-red-500 font-bold hover:underline">{t('common.discard')}</button>
                 </div>
               </div>
             ))}

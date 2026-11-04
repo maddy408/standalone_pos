@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
 import {
   Layers,
+  Package,
   Tags,
   Plus,
   Edit2,
@@ -48,7 +49,6 @@ export default function MasterData() {
       : tab === 'tax_rates'
       ? '/lookup/tax-rates'
       : `/lookup/${tab}`;
-
   const loadCategories = () => {
     api.get('/categories', { params: { business_type: settings?.business_type || undefined } })
       .then(({ data }) => setCategoriesList(data));
@@ -212,7 +212,14 @@ export default function MasterData() {
   return (
     <div className="space-y-5">
       {/* Tab Navigation Bar */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#E8E3EF] dark:border-[#393244] pb-3">
+        <Link
+          to="/products"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244]"
+        >
+          <Package className="w-4 h-4" />
+          <span>All Products</span>
+        </Link>
         {TABS.map((tItem) => {
           const Icon = tItem.icon;
           const active = tab === tItem.id;
@@ -222,8 +229,8 @@ export default function MasterData() {
               onClick={() => handleTabChange(tItem.id)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
                 active
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+                  ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-sm'
+                  : 'bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244]'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -237,23 +244,23 @@ export default function MasterData() {
         {/* Table View */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#716B7C]">
               {TABS.find((x) => x.id === tab)?.label} List
             </h2>
             <div className="relative w-64">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
             <table className="min-w-full text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800 text-left font-semibold text-slate-600 dark:text-slate-300">
+              <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
                 <tr>
                   <th className="px-3.5 py-2.5">Name</th>
                   {tab === 'categories' && <th className="px-3.5 py-2.5">Category Type</th>}
@@ -265,22 +272,22 @@ export default function MasterData() {
                   <th className="px-3.5 py-2.5 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
                 {filteredRows.map((r) => {
                   const parentCat = categoriesList.find((c) => c.id === r.parent_id);
                   const isActive = (r.is_active ?? 1) === 1;
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr key={r.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
                       <td className="px-3.5 py-2.5 font-medium">{r.name}</td>
 
                       {tab === 'categories' && (
                         <td className="px-3.5 py-2.5">
                           {r.parent_id ? (
-                            <span className="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-semibold px-2 py-0.5 rounded text-[10px]">
+                            <span className="bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] dark:text-[#A98ADB] font-semibold px-2 py-0.5 rounded text-[10px]">
                               Subcategory
                             </span>
                           ) : (
-                            <span className="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 font-semibold px-2 py-0.5 rounded text-[10px]">
+                            <span className="bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] font-semibold px-2 py-0.5 rounded text-[10px]">
                               Main Category
                             </span>
                           )}
@@ -288,14 +295,14 @@ export default function MasterData() {
                       )}
 
                       {tab === 'categories' && (
-                        <td className="px-3.5 py-2.5 text-slate-500">
+                        <td className="px-3.5 py-2.5 text-[#716B7C]">
                           {parentCat ? parentCat.name : '—'}
                         </td>
                       )}
 
                       {tab === 'brands' && (
                         <td className="px-3.5 py-2.5">
-                          <span className="capitalize font-medium text-slate-600 dark:text-slate-300">
+                          <span className="capitalize font-medium text-[#716B7C] dark:text-[#B8B0C4]">
                             {r.business_type || 'Universal'}
                           </span>
                         </td>
@@ -312,8 +319,8 @@ export default function MasterData() {
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-slate-400 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                            <span className="inline-flex items-center gap-1 text-[#716B7C] dark:text-[#B8B0C4] font-medium bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded text-[10px]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#716B7C]"></span>
                               Inactive
                             </span>
                           )}
@@ -335,7 +342,7 @@ export default function MasterData() {
                               }
                             }}
                             title="Edit"
-                            className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors"
+                            className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -371,7 +378,7 @@ export default function MasterData() {
                 })}
                 {filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
+                    <td colSpan={7} className="px-3 py-8 text-center text-[#716B7C] dark:text-[#B8B0C4]">
                       No records found
                     </td>
                   </tr>
@@ -382,16 +389,16 @@ export default function MasterData() {
         </div>
 
         {/* Form Drawer / Box */}
-        <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4 self-start">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
+          <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
             <h3 className="font-bold text-sm flex items-center gap-2">
-              <Plus className="w-4 h-4 text-amber-500" />
+              <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
               {isEditing ? `Edit ${tab}` : `Add New ${tab}`}
             </h3>
             {isEditing && (
               <button
                 onClick={resetForms}
-                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                className="text-xs text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
               >
                 <X className="w-3 h-3" /> Cancel
               </button>
@@ -409,7 +416,7 @@ export default function MasterData() {
             {tab === 'categories' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Category Name *
                   </label>
                   <input
@@ -417,18 +424,18 @@ export default function MasterData() {
                     value={catForm.name}
                     onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
                     placeholder="e.g. Smart Phones or Screen Protectors"
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Parent Category (Optional - select for Subcategory)
                   </label>
                   <select
                     value={catForm.parent_id}
                     onChange={(e) => setCatForm({ ...catForm, parent_id: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   >
                     <option value="">-- None (This is a Main Category) --</option>
                     {categoriesList
@@ -442,13 +449,13 @@ export default function MasterData() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Status
                   </label>
                   <select
                     value={catForm.is_active}
                     onChange={(e) => setCatForm({ ...catForm, is_active: Number(e.target.value) })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   >
                     <option value={1}>Active</option>
                     <option value={0}>Inactive (Deactivated)</option>
@@ -461,7 +468,7 @@ export default function MasterData() {
             {tab === 'brands' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Brand Name *
                   </label>
                   <input
@@ -469,18 +476,18 @@ export default function MasterData() {
                     value={brandForm.name}
                     onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
                     placeholder="e.g. Apple, Samsung, Godrej"
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Status
                   </label>
                   <select
                     value={brandForm.is_active}
                     onChange={(e) => setBrandForm({ ...brandForm, is_active: Number(e.target.value) })}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   >
                     <option value={1}>Active</option>
                     <option value={0}>Inactive (Deactivated)</option>
@@ -493,7 +500,7 @@ export default function MasterData() {
             {tab === 'units' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Unit Name *
                   </label>
                   <input
@@ -501,11 +508,11 @@ export default function MasterData() {
                     value={unitForm.name}
                     onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })}
                     placeholder="e.g. Piece, Box, Kilogram"
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Short Code *
                   </label>
                   <input
@@ -513,7 +520,7 @@ export default function MasterData() {
                     value={unitForm.short_code}
                     onChange={(e) => setUnitForm({ ...unitForm, short_code: e.target.value })}
                     placeholder="e.g. pcs, box, kg"
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
               </>
@@ -523,7 +530,7 @@ export default function MasterData() {
             {tab === 'tax_rates' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Tax Name *
                   </label>
                   <input
@@ -531,11 +538,11 @@ export default function MasterData() {
                     value={taxForm.name}
                     onChange={(e) => setTaxForm({ ...taxForm, name: e.target.value })}
                     placeholder="e.g. GST 18%, Exempt"
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
                     Percentage (%) *
                   </label>
                   <input
@@ -545,7 +552,7 @@ export default function MasterData() {
                     value={taxForm.percent}
                     onChange={(e) => setTaxForm({ ...taxForm, percent: e.target.value })}
                     placeholder="e.g. 18"
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
               </>
@@ -554,14 +561,14 @@ export default function MasterData() {
             <div className="pt-2 flex gap-2">
               <button
                 type="submit"
-                className="flex-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 transition-colors shadow-sm"
+                className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 transition-colors shadow-sm"
               >
                 {isEditing ? 'Save Changes' : 'Save'}
               </button>
               <button
                 type="button"
                 onClick={resetForms}
-                className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] px-4 py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
               >
                 Reset
               </button>

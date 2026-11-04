@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
+import { formatCurrency } from '../utils/currency';
 import { useAuth } from '../hooks/useAuth';
 import { cacheProducts, enqueueOutboxItem, newUuid } from '../db/db';
 import { refreshPendingCount } from '../db/syncService';
@@ -13,6 +15,7 @@ import {
   Trash2,
   X,
   Layers,
+  Tags,
   Barcode,
   Layers2,
   Image as ImageIcon,
@@ -133,6 +136,8 @@ export default function Products() {
       api.get('/lookup/addons').then(({ data }) => setAddonsList(data));
     }
   }, [settings?.business_type]);
+
+ [settings?.business_type]);
 
   // Barcode Auto Generator
   const generateBarcode = () => {
@@ -366,27 +371,52 @@ export default function Products() {
   };
 
   const businessIcon = {
-    mobile: <Smartphone className="w-5 h-5 text-amber-500" />,
-    furniture: <Sofa className="w-5 h-5 text-amber-500" />,
-    food: <Utensils className="w-5 h-5 text-amber-500" />,
+    mobile: <Smartphone className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />,
+    furniture: <Sofa className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />,
+    food: <Utensils className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />,
   }[businessType];
 
   return (
     <div className="space-y-6">
+      {/* Three Existing Products Navigation Options */}
+      <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-[#211D2A] rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm overflow-x-auto scrollbar-thin">
+        <Link
+          to="/products"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-[#7652B5] text-white shadow-sm dark:bg-[#A98ADB] dark:text-[#17151D] flex-shrink-0"
+        >
+          <Package className="w-4 h-4" />
+          <span>All Products</span>
+        </Link>
+        <Link
+          to="/master-data?tab=categories"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] hover:text-[#282431] dark:hover:bg-[#2B2536] dark:hover:text-[#F5F2F9] flex-shrink-0"
+        >
+          <Layers className="w-4 h-4" />
+          <span>Categories & Sub</span>
+        </Link>
+        <Link
+          to="/master-data?tab=brands"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] hover:text-[#282431] dark:hover:bg-[#2B2536] dark:hover:text-[#F5F2F9] flex-shrink-0"
+        >
+          <Tags className="w-4 h-4" />
+          <span>Brands Mapping</span>
+        </Link>
+      </div>
+
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <div className="p-3 rounded-xl bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB]">
             {businessIcon}
           </div>
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               Product Creation & Catalog
-              <span className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+              <span className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] border border-[#E8E3EF] dark:border-[#393244]">
                 {businessType} mode
               </span>
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[#716B7C]">
               Configured dynamically for {businessType} specs, variants, barcodes & inventory
             </p>
           </div>
@@ -394,18 +424,18 @@ export default function Products() {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, barcode, SKU..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#2B2536] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             />
           </div>
           {isEditing && (
             <button
               onClick={resetForm}
-              className="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> New Product
             </button>
@@ -417,14 +447,14 @@ export default function Products() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Products List (Left side - 5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider px-1">
+          <div className="flex items-center justify-between text-xs font-bold text-[#716B7C] uppercase tracking-wider px-1">
             <span>Product Inventory ({products.length})</span>
-            <span className="text-amber-600 capitalize">{businessType}</span>
+            <span className="text-[#7652B5] dark:text-[#A98ADB] capitalize">{businessType}</span>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm max-h-[850px] overflow-y-auto scrollbar-thin">
+          <div className="overflow-x-auto rounded-2xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm max-h-[850px] overflow-y-auto scrollbar-thin">
             <table className="min-w-full text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-800/80 sticky top-0 text-left font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+              <thead className="bg-[#F7F5FC] dark:bg-[#2B2536]/80 sticky top-0 text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4] border-b border-[#E8E3EF] dark:border-[#393244]">
                 <tr>
                   <th className="px-3.5 py-2.5">Product</th>
                   <th className="px-3.5 py-2.5 text-right">Price ({currency})</th>
@@ -432,7 +462,7 @@ export default function Products() {
                   <th className="px-3.5 py-2.5 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
                 {products.map((p) => {
                   const isLow = p.low_stock_threshold && Number(p.stock_qty || 0) <= Number(p.low_stock_threshold);
                   const isSelected = form.id === p.id;
@@ -442,25 +472,25 @@ export default function Products() {
                       onClick={() => startEdit(p)}
                       className={`cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-amber-500/10 border-l-4 border-amber-500'
-                          : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/40'
+                          ? 'bg-[#EDE7F7] dark:bg-[#2B2536] border-l-4 border-[#7652B5] dark:border-[#A98ADB]'
+                          : 'hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40'
                       }`}
                     >
                       <td className="px-3.5 py-2.5">
-                        <div className="font-semibold text-slate-900 dark:text-white line-clamp-1">{p.name}</div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                        <div className="font-semibold text-[#282431] dark:text-[#F5F2F9] line-clamp-1">{p.name}</div>
+                        <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] flex items-center gap-2">
                           {p.category_name && <span>{p.category_name}</span>}
                           {p.barcode && <span className="font-mono">#{p.barcode}</span>}
                           {p.variants?.length > 0 && (
-                            <span className="text-amber-600 font-bold">({p.variants.length} var)</span>
+                            <span className="text-[#7652B5] dark:text-[#A98ADB] font-bold">({p.variants.length} var)</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-3.5 py-2.5 text-right font-bold text-amber-600 dark:text-amber-400">
-                        {currency}{Number(p.selling_price || 0).toFixed(2)}
+                      <td className="px-3.5 py-2.5 text-right font-bold text-[#7652B5] dark:text-[#A98ADB]">
+                        {formatCurrency(p.selling_price || 0, currency)}
                       </td>
                       <td className="px-3.5 py-2.5 text-right font-medium">
-                        <span className={`px-1.5 py-0.5 rounded ${isLow ? 'bg-red-50 dark:bg-red-950/40 text-red-500 font-bold' : 'text-slate-600 dark:text-slate-300'}`}>
+                        <span className={`px-1.5 py-0.5 rounded ${isLow ? 'bg-red-50 dark:bg-red-950/40 text-red-500 font-bold' : 'text-[#716B7C] dark:text-[#B8B0C4]'}`}>
                           {Number(p.stock_qty || 0)} {p.unit_code || ''}
                         </span>
                       </td>
@@ -469,7 +499,7 @@ export default function Products() {
                           <button
                             onClick={() => startEdit(p)}
                             title="Edit"
-                            className="p-1 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
+                            className="p-1 text-[#7652B5] dark:text-[#A98ADB] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -487,7 +517,7 @@ export default function Products() {
                 })}
                 {products.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-slate-400 italic">
+                    <td colSpan={4} className="py-12 text-center text-[#716B7C] dark:text-[#B8B0C4] italic">
                       No products found. Use the form to create your first item.
                     </td>
                   </tr>
@@ -498,21 +528,21 @@ export default function Products() {
         </div>
 
         {/* Dynamic Comprehensive Product Form (Right side - 7 cols) */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
+        <div className="lg:col-span-7 bg-white dark:bg-[#211D2A] rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm p-6 space-y-5">
           {/* Form Action Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
             <div>
-              <h2 className="font-bold text-base flex items-center gap-2 text-slate-900 dark:text-white">
-                <Plus className="w-4 h-4 text-amber-500" />
+              <h2 className="font-bold text-base flex items-center gap-2 text-[#282431] dark:text-[#F5F2F9]">
+                <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
                 {isEditing ? `Edit Product: ${form.name}` : `Create New ${businessType.toUpperCase()} Product`}
               </h2>
-              <p className="text-xs text-slate-500">Fill common information, pricing, variants & business specifications</p>
+              <p className="text-xs text-[#716B7C]">Fill common information, pricing, variants & business specifications</p>
             </div>
             {isEditing && (
               <button
                 type="button"
                 onClick={resetForm}
-                className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                className="text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
               >
                 <X className="w-3.5 h-3.5" /> Cancel
               </button>
@@ -520,7 +550,7 @@ export default function Products() {
           </div>
 
           {/* Form Section Navigation Pills */}
-          <div className="flex flex-wrap gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex flex-wrap gap-1.5 border-b border-[#E8E3EF] dark:border-[#393244] pb-3">
             {[
               { id: 'basic', label: '1. Basic Info' },
               { id: 'pricing', label: '2. Pricing & Tax' },
@@ -536,8 +566,8 @@ export default function Products() {
                 onClick={() => setActiveFormSection(sec.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                   activeFormSection === sec.id
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-sm'
+                    : 'bg-[#EDE7F7] dark:bg-[#2B2536] text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#282431] dark:hover:text-white'
                 }`}
               >
                 {sec.label}
@@ -565,7 +595,7 @@ export default function Products() {
             {activeFormSection === 'basic' && (
               <div className="space-y-4 animate-in fade-in duration-150">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                     Product Name *
                   </label>
                   <input
@@ -579,17 +609,17 @@ export default function Products() {
                         ? 'e.g. Solid Teak Wood Dining Table, Ergonomic Office Chair'
                         : 'e.g. Special Chicken Biryani, Butter Naan'
                     }
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none font-medium"
+                    className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none font-medium"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Category</label>
                     <select
                       value={form.category_id}
                       onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     >
                       <option value="">-- Select Category --</option>
                       {categories.map((c) => (
@@ -601,11 +631,11 @@ export default function Products() {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Brand</label>
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Brand</label>
                     <select
                       value={form.brand_id}
                       onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     >
                       <option value="">-- Select Brand --</option>
                       {brands.map((b) => (
@@ -619,22 +649,22 @@ export default function Products() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">SKU</label>
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">SKU</label>
                     <input
                       value={form.sku}
                       onChange={(e) => setForm({ ...form, sku: e.target.value })}
                       placeholder="e.g. MOB-0012"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-slate-700 dark:text-slate-300">Barcode</label>
+                      <label className="font-semibold text-[#282431] dark:text-[#B8B0C4]">Barcode</label>
                       <button
                         type="button"
                         onClick={generateBarcode}
-                        className="text-[10px] text-amber-600 hover:underline flex items-center gap-0.5"
+                        className="text-[10px] text-[#7652B5] dark:text-[#A98ADB] hover:underline flex items-center gap-0.5"
                       >
                         <Barcode className="w-3 h-3" /> Auto Gen
                       </button>
@@ -643,23 +673,23 @@ export default function Products() {
                       value={form.barcode}
                       onChange={(e) => setForm({ ...form, barcode: e.target.value })}
                       placeholder="Type or auto-generate"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none font-mono"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">HSN Code</label>
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">HSN Code</label>
                     <input
                       value={form.hsn_code}
                       onChange={(e) => setForm({ ...form, hsn_code: e.target.value })}
                       placeholder="e.g. 85171200"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                     Product Description
                   </label>
                   <textarea
@@ -667,7 +697,7 @@ export default function Products() {
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Enter detailed description, key specifications, or highlights..."
-                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   />
                 </div>
 
@@ -678,14 +708,14 @@ export default function Products() {
             {/* SECTION 2: PRICING & TAXATION */}
             {activeFormSection === 'pricing' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
-                  <div className="font-bold text-xs uppercase text-slate-500 tracking-wider">
+                <div className="p-4 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] space-y-3">
+                  <div className="font-bold text-xs uppercase text-[#716B7C] tracking-wider">
                     Price Tiers ({currency})
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                         Retail Selling Price *
                       </label>
                       <input
@@ -695,12 +725,12 @@ export default function Products() {
                         value={form.retail_price}
                         onChange={(e) => setForm({ ...form, retail_price: e.target.value, selling_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 font-bold text-amber-600 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 font-bold text-[#7652B5] dark:text-[#A98ADB] focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                         Wholesale Price
                       </label>
                       <input
@@ -709,12 +739,12 @@ export default function Products() {
                         value={form.wholesale_price}
                         onChange={(e) => setForm({ ...form, wholesale_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                         Customer Special Price
                       </label>
                       <input
@@ -723,14 +753,14 @@ export default function Products() {
                         value={form.customer_price}
                         onChange={(e) => setForm({ ...form, customer_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                         Purchase Price ({currency})
                       </label>
                       <input
@@ -739,12 +769,12 @@ export default function Products() {
                         value={form.purchase_price}
                         onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                         MRP ({currency})
                       </label>
                       <input
@@ -753,24 +783,24 @@ export default function Products() {
                         value={form.mrp}
                         onChange={(e) => setForm({ ...form, mrp: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Tax Configuration */}
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
-                  <div className="font-bold text-xs uppercase text-slate-500 tracking-wider">
+                <div className="p-4 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] space-y-3">
+                  <div className="font-bold text-xs uppercase text-[#716B7C] tracking-wider">
                     Taxation & GST
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tax Rate</label>
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Tax Rate</label>
                       <select
                         value={form.tax_rate_id}
                         onChange={(e) => setForm({ ...form, tax_rate_id: e.target.value })}
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       >
                         <option value="">-- None (0%) --</option>
                         {taxRates.map((tRate) => (
@@ -782,11 +812,11 @@ export default function Products() {
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Tax Calculation</label>
+                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Tax Calculation</label>
                       <select
                         value={form.tax_inclusive ? '1' : '0'}
                         onChange={(e) => setForm({ ...form, tax_inclusive: e.target.value === '1' })}
-                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                       >
                         <option value="0">Tax Exclusive (Added on top)</option>
                         <option value="1">Tax Inclusive (Included in price)</option>
@@ -802,11 +832,11 @@ export default function Products() {
               <div className="space-y-4 animate-in fade-in duration-150">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Stock Unit</label>
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Stock Unit</label>
                     <select
                       value={form.unit_id}
                       onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     >
                       <option value="">-- Select Unit (Pcs, Set, Pair, Kg...) --</option>
                       {units.map((u) => (
@@ -818,7 +848,7 @@ export default function Products() {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                       Current Stock Qty
                     </label>
                     <input
@@ -827,12 +857,12 @@ export default function Products() {
                       value={form.stock_qty}
                       onChange={(e) => setForm({ ...form, stock_qty: e.target.value })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 font-bold focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 font-bold focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                       Opening Stock
                     </label>
                     <input
@@ -841,14 +871,14 @@ export default function Products() {
                       value={form.opening_stock}
                       onChange={(e) => setForm({ ...form, opening_stock: e.target.value })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                       Low Stock Alert
                     </label>
                     <input
@@ -857,12 +887,12 @@ export default function Products() {
                       value={form.low_stock_threshold}
                       onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })}
                       placeholder="e.g. 5"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                       Minimum Stock
                     </label>
                     <input
@@ -871,12 +901,12 @@ export default function Products() {
                       value={form.min_stock}
                       onChange={(e) => setForm({ ...form, min_stock: e.target.value })}
                       placeholder="e.g. 2"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                       Maximum Stock
                     </label>
                     <input
@@ -885,21 +915,21 @@ export default function Products() {
                       value={form.max_stock}
                       onChange={(e) => setForm({ ...form, max_stock: e.target.value })}
                       placeholder="e.g. 100"
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Mobile Shop: Unique IMEI / Serial Number Tracking */}
                 {businessType === 'mobile' && (
-                  <div className="p-4 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 space-y-3">
+                  <div className="p-4 rounded-xl bg-[#EDE7F7]/50 dark:bg-[#2B2536]/50 dark:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244] dark:border-[#393244] space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-xs text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-[#7652B5] dark:text-[#C5B3E6] flex items-center gap-1.5">
                           <Smartphone className="w-4 h-4" />
                           Individual Device IMEI & Serial Tracking
                         </div>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-[11px] text-[#716B7C]">
                           Enable for phones/tablets. Disable for phone covers, cables, chargers & accessories.
                         </p>
                       </div>
@@ -910,46 +940,46 @@ export default function Products() {
                           onChange={(e) => setForm({ ...form, track_serial: e.target.checked })}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        <div className="w-11 h-6 bg-[#EDE7F7] peer-focus:outline-none rounded-full peer dark:bg-[#393244] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#E8E3EF] dark:border-[#393244] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7652B5] dark:bg-[#A98ADB]"></div>
                       </label>
                     </div>
 
                     {form.track_serial && (
                       <div className="space-y-3 pt-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-xs text-slate-700 dark:text-slate-300">
+                          <span className="font-semibold text-xs text-[#282431] dark:text-[#B8B0C4]">
                             Registered Devices / IMEIs ({form.serials?.length || 0})
                           </span>
                           <button
                             type="button"
                             onClick={addSerialRow}
-                            className="text-xs font-bold text-amber-600 hover:underline flex items-center gap-1"
+                            className="text-xs font-bold text-[#7652B5] dark:text-[#A98ADB] hover:underline flex items-center gap-1"
                           >
                             <Plus className="w-3.5 h-3.5" /> + Add Device IMEI
                           </button>
                         </div>
 
                         {form.serials?.map((s, idx) => (
-                          <div key={idx} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-2">
+                          <div key={idx} className="p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               <input
                                 value={s.imei1}
                                 onChange={(e) => updateSerialRow(idx, { imei1: e.target.value })}
                                 placeholder="Primary IMEI 1 (15 digits)"
-                                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                               />
                               <input
                                 value={s.imei2}
                                 onChange={(e) => updateSerialRow(idx, { imei2: e.target.value })}
                                 placeholder="Secondary IMEI 2 (Optional)"
-                                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                               />
                               <div className="flex gap-1">
                                 <input
                                   value={s.serial_no}
                                   onChange={(e) => updateSerialRow(idx, { serial_no: e.target.value })}
                                   placeholder="Serial Number / S/N"
-                                  className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                                  className="flex-1 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                                 />
                                 {form.serials.length > 1 && (
                                   <button
@@ -967,20 +997,20 @@ export default function Products() {
                                 value={s.color}
                                 onChange={(e) => updateSerialRow(idx, { color: e.target.value })}
                                 placeholder="Device Color (e.g. Titanium Blue)"
-                                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-2.5 py-1 text-[11px]"
+                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-[11px]"
                               />
                               <input
                                 type="number"
                                 value={s.warranty_months}
                                 onChange={(e) => updateSerialRow(idx, { warranty_months: e.target.value })}
                                 placeholder="Warranty (Months)"
-                                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-2.5 py-1 text-[11px]"
+                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-[11px]"
                               />
                               <input
                                 type="date"
                                 value={s.warranty_start}
                                 onChange={(e) => updateSerialRow(idx, { warranty_start: e.target.value })}
-                                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-2.5 py-1 text-[11px]"
+                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-[11px]"
                               />
                             </div>
                           </div>
@@ -995,14 +1025,14 @@ export default function Products() {
             {/* SECTION 4: DYNAMIC BUSINESS SPECIFICATIONS */}
             {activeFormSection === 'specs' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {businessIcon}
-                    <span className="font-bold text-xs uppercase text-slate-700 dark:text-slate-300">
+                    <span className="font-bold text-xs uppercase text-[#282431] dark:text-[#B8B0C4]">
                       {businessType} Specific Attributes
                     </span>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-medium">
+                  <span className="text-[11px] text-[#716B7C] font-medium">
                     {attributeFields.length} dynamic fields configured
                   </span>
                 </div>
@@ -1021,7 +1051,7 @@ export default function Products() {
                       }
                       return (
                         <div key={field.field_key}>
-                          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                             {label} {field.is_required ? '*' : ''}
                           </label>
                           <select
@@ -1032,7 +1062,7 @@ export default function Products() {
                                 attributes: { ...form.attributes, [field.field_key]: e.target.value },
                               })
                             }
-                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                            className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                           >
                             <option value="">-- Choose {field.label_en} --</option>
                             {options.map((opt) => (
@@ -1048,7 +1078,7 @@ export default function Products() {
                     if (field.field_type === 'textarea') {
                       return (
                         <div key={field.field_key} className="sm:col-span-2">
-                          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                             {label}
                           </label>
                           <textarea
@@ -1060,7 +1090,7 @@ export default function Products() {
                                 attributes: { ...form.attributes, [field.field_key]: e.target.value },
                               })
                             }
-                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                            className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                           />
                         </div>
                       );
@@ -1068,7 +1098,7 @@ export default function Products() {
 
                     return (
                       <div key={field.field_key}>
-                        <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
                           {label} {field.is_required ? '*' : ''}
                         </label>
                         <input
@@ -1080,7 +1110,7 @@ export default function Products() {
                               attributes: { ...form.attributes, [field.field_key]: e.target.value },
                             })
                           }
-                          className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                         />
                       </div>
                     );
@@ -1092,19 +1122,19 @@ export default function Products() {
             {/* SECTION 5: REUSABLE PRODUCT VARIANTS */}
             {activeFormSection === 'variants' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244]">
                   <div>
-                    <span className="font-bold text-xs uppercase text-slate-700 dark:text-slate-300 block">
+                    <span className="font-bold text-xs uppercase text-[#282431] dark:text-[#B8B0C4] block">
                       Product Variants
                     </span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[11px] text-[#716B7C]">
                       e.g. Size (Small/Large), RAM/Storage (8GB/128GB), Color (Teak/Walnut)
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={addVariantRow}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold flex items-center gap-1 shadow-sm"
+                    className="px-3 py-1.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold flex items-center gap-1 shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" /> + Add Variant
                   </button>
@@ -1112,9 +1142,9 @@ export default function Products() {
 
                 <div className="space-y-2.5">
                   {form.variants?.map((v, i) => (
-                    <div key={i} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 space-y-2">
+                    <div key={i} className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-amber-600">Variant #{i + 1}</span>
+                        <span className="font-bold text-xs text-[#7652B5] dark:text-[#A98ADB]">Variant #{i + 1}</span>
                         <button
                           type="button"
                           onClick={() => removeVariantRow(i)}
@@ -1130,7 +1160,7 @@ export default function Products() {
                             value={v.variant_name}
                             onChange={(e) => updateVariantRow(i, { variant_name: e.target.value })}
                             placeholder="Variant Name (e.g. 256GB Space Gray / Half / 6-Seater)"
-                            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1.5 text-xs font-medium"
+                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-medium"
                           />
                         </div>
                         <div>
@@ -1138,7 +1168,7 @@ export default function Products() {
                             value={v.sku}
                             onChange={(e) => updateVariantRow(i, { sku: e.target.value })}
                             placeholder="Variant SKU"
-                            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1.5 text-xs"
+                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs"
                           />
                         </div>
                         <div>
@@ -1146,50 +1176,50 @@ export default function Products() {
                             value={v.barcode}
                             onChange={(e) => updateVariantRow(i, { barcode: e.target.value })}
                             placeholder="Variant Barcode"
-                            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[10px] text-slate-400 block">Price Adjust ({currency})</label>
+                          <label className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] block">Price Adjust ({currency})</label>
                           <input
                             type="number"
                             step="any"
                             value={v.price_adjustment}
                             onChange={(e) => updateVariantRow(i, { price_adjustment: e.target.value })}
                             placeholder="+/- 0.00"
-                            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1 text-xs"
+                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-xs"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-slate-400 block">Exact Selling Price ({currency})</label>
+                          <label className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] block">Exact Selling Price ({currency})</label>
                           <input
                             type="number"
                             step="any"
                             value={v.selling_price}
                             onChange={(e) => updateVariantRow(i, { selling_price: e.target.value })}
                             placeholder="Override Price"
-                            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1 text-xs font-bold text-amber-600"
+                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-xs font-bold text-[#7652B5] dark:text-[#A98ADB]"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-slate-400 block">Variant Stock</label>
+                          <label className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] block">Variant Stock</label>
                           <input
                             type="number"
                             step="any"
                             value={v.stock_qty}
                             onChange={(e) => updateVariantRow(i, { stock_qty: e.target.value })}
                             placeholder="0"
-                            className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-1 text-xs"
+                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-xs"
                           />
                         </div>
                       </div>
                     </div>
                   ))}
                   {(!form.variants || form.variants.length === 0) && (
-                    <div className="p-8 text-center text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                    <div className="p-8 text-center text-[#716B7C] dark:text-[#B8B0C4] border border-dashed border-[#E8E3EF] dark:border-[#393244] rounded-xl">
                       No variants added. This product will be sold as a single standard item.
                     </div>
                   )}
@@ -1200,20 +1230,20 @@ export default function Products() {
             {/* SECTION 6: HOTEL / RESTAURANT ADD-ONS MANAGEMENT */}
             {businessType === 'food' && activeFormSection === 'addons' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-3.5 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/60 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-[#EDE7F7]/50 dark:bg-[#2B2536]/50 dark:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244] dark:border-[#393244] flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-xs text-amber-800 dark:text-amber-300 block">
+                    <span className="font-bold text-xs text-[#7652B5] dark:text-[#C5B3E6] block">
                       Food Add-ons & Extra Toppings
                     </span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[11px] text-[#716B7C]">
                       Configured add-on items appear dynamically during POS billing for customization
                     </span>
                   </div>
                 </div>
 
                 {/* Quick Add-on Creator Box */}
-                <div className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40 space-y-2">
-                  <span className="font-bold text-[11px] text-slate-700 dark:text-slate-300 block">
+                <div className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC]/60 dark:bg-[#2B2536]/40 space-y-2">
+                  <span className="font-bold text-[11px] text-[#282431] dark:text-[#B8B0C4] block">
                     Create Reusable Food Add-on
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
@@ -1221,7 +1251,7 @@ export default function Products() {
                       value={newAddonGroup.name}
                       onChange={(e) => setNewAddonGroup({ ...newAddonGroup, name: e.target.value })}
                       placeholder="Add-on Name (e.g. Extra Cheese)"
-                      className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+                      className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1.5 text-xs"
                     />
                     <input
                       type="number"
@@ -1229,18 +1259,18 @@ export default function Products() {
                       value={newAddonGroup.price}
                       onChange={(e) => setNewAddonGroup({ ...newAddonGroup, price: e.target.value })}
                       placeholder={`Extra Price (${currency})`}
-                      className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+                      className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1.5 text-xs"
                     />
                     <input
                       value={newAddonGroup.group_name}
                       onChange={(e) => setNewAddonGroup({ ...newAddonGroup, group_name: e.target.value })}
                       placeholder="Group (e.g. Toppings / Sides)"
-                      className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1.5 text-xs"
+                      className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1.5 text-xs"
                     />
                     <button
                       type="button"
                       onClick={handleCreateAddon}
-                      className="rounded-lg bg-amber-500 hover:bg-amber-400 font-bold text-slate-950 py-1.5 text-xs shadow-sm"
+                      className="rounded-lg bg-[#7652B5] dark:bg-[#A98ADB] hover:bg-[#5B3B91] dark:hover:bg-[#C0A5EA] font-bold text-white dark:text-[#17151D] py-1.5 text-xs shadow-sm"
                     >
                       + Save Add-on
                     </button>
@@ -1249,18 +1279,18 @@ export default function Products() {
 
                 {/* Add-ons List */}
                 <div className="space-y-1.5">
-                  <span className="font-semibold text-xs text-slate-700 dark:text-slate-300 block">
+                  <span className="font-semibold text-xs text-[#282431] dark:text-[#B8B0C4] block">
                     Available Add-ons in System ({addonsList.length})
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {addonsList.map((a) => (
-                      <div key={a.id} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between">
+                      <div key={a.id} className="p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] flex items-center justify-between">
                         <div>
-                          <span className="font-bold text-slate-800 dark:text-slate-200 block">{a.name}</span>
-                          <span className="text-[10px] text-slate-400">{a.group_name || 'General'}</span>
+                          <span className="font-bold text-[#282431] dark:text-[#F5F2F9] block">{a.name}</span>
+                          <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">{a.group_name || 'General'}</span>
                         </div>
                         <span className="font-bold text-xs text-emerald-600">
-                          +{currency}{Number(a.price).toFixed(2)}
+                          +{formatCurrency(a.price, currency)}
                         </span>
                       </div>
                     ))}
@@ -1272,60 +1302,60 @@ export default function Products() {
             {/* SECTION 7: SALES CHANNELS & OTHER SETTINGS */}
             {activeFormSection === 'settings' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
-                  <span className="font-bold text-xs uppercase text-slate-500 tracking-wider block">
+                <div className="p-4 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] space-y-3">
+                  <span className="font-bold text-xs uppercase text-[#716B7C] tracking-wider block">
                     Sales Channel Visibility & Policies
                   </span>
 
                   <div className="space-y-2.5">
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-slate-800 dark:text-slate-200">POS Sale Enabled</span>
-                        <span className="text-[10px] text-slate-400">Display and sell this item on the POS Billing cashier screen</span>
+                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">POS Sale Enabled</span>
+                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Display and sell this item on the POS Billing cashier screen</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={form.pos_enabled}
                         onChange={(e) => setForm({ ...form, pos_enabled: e.target.checked })}
-                        className="w-4 h-4 accent-amber-500 rounded"
+                        className="w-4 h-4 accent-[#7652B5] rounded"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-slate-800 dark:text-slate-200">Online Sale Enabled</span>
-                        <span className="text-[10px] text-slate-400">Expose product on online catalog & sync to external web channels</span>
+                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">Online Sale Enabled</span>
+                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Expose product on online catalog & sync to external web channels</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={form.online_enabled}
                         onChange={(e) => setForm({ ...form, online_enabled: e.target.checked })}
-                        className="w-4 h-4 accent-amber-500 rounded"
+                        className="w-4 h-4 accent-[#7652B5] rounded"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-slate-800 dark:text-slate-200">Product Returnable</span>
-                        <span className="text-[10px] text-slate-400">Allow customers to return this product for refund or credit note</span>
+                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">Product Returnable</span>
+                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Allow customers to return this product for refund or credit note</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={form.is_returnable}
                         onChange={(e) => setForm({ ...form, is_returnable: e.target.checked })}
-                        className="w-4 h-4 accent-amber-500 rounded"
+                        className="w-4 h-4 accent-[#7652B5] rounded"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-slate-800 dark:text-slate-200">Product Status (Active / Inactive)</span>
-                        <span className="text-[10px] text-slate-400">Inactive products are hidden from daily operations</span>
+                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">Product Status (Active / Inactive)</span>
+                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Inactive products are hidden from daily operations</span>
                       </div>
                       <select
                         value={form.is_active}
                         onChange={(e) => setForm({ ...form, is_active: Number(e.target.value) })}
-                        className="rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-xs font-semibold"
+                        className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1 text-xs font-semibold"
                       >
                         <option value={1}>Active</option>
                         <option value={0}>Inactive</option>
@@ -1337,7 +1367,7 @@ export default function Products() {
             )}
 
             {/* Bottom Form Actions */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+            <div className="pt-4 border-t border-[#E8E3EF] dark:border-[#393244] flex items-center justify-between gap-3">
               <div className="flex gap-2">
                 {activeFormSection !== 'basic' && (
                   <button
@@ -1347,7 +1377,7 @@ export default function Products() {
                       const idx = sections.indexOf(activeFormSection);
                       if (idx > 0) setActiveFormSection(sections[idx - 1]);
                     }}
-                    className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="px-3 py-2 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
                   >
                     ← Previous
                   </button>
@@ -1360,7 +1390,7 @@ export default function Products() {
                       const idx = sections.indexOf(activeFormSection);
                       if (idx < sections.length - 1) setActiveFormSection(sections[idx + 1]);
                     }}
-                    className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                    className="px-3 py-2 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
                   >
                     Next →
                   </button>
@@ -1370,14 +1400,14 @@ export default function Products() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-black text-xs shadow-md transition-colors"
                 >
                   {isEditing ? 'Save Product Changes' : 'Create Product Now'}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="px-4 py-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
                 >
                   Reset
                 </button>

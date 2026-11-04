@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
+import { formatCurrency } from '../utils/currency';
 import {
   Truck,
   Search,
@@ -106,26 +107,26 @@ export default function Suppliers() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              <Truck className="w-5 h-5 text-amber-500" />
+              <Truck className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
               {t('suppliers.title')}
             </h1>
-            <p className="text-xs text-slate-500">Manage vendors, purchase logs & accounts payable</p>
+            <p className="text-xs text-[#716B7C]">Manage vendors, purchase logs & accounts payable</p>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, phone..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
           <table className="min-w-full text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800 text-left font-semibold text-slate-600 dark:text-slate-300">
+            <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
               <tr>
                 <th className="px-3.5 py-2.5">{t('common.name')}</th>
                 <th className="px-3.5 py-2.5">Contact</th>
@@ -133,32 +134,32 @@ export default function Suppliers() {
                 <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
               {suppliers.map((s) => {
                 const bal = Number(s.balance || 0);
                 return (
-                  <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                  <tr key={s.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
                     <td className="px-3.5 py-2.5 font-medium">
                       <div>{s.name}</div>
-                      {s.address && <div className="text-[10px] text-slate-400 truncate max-w-xs">{s.address}</div>}
+                      {s.address && <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] truncate max-w-xs">{s.address}</div>}
                     </td>
                     <td className="px-3.5 py-2.5 space-y-0.5">
                       {s.phone && (
-                        <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-                          <Phone className="w-3 h-3 text-slate-400" />
+                        <div className="flex items-center gap-1.5 text-[#716B7C] dark:text-[#B8B0C4]">
+                          <Phone className="w-3 h-3 text-[#716B7C] dark:text-[#B8B0C4]" />
                           <span>{s.phone}</span>
                         </div>
                       )}
                       {s.email && (
-                        <div className="flex items-center gap-1.5 text-slate-500">
-                          <Mail className="w-3 h-3 text-slate-400" />
+                        <div className="flex items-center gap-1.5 text-[#716B7C]">
+                          <Mail className="w-3 h-3 text-[#716B7C] dark:text-[#B8B0C4]" />
                           <span className="truncate max-w-xs">{s.email}</span>
                         </div>
                       )}
                     </td>
                     <td className="px-3.5 py-2.5 text-right font-bold">
-                      <span className={bal > 0 ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded' : 'text-slate-600 dark:text-slate-400'}>
-                        {currency}{bal.toFixed(2)}
+                      <span className={bal > 0 ? 'text-[#7652B5] dark:text-[#A98ADB] bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded' : 'text-[#716B7C] dark:text-[#B8B0C4]'}>
+                        {formatCurrency(bal, currency)}
                       </span>
                     </td>
                     <td className="px-3.5 py-2.5 text-center">
@@ -166,14 +167,14 @@ export default function Suppliers() {
                         <button
                           onClick={() => startEdit(s)}
                           title="Edit Supplier"
-                          className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors"
+                          className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => viewDetails(s)}
                           title="Purchase History"
-                          className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                          className="p-1.5 text-[#716B7C] hover:text-[#282431] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
                         >
                           <FileText className="w-3.5 h-3.5" />
                         </button>
@@ -184,7 +185,7 @@ export default function Suppliers() {
               })}
               {suppliers.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={4} className="px-3 py-8 text-center text-[#716B7C] dark:text-[#B8B0C4]">
                     No suppliers found
                   </td>
                 </tr>
@@ -195,15 +196,15 @@ export default function Suppliers() {
 
         {/* Detailed Supplier View */}
         {details && (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm text-xs">
-            <div className="mb-3 flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-amber-500" />
+          <div className="rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] p-4 shadow-sm text-xs">
+            <div className="mb-3 flex justify-between items-center pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
                 Ledger History — {details.name}
               </h3>
               <button
                 onClick={() => setDetails(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded"
+                className="p-1 text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] rounded"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -211,31 +212,31 @@ export default function Suppliers() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">Recent Purchases</h4>
+                <h4 className="font-semibold text-[#282431] dark:text-[#B8B0C4] mb-2">Recent Purchases</h4>
                 <ul className="space-y-1.5">
                   {(details.purchase_history || []).map((p) => (
-                    <li key={p.id} className="flex justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/50">
+                    <li key={p.id} className="flex justify-between p-2 rounded bg-[#F7F5FC] dark:bg-[#2B2536]/50">
                       <span>{p.purchase_no}</span>
-                      <span className="font-semibold">{currency}{Number(p.grand_total).toFixed(2)}</span>
+                      <span className="font-semibold">{formatCurrency(p.grand_total, currency)}</span>
                     </li>
                   ))}
                   {(!details.purchase_history || details.purchase_history.length === 0) && (
-                    <li className="text-slate-400 italic">No purchase history</li>
+                    <li className="text-[#716B7C] dark:text-[#B8B0C4] italic">No purchase history</li>
                   )}
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">Recent Payments</h4>
+                <h4 className="font-semibold text-[#282431] dark:text-[#B8B0C4] mb-2">Recent Payments</h4>
                 <ul className="space-y-1.5">
                   {(details.payment_history || []).map((p) => (
-                    <li key={p.id} className="flex justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/50">
+                    <li key={p.id} className="flex justify-between p-2 rounded bg-[#F7F5FC] dark:bg-[#2B2536]/50">
                       <span>{new Date(p.created_at).toLocaleDateString()}</span>
-                      <span className="font-semibold text-emerald-600">{currency}{Number(p.amount).toFixed(2)}</span>
+                      <span className="font-semibold text-emerald-600">{formatCurrency(p.amount, currency)}</span>
                     </li>
                   ))}
                   {(!details.payment_history || details.payment_history.length === 0) && (
-                    <li className="text-slate-400 italic">No payment history</li>
+                    <li className="text-[#716B7C] dark:text-[#B8B0C4] italic">No payment history</li>
                   )}
                 </ul>
               </div>
@@ -245,10 +246,10 @@ export default function Suppliers() {
       </div>
 
       {/* Supplier Form */}
-      <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4 self-start">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+      <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
+        <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
           <h2 className="font-bold text-sm flex items-center gap-2">
-            <Plus className="w-4 h-4 text-amber-500" />
+            <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
             {isEditing ? 'Edit Supplier' : t('suppliers.add_supplier')}
           </h2>
           {isEditing && (
@@ -258,7 +259,7 @@ export default function Suppliers() {
                 setIsEditing(false);
                 setErrors({});
               }}
-              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+              className="text-xs text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
             >
               <X className="w-3 h-3" /> Cancel
             </button>
@@ -267,7 +268,7 @@ export default function Suppliers() {
 
         <form onSubmit={submit} className="space-y-3 text-xs">
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               Supplier Name *
             </label>
             <input
@@ -275,14 +276,14 @@ export default function Suppliers() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Apex Distributors"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-700 focus:ring-amber-500'
+                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
               }`}
             />
             {errors.name && <p className="mt-1 text-[11px] text-red-500">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               Phone Number (10 Digits)
             </label>
             <input
@@ -291,14 +292,14 @@ export default function Suppliers() {
               onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
               placeholder="e.g. 9876543210"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-700 focus:ring-amber-500'
+                errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
               }`}
             />
             {errors.phone && <p className="mt-1 text-[11px] text-red-500">{errors.phone}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               Email Address
             </label>
             <input
@@ -307,26 +308,26 @@ export default function Suppliers() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="e.g. contact@supplier.com"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-slate-300 dark:border-slate-700 focus:ring-amber-500'
+                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
               }`}
             />
             {errors.email && <p className="mt-1 text-[11px] text-red-500">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               GSTIN
             </label>
             <input
               value={form.gstin}
               onChange={(e) => setForm({ ...form, gstin: e.target.value.toUpperCase() })}
               placeholder="e.g. 33AAAAA0000A1Z5"
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-500 uppercase"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5] uppercase"
             />
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               Address
             </label>
             <textarea
@@ -334,14 +335,14 @@ export default function Suppliers() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder="Warehouse / Office address"
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5]"
             />
           </div>
 
           <div className="pt-2 flex gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 transition-colors shadow-sm"
+              className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 transition-colors shadow-sm"
             >
               {isEditing ? 'Update Supplier' : t('common.save')}
             </button>
@@ -352,7 +353,7 @@ export default function Suppliers() {
                 setIsEditing(false);
                 setErrors({});
               }}
-              className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] px-4 py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
             >
               Reset
             </button>

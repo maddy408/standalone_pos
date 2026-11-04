@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
+import { formatCurrency } from '../utils/currency';
 import {
   ShoppingBag,
   Plus,
@@ -28,7 +29,6 @@ export default function Purchases() {
   const currency = settings?.currency_symbol || '₹';
 
   const load = () => api.get('/purchases').then(({ data }) => setPurchases(data));
-
   const loadProducts = () => {
     if (!settings?.business_type) return;
     api.get('/products', { params: { business_type: settings.business_type } }).then(({ data }) => setProducts(data));
@@ -147,15 +147,15 @@ export default function Purchases() {
       <div className="lg:col-span-2 space-y-4">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-amber-500" />
+            <ShoppingBag className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
             {t('purchases.title')}
           </h1>
-          <p className="text-xs text-slate-500">Record stock procurement, invoice vouchers & returns</p>
+          <p className="text-xs text-[#716B7C]">Record stock procurement, invoice vouchers & returns</p>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
           <table className="min-w-full text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800 text-left font-semibold text-slate-600 dark:text-slate-300">
+            <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
               <tr>
                 <th className="px-3.5 py-2.5">Voucher #</th>
                 <th className="px-3.5 py-2.5">{t('purchases.supplier')}</th>
@@ -164,22 +164,22 @@ export default function Purchases() {
                 <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
               {purchases.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                <tr key={p.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
                   <td className="px-3.5 py-2.5 font-mono font-medium">{p.purchase_no}</td>
                   <td className="px-3.5 py-2.5">{p.supplier_name}</td>
-                  <td className="px-3.5 py-2.5 text-right font-bold text-slate-900 dark:text-white">
-                    {currency}{Number(p.grand_total).toFixed(2)}
+                  <td className="px-3.5 py-2.5 text-right font-bold text-[#282431] dark:text-[#F5F2F9]">
+                    {formatCurrency(p.grand_total, currency)}
                   </td>
                   <td className="px-3.5 py-2.5 text-right text-emerald-600 font-semibold">
-                    {currency}{Number(p.paid_amount).toFixed(2)}
+                    {formatCurrency(p.paid_amount, currency)}
                   </td>
                   <td className="px-3.5 py-2.5 text-center">
                     <button
                       onClick={() => openReturn(p)}
                       title="Return items"
-                      className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors inline-flex items-center gap-1"
+                      className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors inline-flex items-center gap-1"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
@@ -188,7 +188,7 @@ export default function Purchases() {
               ))}
               {purchases.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={5} className="px-3 py-8 text-center text-[#716B7C] dark:text-[#B8B0C4]">
                     No purchases recorded yet
                   </td>
                 </tr>
@@ -201,17 +201,17 @@ export default function Purchases() {
       {/* Return Modal */}
       {returning && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 p-5 shadow-2xl border border-slate-200 dark:border-slate-800">
+          <div className="w-full max-w-md rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-2xl border border-[#E8E3EF] dark:border-[#393244]">
             <h3 className="mb-2 font-bold text-sm flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-500" />
+              <RotateCcw className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
               Return Items — {returning.purchase_no}
             </h3>
             <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
               {returning.items.map((it) => (
-                <div key={it.id} className="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/60 text-xs">
+                <div key={it.id} className="flex items-center justify-between p-2 rounded bg-[#F7F5FC] dark:bg-[#2B2536]/60 text-xs">
                   <div>
                     <span className="font-semibold block">{it.product_name}</span>
-                    <span className="text-slate-400">Purchased Qty: {it.qty}</span>
+                    <span className="text-[#716B7C] dark:text-[#B8B0C4]">Purchased Qty: {it.qty}</span>
                   </div>
                   <input
                     type="number"
@@ -219,16 +219,16 @@ export default function Purchases() {
                     max={it.qty}
                     value={returnQtys[it.id] || 0}
                     onChange={(e) => setReturnQtys({ ...returnQtys, [it.id]: e.target.value })}
-                    className="w-20 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-center"
+                    className="w-20 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1 text-xs text-center"
                   />
                 </div>
               ))}
             </div>
             <div className="mt-4 flex gap-2 text-xs">
-              <button onClick={submitReturn} className="flex-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 shadow-sm">
+              <button onClick={submitReturn} className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 shadow-sm">
                 Confirm Return
               </button>
-              <button onClick={() => setReturning(null)} className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 hover:bg-slate-100 dark:hover:bg-slate-800">
+              <button onClick={() => setReturning(null)} className="flex-1 rounded-lg border border-[#E8E3EF] dark:border-[#393244] py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]">
                 Cancel
               </button>
             </div>
@@ -237,9 +237,9 @@ export default function Purchases() {
       )}
 
       {/* New Purchase Form */}
-      <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4 self-start">
-        <h2 className="font-bold text-sm flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-          <Plus className="w-4 h-4 text-amber-500" />
+      <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
+        <h2 className="font-bold text-sm flex items-center gap-2 pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
           {t('purchases.new_purchase')}
         </h2>
 
@@ -251,14 +251,14 @@ export default function Purchases() {
 
         <form onSubmit={submit} className="space-y-3 text-xs">
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               Select Supplier *
             </label>
             <select
               required
               value={supplierId}
               onChange={(e) => setSupplierId(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
             >
               <option value="">-- Choose Supplier --</option>
               {suppliers.map((s) => (
@@ -270,23 +270,23 @@ export default function Purchases() {
           </div>
 
           <div className="space-y-2">
-            <label className="block font-semibold text-slate-700 dark:text-slate-300">
+            <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4]">
               Purchased Items
             </label>
             {items.map((it, i) => {
               const product = selectedProduct(it.product_id);
               return (
-                <div key={i} className="space-y-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-2.5">
+                <div key={i} className="space-y-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC]/50 dark:bg-[#2B2536]/30 p-2.5">
                   <select
                     required
                     value={it.product_id}
                     onChange={(e) => updateItem(i, { product_id: e.target.value })}
-                    className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    className="w-full rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2 py-1.5 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                   >
                     <option value="">{t('purchases.select_product')}</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} {p.purchase_price ? `(${currency}${Number(p.purchase_price).toFixed(2)})` : ''}
+                        {p.name} {p.purchase_price ? `(${formatCurrency(p.purchase_price, currency)})` : ''}
                       </option>
                     ))}
                   </select>
@@ -301,7 +301,7 @@ export default function Purchases() {
                           value={it.qty}
                           onChange={(e) => updateItem(i, { qty: e.target.value })}
                           placeholder="Qty"
-                          className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 text-center focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                          className="w-full rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2 py-1.5 text-center focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
                         />
                       </div>
                     )}
@@ -312,7 +312,7 @@ export default function Purchases() {
                         value={it.unit_price}
                         onChange={(e) => updateItem(i, { unit_price: e.target.value })}
                         placeholder="Price / Unit"
-                        className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none font-semibold"
+                        className="w-full rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2 py-1.5 focus:ring-1 focus:ring-[#7652B5] focus:outline-none font-semibold"
                       />
                     </div>
                     {items.length > 1 && (
@@ -331,7 +331,7 @@ export default function Purchases() {
                       value={it.serials_text}
                       onChange={(e) => updateItem(i, { serials_text: e.target.value })}
                       placeholder="Comma separated IMEIs (e.g. 123456789012345, 987654321098765)"
-                      className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none font-mono text-[11px]"
+                      className="w-full rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2 py-1.5 focus:ring-1 focus:ring-[#7652B5] focus:outline-none font-mono text-[11px]"
                     />
                   )}
                 </div>
@@ -341,30 +341,30 @@ export default function Purchases() {
             <button
               type="button"
               onClick={addRow}
-              className="text-xs text-amber-600 dark:text-amber-400 font-semibold hover:underline flex items-center gap-1"
+              className="text-xs text-[#7652B5] dark:text-[#A98ADB] font-semibold hover:underline flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
               {t('purchases.add_item')}
             </button>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+          <div className="pt-2 border-t border-[#E8E3EF] dark:border-[#393244] space-y-2">
             <div className="flex justify-between items-center text-xs font-semibold">
               <span>{t('purchases.grand_total')}:</span>
-              <span className="text-base font-bold text-slate-900 dark:text-white">
-                {currency}{grandTotal.toFixed(2)}
+              <span className="text-base font-bold text-[#282431] dark:text-[#F5F2F9]">
+                {formatCurrency(grandTotal, currency)}
               </span>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="font-semibold text-slate-700 dark:text-slate-300">
+                <label className="font-semibold text-[#282431] dark:text-[#B8B0C4]">
                   {t('purchases.paid_amount')} ({currency})
                 </label>
                 <button
                   type="button"
                   onClick={handleAutoFillPaid}
-                  className="text-[10px] text-amber-600 hover:underline"
+                  className="text-[10px] text-[#7652B5] dark:text-[#A98ADB] hover:underline"
                 >
                   Pay Full Total
                 </button>
@@ -375,14 +375,14 @@ export default function Purchases() {
                 value={paidAmount}
                 onChange={(e) => setPaidAmount(e.target.value)}
                 placeholder={grandTotal.toFixed(2)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 font-bold text-emerald-600 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 font-bold text-emerald-600 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 transition-colors shadow-sm text-xs mt-2"
+            className="w-full rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2.5 transition-colors shadow-sm text-xs mt-2"
           >
             Save Purchase
           </button>

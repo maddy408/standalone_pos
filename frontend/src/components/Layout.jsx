@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../theme/ThemeProvider';
@@ -21,165 +21,146 @@ import {
   ArrowUpCircle,
   BarChart3,
   UserCheck,
+  ShieldCheck,
   Settings,
   LogOut,
   Moon,
   Sun,
   ChevronDown,
-  ChevronRight,
-  Menu,
-  X,
 } from 'lucide-react';
 
 export default function Layout() {
   const { t, i18n } = useTranslation();
   const { user, logout, can } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [productMenuOpen, setProductMenuOpen] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+
+  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  const productDropdownRef = useRef(null);
 
   const canManageProducts = can('products.manage');
 
-  return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-        />
-      )}
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(event.target)) {
+        setProductDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-200 border-r border-slate-800 flex flex-col transition-transform duration-200 ease-in-out ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
-        {/* Brand / Logo */}
-        <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black text-lg shadow-md">
+  // Determine active route for Products
+  const isAllProductsActive = location.pathname === '/products';
+  const isCategoriesActive =
+    location.pathname === '/master-data' &&
+    (location.search.includes('tab=categories') || !location.search.includes('tab='));
+  const isBrandsActive =
+    location.pathname === '/master-data' && location.search.includes('tab=brands');
+  const isProductsActive = isAllProductsActive || isCategoriesActive || isBrandsActive;
+
+  const navItemClass = ({ isActive }) =>
+    `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all flex-shrink-0 whitespace-nowrap ${
+      isActive
+        ? 'bg-[#7652B5] text-white shadow-sm dark:bg-[#A98ADB] dark:text-[#17151D] font-bold'
+        : 'text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] hover:text-[#282431] dark:hover:bg-[#2B2536] dark:hover:text-[#F5F2F9]'
+    }`;
+
+  return (
+    <div className="flex flex-col h-screen bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] overflow-hidden font-sans">
+      {/* Top Single Header with Horizontal Navigation */}
+      <header className="h-14 border-b border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-4 flex items-center justify-between gap-3 w-full max-w-full overflow-hidden flex-shrink-0 z-30 shadow-sm">
+        {/* Brand / Logo + Sync Now option */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#7652B5] dark:bg-[#A98ADB] text-white dark:text-[#17151D] flex items-center justify-center font-black text-sm shadow-sm">
               UP
             </div>
-            <div>
-              <div className="text-base font-bold text-white tracking-tight leading-tight">
+            <div className="hidden sm:block">
+              <span className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9] tracking-tight leading-none">
                 {t('app_name')}
-              </div>
-              <div className="text-[11px] text-amber-400 font-medium tracking-wide uppercase">
-                Enterprise Suite
-              </div>
+              </span>
             </div>
+          </Link>
+
+          {/* Sync Status Badge with "Sync Now" */}
+          <div className="flex-shrink-0">
+            <SyncStatusBadge />
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-slate-400 hover:text-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1 scrollbar-thin">
-          <NavLink
-            to="/"
-            end
-            onClick={() => setSidebarOpen(false)}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                isActive
-                  ? 'bg-amber-500 text-slate-950 shadow-sm'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`
-            }
-          >
-            <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+        {/* Navigation Menu (Immediately after Sync Now, strictly single row, only this area scrolls) */}
+        <nav className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-thin px-1 py-1">
+          <NavLink to="/" end className={navItemClass}>
+            <LayoutDashboard className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{t('nav.dashboard')}</span>
           </NavLink>
 
           {can('pos.access') && (
-            <NavLink
-              to="/pos"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <ShoppingCart className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/pos" className={navItemClass}>
+              <ShoppingCart className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.pos')}</span>
             </NavLink>
           )}
 
-          {/* Products with sub-items */}
+          {/* Products Menu (Direct NavLink without downward dropdown arrow) */}
           {can('products.view') && (
-            <div className="space-y-0.5">
-              <div
-                onClick={() => setProductMenuOpen(!productMenuOpen)}
-                className="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold tracking-wide text-slate-300 hover:bg-slate-800 hover:text-white cursor-pointer select-none transition-colors"
+            <div className="relative flex-shrink-0" ref={productDropdownRef} onMouseEnter={() => setProductDropdownOpen(true)} onMouseLeave={() => setProductDropdownOpen(false)}>
+              <NavLink
+                to="/products"
+                className={navItemClass}
               >
-                <div className="flex items-center gap-3">
-                  <Package className="w-4 h-4 flex-shrink-0" />
-                  <span>{t('nav.products')}</span>
-                </div>
-                {productMenuOpen ? (
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                )}
-              </div>
+                <Package className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{t('nav.products')}</span>
+              </NavLink>
 
-              {productMenuOpen && (
-                <div className="ml-5 pl-3 border-l border-slate-700/60 space-y-0.5 my-1">
-                  <NavLink
+              {/* Products Submenu Dropdown (opens on hover, no downward chevron arrow button) */}
+              {productDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1.5 w-48 rounded-xl bg-white dark:bg-[#211D2A] border border-[#E8E3EF] dark:border-[#393244] shadow-xl py-1 z-50 text-xs">
+                  {/* 1. All Products */}
+                  <Link
                     to="/products"
-                    onClick={() => setSidebarOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                        isActive
-                          ? 'bg-amber-500/20 text-amber-300 font-semibold'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                      }`
-                    }
+                    onClick={() => setProductDropdownOpen(false)}
+                    className={`flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                      isAllProductsActive
+                        ? 'bg-[#EDE7F7] text-[#7652B5] font-bold dark:bg-[#2B2536] dark:text-[#A98ADB]'
+                        : 'text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#F7F5FC] dark:hover:bg-[#2B2536] hover:text-[#282431] dark:hover:text-[#F5F2F9]'
+                    }`}
                   >
-                    <Package className="w-3.5 h-3.5" />
+                    <Package className="w-3.5 h-3.5 flex-shrink-0" />
                     <span>All Products</span>
-                  </NavLink>
+                  </Link>
 
                   {canManageProducts && (
                     <>
-                      <NavLink
+                      {/* 2. Categories & Sub */}
+                      <Link
                         to="/master-data?tab=categories"
-                        onClick={() => setSidebarOpen(false)}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                            isActive
-                              ? 'bg-amber-500/20 text-amber-300 font-semibold'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                          }`
-                        }
+                        onClick={() => setProductDropdownOpen(false)}
+                        className={`flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                          isCategoriesActive
+                            ? 'bg-[#EDE7F7] text-[#7652B5] font-bold dark:bg-[#2B2536] dark:text-[#A98ADB]'
+                            : 'text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#F7F5FC] dark:hover:bg-[#2B2536] hover:text-[#282431] dark:hover:text-[#F5F2F9]'
+                        }`}
                       >
-                        <Layers className="w-3.5 h-3.5" />
+                        <Layers className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>Categories & Sub</span>
-                      </NavLink>
+                      </Link>
 
-                      <NavLink
+                      {/* 3. Brands Mapping */}
+                      <Link
                         to="/master-data?tab=brands"
-                        onClick={() => setSidebarOpen(false)}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-colors ${
-                            isActive
-                              ? 'bg-amber-500/20 text-amber-300 font-semibold'
-                              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                          }`
-                        }
+                        onClick={() => setProductDropdownOpen(false)}
+                        className={`flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                          isBrandsActive
+                            ? 'bg-[#EDE7F7] text-[#7652B5] font-bold dark:bg-[#2B2536] dark:text-[#A98ADB]'
+                            : 'text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#F7F5FC] dark:hover:bg-[#2B2536] hover:text-[#282431] dark:hover:text-[#F5F2F9]'
+                        }`}
                       >
-                        <Tags className="w-3.5 h-3.5" />
+                        <Tags className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>Brands Mapping</span>
-                      </NavLink>
+                      </Link>
                     </>
                   )}
                 </div>
@@ -188,231 +169,133 @@ export default function Layout() {
           )}
 
           {can('pos.access') && (
-            <NavLink
-              to="/invoices"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <FileText className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/invoices" className={navItemClass}>
+              <FileText className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.invoices')}</span>
             </NavLink>
           )}
 
           {can('customers.manage') && (
-            <NavLink
-              to="/customers"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <Users className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/customers" className={navItemClass}>
+              <Users className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.customers')}</span>
             </NavLink>
           )}
 
           {can('suppliers.manage') && (
-            <NavLink
-              to="/suppliers"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <Truck className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/suppliers" className={navItemClass}>
+              <Truck className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.suppliers')}</span>
             </NavLink>
           )}
 
           {can('purchases.manage') && (
-            <NavLink
-              to="/purchases"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <ShoppingBag className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/purchases" className={navItemClass}>
+              <ShoppingBag className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.purchases')}</span>
             </NavLink>
           )}
 
           {can('inventory.view') && (
-            <NavLink
-              to="/inventory"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <Boxes className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/inventory" className={navItemClass}>
+              <Boxes className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.inventory')}</span>
             </NavLink>
           )}
 
           {can('expenses.manage') && (
-            <NavLink
-              to="/expenses"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <ArrowDownCircle className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/expenses" className={navItemClass}>
+              <ArrowDownCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.expenses')}</span>
             </NavLink>
           )}
 
           {can('income.manage') && (
-            <NavLink
-              to="/income"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <ArrowUpCircle className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/income" className={navItemClass}>
+              <ArrowUpCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.income')}</span>
             </NavLink>
           )}
 
           {can('reports.view') && (
-            <NavLink
-              to="/reports"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <BarChart3 className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/reports" className={navItemClass}>
+              <BarChart3 className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.reports')}</span>
             </NavLink>
           )}
 
           {can('users.manage') && (
-            <NavLink
-              to="/users"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <UserCheck className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/users" className={navItemClass}>
+              <UserCheck className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.users')}</span>
             </NavLink>
           )}
 
+          {can('users.manage') && (
+            <NavLink to="/audit-log" className={navItemClass}>
+              <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{t('nav.audit_log')}</span>
+            </NavLink>
+          )}
+
           {can('settings.manage') && (
-            <NavLink
-              to="/settings"
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
-                  isActive
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`
-              }
-            >
-              <Settings className="w-4 h-4 flex-shrink-0" />
+            <NavLink to="/settings" className={navItemClass}>
+              <Settings className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{t('nav.settings')}</span>
             </NavLink>
           )}
         </nav>
 
-        {/* User Card */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-bold text-white truncate">{user?.full_name}</div>
-            <div className="text-[10px] text-amber-400 capitalize font-medium">{user?.role}</div>
+        {/* Right Header Controls: Administrator Profile, Language, Theme, Logout */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          {/* Administrator Profile */}
+          <div className="hidden md:flex flex-col text-right">
+            <span className="text-xs font-bold text-[#282431] dark:text-[#F5F2F9] leading-tight truncate max-w-[120px]">
+              {user?.full_name || 'Administrator'}
+            </span>
+            <span className="text-[10px] text-[#7652B5] dark:text-[#A98ADB] capitalize font-semibold leading-tight">
+              {user?.role || 'admin'}
+            </span>
           </div>
+
+          {/* Language Selector */}
+          <select
+            value={i18n.language}
+            onChange={(e) => changeLanguage(e.target.value)}
+            className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#7652B5]/30 focus:border-[#7652B5]"
+          >
+            <option value="en">English (EN)</option>
+            <option value="ta">தமிழ் (TA)</option>
+          </select>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#7652B5] dark:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+            title="Toggle Theme"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-[#A98ADB]" />
+            ) : (
+              <Moon className="w-4 h-4 text-[#7652B5]" />
+            )}
+          </button>
+
+          {/* Logout Button */}
           <button
             onClick={logout}
             title={t('nav.logout')}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#716B7C] dark:text-[#B8B0C4] hover:text-red-500 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
           >
             <LogOut className="w-4 h-4" />
           </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Navbar */}
-        <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 flex items-center justify-between gap-3 flex-shrink-0 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <SyncStatusBadge />
-          </div>
-
-          <div className="flex items-center gap-2.5">
-            <select
-              value={i18n.language}
-              onChange={(e) => changeLanguage(e.target.value)}
-              className="rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
-            >
-              <option value="en">English (EN)</option>
-              <option value="ta">தமிழ் (TA)</option>
-            </select>
-
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
-            </button>
-          </div>
-        </header>
-
-        {/* Page View Body */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100/70 dark:bg-slate-950 pb-20">
-          <Outlet />
-        </main>
-      </div>
+      {/* Main Page View Body */}
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#F7F5FC] dark:bg-[#17151D]">
+        <Outlet />
+      </main>
 
       {/* Install PWA Prompt Banner */}
       <PwaInstallPrompt />

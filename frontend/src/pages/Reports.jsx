@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
+import { formatCurrency } from '../utils/currency';
 
 const REPORT_TABS = [
   'sales', 'purchases', 'profit_loss', 'inventory', 'stock_adjustments',
@@ -37,7 +38,6 @@ export default function Reports() {
   // income, customers, suppliers, payments) deliberately stay unscoped
   // since an invoice/expense/payment isn't itself tied to one business type.
   const PRODUCT_SCOPED_TABS = ['sales', 'inventory', 'stock_adjustments', 'tax'];
-
   const load = () => {
     setLoading(true);
     const params = needsDateRange ? { from, to } : {};
@@ -56,7 +56,7 @@ export default function Reports() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, settings?.business_type]);
 
-  const fmt = (n) => `${currency}${Number(n || 0).toFixed(2)}`;
+  const fmt = (n) => formatCurrency(n, currency);
   const c = (key) => t(`reports.cols.${key}`);
 
   return (
@@ -69,7 +69,7 @@ export default function Reports() {
             key={key}
             onClick={() => setTab(key)}
             className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-              tab === key ? 'bg-brand-600 text-white' : 'border border-slate-300 dark:border-slate-600'
+              tab === key ? 'bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D]' : 'border border-[#E8E3EF] dark:border-[#393244]'
             }`}
           >
             {t(`reports.tabs.${key}`)}
@@ -79,17 +79,17 @@ export default function Reports() {
 
       {needsDateRange && (
         <div className="mb-3 flex items-center gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-sm" />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1 text-sm" />
           <span className="text-sm">{t('reports.to')}</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-sm" />
-          <button onClick={load} className="rounded-md bg-brand-600 px-3 py-1 text-white text-sm">{t('reports.apply')}</button>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1 text-sm" />
+          <button onClick={load} className="rounded-md bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] px-4 py-1.5 font-bold text-xs shadow-sm">{t('reports.apply')}</button>
         </div>
       )}
 
-      {loading && <div className="text-sm text-slate-400">{t('common.loading')}</div>}
+      {loading && <div className="text-sm text-[#716B7C] dark:text-[#B8B0C4]">{t('common.loading')}</div>}
 
       {!loading && data && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 overflow-x-auto">
+        <div className="rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] p-4 overflow-x-auto">
           {tab === 'sales' && (
             <>
               <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -256,8 +256,8 @@ export default function Reports() {
 
 function Stat({ label, value, highlight }) {
   return (
-    <div className={`rounded-md p-3 ${highlight ? 'bg-brand-50 dark:bg-brand-900/30' : 'bg-slate-50 dark:bg-slate-800'}`}>
-      <div className="text-xs text-slate-500 dark:text-slate-400">{label}</div>
+    <div className={`rounded-md p-3 ${highlight ? 'bg-[#EDE7F7] dark:bg-[#2B2536]' : 'bg-[#F7F5FC] dark:bg-[#2B2536]'}`}>
+      <div className="text-xs text-[#716B7C] dark:text-[#B8B0C4]">{label}</div>
       <div className="text-lg font-bold">{value}</div>
     </div>
   );
@@ -265,11 +265,11 @@ function Stat({ label, value, highlight }) {
 
 function Table({ rows, cols, emptyText }) {
   if (!rows || rows.length === 0) {
-    return <div className="py-6 text-center text-sm text-slate-400">{emptyText}</div>;
+    return <div className="py-6 text-center text-sm text-[#716B7C] dark:text-[#B8B0C4]">{emptyText}</div>;
   }
   return (
     <table className="min-w-full text-sm">
-      <thead className="bg-slate-50 dark:bg-slate-800 text-left">
+      <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left">
         <tr>
           {cols.map(([key, label]) => (
             <th key={key} className="px-3 py-2">{label}</th>
@@ -278,7 +278,7 @@ function Table({ rows, cols, emptyText }) {
       </thead>
       <tbody>
         {rows.map((row, i) => (
-          <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
+          <tr key={i} className="border-t border-[#E8E3EF] dark:border-[#393244]">
             {cols.map(([key, _, formatter]) => (
               <td key={key} className="px-3 py-2">{formatter ? formatter(row[key]) : row[key]}</td>
             ))}

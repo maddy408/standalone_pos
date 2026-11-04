@@ -7,7 +7,6 @@ export default function PwaInstallPrompt() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) {
       return;
@@ -23,7 +22,6 @@ export default function PwaInstallPrompt() {
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Also if not standalone, show a prompt even in browsers like desktop Chrome/Edge where banner can trigger or guide user
     const timer = setTimeout(() => {
       if (!isStandalone && !sessionStorage.getItem('pwa_dismissed')) {
         setShowPrompt(true);
@@ -59,21 +57,21 @@ export default function PwaInstallPrompt() {
   if (!showPrompt || dismissed) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-amber-950 text-amber-100 px-4 py-2.5 shadow-2xl flex items-center justify-between border-t border-amber-800">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#211D2A] text-[#F5F2F9] px-4 py-2.5 shadow-2xl flex items-center justify-between border-t border-[#393244]">
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Download className="w-4 h-4 text-amber-400 animate-bounce" />
-        <span>Install Universal POS App on your Home Screen!</span>
+        <Download className="w-4 h-4 text-[#A98ADB] animate-bounce" />
+        <span>Install Universal POS App on your device for fast offline access!</span>
       </div>
       <div className="flex items-center gap-3">
         <button
           onClick={handleClose}
-          className="text-xs text-amber-300 hover:text-white transition-colors"
+          className="text-xs text-[#B8B0C4] hover:text-white transition-colors"
         >
           Close
         </button>
         <button
           onClick={handleInstall}
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded text-xs transition-colors shadow flex items-center gap-1.5"
+          className="bg-[#7652B5] hover:bg-[#5B3B91] text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-colors shadow-sm flex items-center gap-1.5"
         >
           <Download className="w-3.5 h-3.5" />
           Install App
@@ -82,4 +80,3 @@ export default function PwaInstallPrompt() {
     </div>
   );
 }
-

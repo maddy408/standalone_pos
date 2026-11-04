@@ -4,11 +4,11 @@ import api from '../config/api';
 
 const ACTION_COLORS = {
   create: 'text-emerald-600',
-  update: 'text-brand-600',
+  update: 'text-[#7652B5] dark:text-[#A98ADB]',
   delete: 'text-red-500',
   cancel: 'text-red-500',
-  adjust: 'text-amber-600',
-  login: 'text-slate-400',
+  adjust: 'text-[#7652B5] dark:text-[#A98ADB]',
+  login: 'text-[#716B7C] dark:text-[#B8B0C4]',
 };
 
 const ACTIONS = ['create', 'update', 'delete', 'cancel', 'adjust', 'login'];
@@ -52,7 +52,7 @@ export default function AuditLog() {
         <select
           value={filters.action}
           onChange={(e) => setFilters({ ...filters, action: e.target.value })}
-          className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1.5 text-sm"
         >
           <option value="">{t('audit.all_actions')}</option>
           {ACTIONS.map((a) => (
@@ -62,7 +62,7 @@ export default function AuditLog() {
         <select
           value={filters.entity_type}
           onChange={(e) => setFilters({ ...filters, entity_type: e.target.value })}
-          className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1.5 text-sm"
         >
           <option value="">{t('audit.all_entities')}</option>
           {entityTypes.map((e) => (
@@ -73,21 +73,21 @@ export default function AuditLog() {
           type="date"
           value={filters.from}
           onChange={(e) => setFilters({ ...filters, from: e.target.value })}
-          className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1.5 text-sm"
         />
         <span className="text-sm">{t('reports.to')}</span>
         <input
           type="date"
           value={filters.to}
           onChange={(e) => setFilters({ ...filters, to: e.target.value })}
-          className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1.5 text-sm"
+          className="rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1.5 text-sm"
         />
-        <button onClick={applyFilters} className="rounded-md bg-brand-600 px-3 py-1.5 text-white text-sm">{t('common.filter')}</button>
+        <button onClick={applyFilters} className="rounded-md bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] -bold  shadow-sm">{t('common.filter')}</button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A]">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 dark:bg-slate-800 text-left">
+          <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left">
             <tr>
               <th className="px-3 py-2">{t('audit.when')}</th>
               <th className="px-3 py-2">{t('audit.user')}</th>
@@ -98,18 +98,18 @@ export default function AuditLog() {
           </thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.id} className="border-t border-slate-100 dark:border-slate-800">
+              <tr key={e.id} className="border-t border-[#E8E3EF] dark:border-[#393244]">
                 <td className="px-3 py-2 whitespace-nowrap">{new Date(e.created_at).toLocaleString()}</td>
                 <td className="px-3 py-2">{e.username || '—'}</td>
                 <td className={`px-3 py-2 font-medium ${ACTION_COLORS[e.action] || ''}`}>{t(`audit.action_${e.action}`, e.action)}</td>
                 <td className="px-3 py-2">{e.entity_type}{e.entity_id ? ` #${e.entity_id}` : ''}</td>
-                <td className="px-3 py-2 text-xs text-slate-400">
+                <td className="px-3 py-2 text-xs text-[#716B7C] dark:text-[#B8B0C4]">
                   {e.details ? Object.entries(e.details).map(([k, v]) => `${k}: ${v}`).join(', ') : ''}
                 </td>
               </tr>
             ))}
             {entries.length === 0 && (
-              <tr><td colSpan={5} className="px-3 py-6 text-center text-slate-400">{t('audit.no_entries')}</td></tr>
+              <tr><td colSpan={5} className="px-3 py-6 text-center text-[#716B7C] dark:text-[#B8B0C4]">{t('audit.no_entries')}</td></tr>
             )}
           </tbody>
         </table>

@@ -31,56 +31,65 @@ export default function Login() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-slate-100 dark:bg-slate-950 p-4 font-sans">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
-        <div className="flex justify-center mb-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xl shadow-md">
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F5FC] dark:bg-[#17151D] p-4 font-sans">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#211D2A] p-8 shadow-xl border border-[#E8E3EF] dark:border-[#393244]"
+      >
+        <div className="flex justify-center mb-5">
+          <div className="w-14 h-14 rounded-2xl bg-[#7652B5] dark:bg-[#A98ADB] text-white dark:text-[#17151D] flex items-center justify-center font-black text-2xl shadow-md">
             UP
           </div>
         </div>
-        <h1 className="mb-1 text-xl font-bold text-slate-900 dark:text-white text-center">
+        <h1 className="mb-1 text-2xl font-black text-[#282431] dark:text-[#F5F2F9] text-center tracking-tight">
           {t('auth.login_title')}
         </h1>
-        <p className="text-xs text-slate-400 text-center mb-6">Universal POS & Management System</p>
+        <p className="text-xs text-[#716B7C] dark:text-[#B8B0C4] text-center mb-6">
+          Universal POS & Management System
+        </p>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-2 text-xs text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800">
+          <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-950/40 px-3.5 py-2.5 text-xs text-red-600 dark:text-red-300 border border-red-200 dark:border-red-900 font-medium">
             {error}
           </div>
         )}
 
         <div className="space-y-4 text-xs">
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">{t('auth.username')}</label>
+            <label className="mb-1.5 block font-semibold text-[#282431] dark:text-[#F5F2F9]">
+              {t('auth.username')}
+            </label>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2.5 focus:ring-2 focus:ring-[#7652B5]/30 focus:border-[#7652B5] focus:outline-none transition-colors"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">{t('auth.password')}</label>
+            <label className="mb-1.5 block font-semibold text-[#282431] dark:text-[#F5F2F9]">
+              {t('auth.password')}
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3.5 py-2.5 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2.5 focus:ring-2 focus:ring-[#7652B5]/30 focus:border-[#7652B5] focus:outline-none transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-amber-500 hover:bg-amber-400 py-3 font-bold text-slate-950 shadow-md transition-colors disabled:opacity-50 mt-2 text-sm"
+            className="w-full rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] py-3 font-bold text-white dark:text-[#17151D] shadow-md transition-colors disabled:opacity-50 mt-3 text-sm"
           >
             {loading ? 'Signing in...' : t('auth.login')}
           </button>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-400">
-          Default: <span className="font-mono text-slate-600 dark:text-slate-300">admin</span> / <span className="font-mono text-slate-600 dark:text-slate-300">Admin@123</span>
+        <div className="mt-6 pt-4 border-t border-[#E8E3EF] dark:border-[#393244] text-center text-xs text-[#716B7C] dark:text-[#B8B0C4] bg-[#F7F5FC] dark:bg-[#17151D] p-3 rounded-xl border">
+          Default: <span className="font-mono font-semibold text-[#7652B5] dark:text-[#A98ADB]">admin</span> / <span className="font-mono font-semibold text-[#7652B5] dark:text-[#A98ADB]">Admin@123</span>
         </div>
       </form>
     </div>

@@ -1,4 +1,5 @@
 import i18n from '../i18n';
+import { formatCurrency } from '../utils/currency';
 
 /** Builds a minimal printable receipt window — used for both a freshly
  * created online invoice and an offline sale that hasn't synced yet. */
@@ -11,8 +12,8 @@ export function openReceiptWindow(invoice, settings) {
       <tr>
         <td>${it.product_name_snapshot || it.product_name}</td>
         <td style="text-align:right">${it.qty}</td>
-        <td style="text-align:right">${currency}${Number(it.unit_price).toFixed(2)}</td>
-        <td style="text-align:right">${currency}${Number(it.line_total || it.unit_price * it.qty).toFixed(2)}</td>
+        <td style="text-align:right">${formatCurrency(it.unit_price, currency)}</td>
+        <td style="text-align:right">${formatCurrency(it.line_total || it.unit_price * it.qty, currency)}</td>
       </tr>`
     )
     .join('');
@@ -24,6 +25,7 @@ export function openReceiptWindow(invoice, settings) {
   const html = `
     <html>
     <head>
+      <meta charset="utf-8">
       <title>${invoice.invoice_no}</title>
       <style>
         body { font-family: monospace; width: 320px; margin: 0 auto; padding: 12px; }
@@ -50,10 +52,10 @@ export function openReceiptWindow(invoice, settings) {
       </table>
       <hr />
       <table class="totals">
-        <tr><td>${t('pos.subtotal')}</td><td style="text-align:right">${currency}${Number(invoice.subtotal).toFixed(2)}</td></tr>
-        <tr><td>${t('pos.discount')}</td><td style="text-align:right">${currency}${Number(invoice.discount_amount || 0).toFixed(2)}</td></tr>
-        <tr><td>${t('pos.tax')}</td><td style="text-align:right">${currency}${Number(invoice.tax_amount || 0).toFixed(2)}</td></tr>
-        <tr><td>${t('pos.grand_total')}</td><td style="text-align:right">${currency}${Number(invoice.grand_total).toFixed(2)}</td></tr>
+        <tr><td>${t('pos.subtotal')}</td><td style="text-align:right">${formatCurrency(invoice.subtotal, currency)}</td></tr>
+        <tr><td>${t('pos.discount')}</td><td style="text-align:right">${formatCurrency(invoice.discount_amount || 0, currency)}</td></tr>
+        <tr><td>${t('pos.tax')}</td><td style="text-align:right">${formatCurrency(invoice.tax_amount || 0, currency)}</td></tr>
+        <tr><td>${t('pos.grand_total')}</td><td style="text-align:right">${formatCurrency(invoice.grand_total, currency)}</td></tr>
       </table>
       <hr />
       ${sloganHtml}
