@@ -91,9 +91,6 @@ export default function Products() {
   const [activeTab, setActiveTab] = useState('all'); // Filter table
   const [activeFormSection, setActiveFormSection] = useState('basic'); // 'basic', 'pricing', 'inventory', 'specs', 'variants', 'addons', 'settings'
 
-  // Image URL input helper
-  const [imageUrlInput, setImageUrlInput] = useState('');
-
   // Add-on group creation inside products (Hotel)
   const [newAddonGroup, setNewAddonGroup] = useState({ name: '', price: '', group_name: 'Add-ons', is_mandatory: 0 });
 
@@ -155,7 +152,6 @@ export default function Products() {
     setIsEditing(false);
     setError('');
     setSuccess('');
-    setImageUrlInput('');
     setActiveFormSection('basic');
   };
 
@@ -210,17 +206,6 @@ export default function Products() {
     setError('');
     setSuccess('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Image helpers
-  const addImage = () => {
-    if (!imageUrlInput.trim()) return;
-    setForm((f) => ({ ...f, images: [...(f.images || []), imageUrlInput.trim()] }));
-    setImageUrlInput('');
-  };
-
-  const removeImage = (idx) => {
-    setForm((f) => ({ ...f, images: (f.images || []).filter((_, i) => i !== idx) }));
   };
 
   // Variant helpers
@@ -686,44 +671,7 @@ export default function Products() {
                   />
                 </div>
 
-                {/* Multiple Images Support */}
-                <div className="space-y-2">
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300">
-                    Product Images (Multi-image support)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      value={imageUrlInput}
-                      onChange={(e) => setImageUrlInput(e.target.value)}
-                      placeholder="Enter Image URL (e.g. https://... or /uploads/item.jpg)"
-                      className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={addImage}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 text-white font-bold hover:bg-slate-700 transition-colors"
-                    >
-                      + Add Image
-                    </button>
-                  </div>
 
-                  {form.images?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {form.images.map((img, i) => (
-                        <div key={i} className="relative group border border-slate-200 dark:border-slate-700 rounded-lg p-1 bg-slate-50 dark:bg-slate-800">
-                          <img src={img} alt="Product preview" className="w-16 h-16 object-cover rounded-md" onError={(e) => { e.target.style.display='none'; }} />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(i)}
-                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow hover:bg-red-600"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
