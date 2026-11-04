@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { appColors } from './appColors';
 
 const ThemeContext = createContext(null);
 
@@ -19,7 +20,9 @@ export function ThemeProvider({ children }) {
   const toggleTheme = () => setThemeState((t) => (t === 'dark' ? 'light' : 'dark'));
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, colors: appColors }}>
+      {children}
+    </ThemeContext.Provider>
   );
 }
 
@@ -28,3 +31,5 @@ export function useTheme() {
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
   return ctx;
 }
+
+export { appColors };
