@@ -31,10 +31,19 @@ export default function Reports() {
   const currency = settings?.currency_symbol || '₹';
 
   const needsDateRange = !['inventory', 'customers', 'suppliers'].includes(tab);
+  // Reports that break figures down per product must stay scoped to the
+  // shop's active business type, same as the Products/POS/Inventory
+  // screens — whole-business financial reports (profit/loss, expenses,
+  // income, customers, suppliers, payments) deliberately stay unscoped
+  // since an invoice/expense/payment isn't itself tied to one business type.
+  const PRODUCT_SCOPED_TABS = ['sales', 'inventory', 'stock_adjustments', 'tax'];
 
   const load = () => {
     setLoading(true);
     const params = needsDateRange ? { from, to } : {};
+    if (PRODUCT_SCOPED_TABS.includes(tab) && settings?.business_type) {
+      params.business_type = settings.business_type;
+    }
     api
       .get(`/reports/${API_PATH[tab] || tab}`, { params })
       .then(({ data }) => setData(data))
@@ -45,7 +54,7 @@ export default function Reports() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, settings?.business_type]);
 
   const fmt = (n) => `${currency}${Number(n || 0).toFixed(2)}`;
   const c = (key) => t(`reports.cols.${key}`);

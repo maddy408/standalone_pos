@@ -61,7 +61,11 @@ INSERT INTO categories (business_type, name) VALUES
 ('furniture', 'Sofas'), ('furniture', 'Beds'), ('furniture', 'Dining Sets'), ('furniture', 'Chairs'),
 ('food', 'Starters'), ('food', 'Main Course'), ('food', 'Beverages'), ('food', 'Desserts');
 
-INSERT INTO brands (name) VALUES ('Samsung'), ('Apple'), ('Xiaomi'), ('OnePlus'), ('Vivo'), ('Generic');
+INSERT INTO brands (name, business_type) VALUES
+('Samsung', 'mobile'), ('Apple', 'mobile'), ('Xiaomi', 'mobile'), ('OnePlus', 'mobile'), ('Vivo', 'mobile'),
+('Nilkamal', 'furniture'), ('Godrej Interio', 'furniture'), ('Urban Ladder', 'furniture'), ('Durian', 'furniture'),
+('In-House', 'food'), ('Signature Recipe', 'food'),
+('Generic', NULL);
 
 -- ---------------------------------------------------------------------------
 -- Dynamic business attribute fields (Master Settings -> Business Type drives

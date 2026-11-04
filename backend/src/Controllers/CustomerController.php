@@ -23,7 +23,7 @@ class CustomerController
         $where = 'WHERE 1=1';
         $params = [];
         if (!empty($_GET['search'])) {
-            $where .= ' AND (name LIKE :s OR phone LIKE :s)';
+            $where .= ' AND (name LIKE :s OR phone LIKE :s OR email LIKE :s)';
             $params['s'] = '%' . $_GET['search'] . '%';
         }
         if (!empty($_GET['updated_since'])) {
@@ -72,9 +72,12 @@ class CustomerController
             return [$row, 200];
         }
 
+        $openingBalance = (float) ($body['opening_balance'] ?? 0);
+        $initialBalance = (float) ($body['balance'] ?? $openingBalance);
+
         $stmt = $this->pdo->prepare(
-            'INSERT INTO customers (uuid, name, phone, email, address, gstin, credit_limit)
-             VALUES (:uuid, :name, :phone, :email, :address, :gstin, :credit_limit)'
+            'INSERT INTO customers (uuid, name, phone, email, address, gstin, opening_balance, credit_limit, balance)
+             VALUES (:uuid, :name, :phone, :email, :address, :gstin, :opening_balance, :credit_limit, :balance)'
         );
         $stmt->execute([
             'uuid' => $uuid,
@@ -83,7 +86,9 @@ class CustomerController
             'email' => $body['email'] ?? null,
             'address' => $body['address'] ?? null,
             'gstin' => $body['gstin'] ?? null,
+            'opening_balance' => $openingBalance,
             'credit_limit' => (float) ($body['credit_limit'] ?? 0),
+            'balance' => $initialBalance,
         ]);
         $id = (int) $this->pdo->lastInsertId();
 
@@ -97,9 +102,12 @@ class CustomerController
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'customers.manage');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
         $stmt = $this->pdo->prepare(
-            'UPDATE customers SET name = :name, phone = :phone, email = :email, address = :address,
-                gstin = :gstin, credit_limit = :credit_limit WHERE id = :id'
+            'UPDATE customers SET name = :name, phone = :phone, email = :email,
+             address = :address, gstin = :gstin, credit_limit = :credit_limit,
+             opening_balance = :opening_balance
+             WHERE id = :id'
         );
         $stmt->execute([
             'name' => $body['name'] ?? '',
@@ -108,50 +116,54 @@ class CustomerController
             'address' => $body['address'] ?? null,
             'gstin' => $body['gstin'] ?? null,
             'credit_limit' => (float) ($body['credit_limit'] ?? 0),
+            'opening_balance' => (float) ($body['opening_balance'] ?? 0),
             'id' => $id,
         ]);
-        Response::json(['ok' => true]);
+
+        $fetch = $this->pdo->prepare('SELECT * FROM customers WHERE id = :id');
+        $fetch->execute(['id' => $id]);
+        Response::json($fetch->fetch());
     }
 
-    public function destroy(string $id): void
-    {
-        $claims = AuthMiddleware::authenticate();
-        PermissionMiddleware::require($claims, 'customers.manage');
-        $this->pdo->prepare('DELETE FROM customers WHERE id = :id')->execute(['id' => $id]);
-        Response::json(['ok' => true]);
-    }
-
-    /** POST /api/customers/{id}/payments — records a collection against the running balance. */
     public function recordPayment(string $id): void
     {
         $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'customers.manage');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $amount = (float) ($body['amount'] ?? 0);
         if ($amount <= 0) {
-            Response::error('Amount must be greater than zero', 422);
+            Response::error('Amount must be positive', 422);
         }
 
         $this->pdo->beginTransaction();
         try {
+            $stmt = $this->pdo->prepare('SELECT balance FROM customers WHERE id = :id FOR UPDATE');
+            $stmt->execute(['id' => $id]);
+            $c = $stmt->fetch();
+            if (!$c) {
+                $this->pdo->rollBack();
+                Response::error('Customer not found', 404);
+            }
+
+            $this->pdo->prepare('UPDATE customers SET balance = balance - :amount WHERE id = :id')
+                ->execute(['amount' => $amount, 'id' => $id]);
+
             $this->pdo->prepare(
-                'INSERT INTO customer_payments (uuid, customer_id, invoice_id, amount, payment_method_id, reference_no, notes)
-                 VALUES (:uuid, :cid, :invoice_id, :amount, :pmid, :ref, :notes)'
+                'INSERT INTO customer_payments (customer_id, payment_method_id, amount, notes, user_id)
+                 VALUES (:cid, :pm, :amount, :notes, :uid)'
             )->execute([
-                'uuid' => $body['uuid'] ?? UuidHelper::v4(),
                 'cid' => $id,
-                'invoice_id' => $body['invoice_id'] ?? null,
+                'pm' => $body['payment_method_id'] ?? 1,
                 'amount' => $amount,
-                'pmid' => $body['payment_method_id'] ?? 1,
-                'ref' => $body['reference_no'] ?? null,
-                'notes' => $body['notes'] ?? null,
+                'notes' => $body['notes'] ?? 'Manual customer payment',
+                'uid' => $claims['uid'],
             ]);
-            $this->pdo->prepare('UPDATE customers SET balance = balance - :amt WHERE id = :id')
-                ->execute(['amt' => $amount, 'id' => $id]);
+
             $this->pdo->commit();
-            Response::json(['ok' => true], 201);
+            Response::json(['ok' => true]);
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
-            Response::error('Failed to record payment: ' . $e->getMessage(), 500);
+            Response::error($e->getMessage(), 500);
         }
     }
 }

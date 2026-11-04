@@ -1,13 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
 import { useAuth } from '../hooks/useAuth';
 import { cacheProducts } from '../db/db';
+import {
+  Package,
+  Search,
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  Layers,
+  Barcode,
+  Layers2,
+  ChevronRight
+} from 'lucide-react';
 
 const BLANK_FORM = {
   id: null,
-  business_type: 'mobile',
   name: '',
   category_id: '',
   brand_id: '',
@@ -19,6 +30,9 @@ const BLANK_FORM = {
   purchase_price: '',
   selling_price: '',
   mrp: '',
+  retail_price: '',
+  wholesale_price: '',
+  customer_price: '',
   stock_qty: '',
   low_stock_threshold: '',
   track_serial: false,
@@ -26,57 +40,12 @@ const BLANK_FORM = {
   serials: [{ imei1: '', imei2: '', serial_no: '' }],
 };
 
-function AttributeField({ field, value, onChange }) {
-  const label = field.label_en;
-  if (field.field_type === 'select') {
-    return (
-      <div>
-        <label className="mb-1 block text-sm font-medium">
-          {label} {field.is_required ? '*' : ''}
-        </label>
-        <select
-          value={value ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-        >
-          <option value="">--</option>
-          {(field.options || []).map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label_en}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-  if (field.field_type === 'boolean') {
-    return (
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} />
-        {label}
-      </label>
-    );
-  }
-  return (
-    <div>
-      <label className="mb-1 block text-sm font-medium">
-        {label} {field.is_required ? '*' : ''} {field.unit_suffix ? `(${field.unit_suffix})` : ''}
-      </label>
-      <input
-        type={field.field_type === 'number' ? 'number' : 'text'}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-      />
-    </div>
-  );
-}
-
 export default function Products() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { can } = useAuth();
   const canManage = can('products.manage');
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -86,107 +55,101 @@ export default function Products() {
   const [form, setForm] = useState(BLANK_FORM);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+
+  const currency = settings?.currency_symbol || '₹';
 
   const loadProducts = () => {
-    api.get('/products', { params: { search: search || undefined } }).then(({ data }) => {
-      setProducts(data);
-      cacheProducts(data);
-    });
+    if (!settings?.business_type) return;
+    api
+      .get('/products', {
+        params: { search: search || undefined, business_type: settings.business_type },
+      })
+      .then(({ data }) => {
+        setProducts(data);
+        cacheProducts(data);
+      })
+      .catch((err) => console.error(err));
   };
 
   useEffect(() => {
     loadProducts();
-    api.get('/lookup/brands').then(({ data }) => setBrands(data));
+  }, [settings?.business_type, search]);
+
+  useEffect(() => {
+    if (!settings?.business_type) return;
+    const bt = settings.business_type;
+
+    api.get('/categories', { params: { business_type: bt } }).then(({ data }) => setCategories(data));
+    api.get('/lookup/brands', { params: { business_type: bt } }).then(({ data }) => setBrands(data));
     api.get('/lookup/units').then(({ data }) => setUnits(data));
     api.get('/lookup/tax-rates').then(({ data }) => setTaxRates(data));
-  }, []);
 
-  useEffect(() => {
-    const t = setTimeout(loadProducts, 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  useEffect(() => {
-    // Default the form's business type to the shop's configured type, but
-    // only before the user has touched the form (id null, name empty) so
-    // this never clobbers an in-progress edit once settings resolve late.
-    if (settings?.business_type && !form.id && !form.name) {
-      setForm((f) => ({ ...f, business_type: settings.business_type }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    api.get(`/settings/business-types/${bt}/fields`).then(({ data }) => {
+      setAttributeFields(data);
+    });
   }, [settings?.business_type]);
 
-  useEffect(() => {
-    api.get('/categories', { params: { business_type: form.business_type } }).then(({ data }) => setCategories(data));
-    api.get('/settings/attribute-fields', { params: { business_type: form.business_type } }).then(({ data }) => setAttributeFields(data));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form?.business_type]);
-
-  const set = (field, value) => setForm((f) => ({ ...f, [field]: value }));
-  const setAttr = (key, value) => setForm((f) => ({ ...f, attributes: { ...f.attributes, [key]: value } }));
-
-  const setSerialRow = (index, key, value) => {
-    setForm((f) => {
-      const serials = [...f.serials];
-      serials[index] = { ...serials[index], [key]: value };
-      return { ...f, serials };
-    });
-  };
-  const addSerialRow = () => setForm((f) => ({ ...f, serials: [...f.serials, { imei1: '', imei2: '', serial_no: '' }] }));
-  const removeSerialRow = (index) => setForm((f) => ({ ...f, serials: f.serials.filter((_, i) => i !== index) }));
-
-  const [variants, setVariants] = useState([]);
-  const [newVariant, setNewVariant] = useState({ variant_name: '', price_adjustment: '', stock_qty: '' });
-
-  const addVariant = async () => {
-    if (!form.id || !newVariant.variant_name.trim()) return;
-    await api.post(`/products/${form.id}/variants`, {
-      variant_name: newVariant.variant_name,
-      price_adjustment: Number(newVariant.price_adjustment) || 0,
-      stock_qty: Number(newVariant.stock_qty) || 0,
-    });
-    setNewVariant({ variant_name: '', price_adjustment: '', stock_qty: '' });
-    const { data } = await api.get(`/products/${form.id}`);
-    setVariants(data.variants || []);
-  };
-
-  const removeVariant = async (variantId) => {
-    await api.delete(`/products/${form.id}/variants/${variantId}`);
-    setVariants((v) => v.filter((x) => x.id !== variantId));
+  const resetForm = () => {
+    setForm(BLANK_FORM);
+    setIsEditing(false);
+    setError('');
   };
 
   const startEdit = (p) => {
     setForm({
-      ...BLANK_FORM,
-      ...p,
+      id: p.id,
+      name: p.name || '',
       category_id: p.category_id || '',
       brand_id: p.brand_id || '',
       unit_id: p.unit_id || '',
       tax_rate_id: p.tax_rate_id || '',
       supplier_id: p.supplier_id || '',
+      barcode: p.barcode || '',
+      sku: p.sku || '',
+      purchase_price: p.purchase_price ? String(Number(p.purchase_price)) : '',
+      selling_price: p.selling_price ? String(Number(p.selling_price)) : '',
+      mrp: p.mrp ? String(Number(p.mrp)) : '',
+      retail_price: p.retail_price ? String(Number(p.retail_price)) : '',
+      wholesale_price: p.wholesale_price ? String(Number(p.wholesale_price)) : '',
+      customer_price: p.customer_price ? String(Number(p.customer_price)) : '',
+      stock_qty: p.stock_qty !== undefined && p.stock_qty !== null ? String(Number(p.stock_qty)) : '',
+      low_stock_threshold: p.low_stock_threshold ? String(Number(p.low_stock_threshold)) : '',
+      track_serial: !!p.track_serial,
       attributes: p.attributes || {},
       serials: [{ imei1: '', imei2: '', serial_no: '' }],
     });
-    setVariants(p.variants || []);
-  };
-
-  const resetForm = () => {
-    setForm({ ...BLANK_FORM, business_type: settings?.business_type || 'mobile' });
-    setVariants([]);
+    setIsEditing(true);
+    setError('');
   };
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!form.name.trim()) {
+      setError('Product name is required');
+      return;
+    }
+
     const payload = {
       ...form,
-      category_id: form.category_id || null,
-      brand_id: form.brand_id || null,
-      unit_id: form.unit_id || null,
-      tax_rate_id: form.tax_rate_id || null,
+      business_type: settings?.business_type || 'mobile',
+      category_id: form.category_id ? Number(form.category_id) : null,
+      brand_id: form.brand_id ? Number(form.brand_id) : null,
+      unit_id: form.unit_id ? Number(form.unit_id) : null,
+      tax_rate_id: form.tax_rate_id ? Number(form.tax_rate_id) : null,
+      purchase_price: form.purchase_price === '' ? 0 : Number(form.purchase_price),
+      selling_price: form.selling_price === '' ? 0 : Number(form.selling_price),
+      retail_price: form.retail_price === '' ? 0 : Number(form.retail_price),
+      wholesale_price: form.wholesale_price === '' ? 0 : Number(form.wholesale_price),
+      customer_price: form.customer_price === '' ? 0 : Number(form.customer_price),
+      mrp: form.mrp === '' ? 0 : Number(form.mrp),
+      stock_qty: form.stock_qty === '' ? 0 : Number(form.stock_qty),
+      low_stock_threshold: form.low_stock_threshold === '' ? null : Number(form.low_stock_threshold),
       serials: form.track_serial ? form.serials.filter((s) => s.imei1 || s.serial_no) : [],
     };
+
     try {
       if (form.id) {
         await api.put(`/products/${form.id}`, payload);
@@ -202,71 +165,106 @@ export default function Products() {
 
   const remove = async (id) => {
     if (!confirm(t('products.delete_confirm'))) return;
-    await api.delete(`/products/${id}`);
-    loadProducts();
+    try {
+      await api.delete(`/products/${id}`);
+      loadProducts();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete');
+    }
   };
-
-  const currency = settings?.currency_symbol || '₹';
-
-  const showSerials = form?.business_type === 'mobile' && form?.track_serial;
-
-  if (!form) return <div>{t('common.loading')}</div>;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className={canManage ? 'lg:col-span-2' : 'lg:col-span-3'}>
-        <div className="mb-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold">{t('products.title')}</h1>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('common.search')}
-            className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-1.5 text-sm"
-          />
+      {/* Products Table Section */}
+      <div className={canManage ? 'lg:col-span-2 space-y-4' : 'lg:col-span-3 space-y-4'}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Package className="w-5 h-5 text-amber-500" />
+              {t('products.title')}
+            </h1>
+            <p className="text-xs text-slate-500">
+              Active Category: <span className="capitalize font-semibold text-amber-600">{settings?.business_type}</span> shop inventory
+            </p>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, barcode..."
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+            />
+          </div>
         </div>
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800 text-left">
+
+        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <table className="min-w-full text-xs">
+            <thead className="bg-slate-50 dark:bg-slate-800 text-left font-semibold text-slate-600 dark:text-slate-300">
               <tr>
-                <th className="px-3 py-2">{t('common.name')}</th>
-                <th className="px-3 py-2">{t('products.category')}</th>
-                <th className="px-3 py-2 text-right">{t('products.selling_price')}</th>
-                <th className="px-3 py-2 text-right">{t('products.stock_qty')}</th>
-                <th className="px-3 py-2">{t('common.actions')}</th>
+                <th className="px-3.5 py-2.5">{t('common.name')}</th>
+                <th className="px-3.5 py-2.5">{t('products.category')}</th>
+                <th className="px-3.5 py-2.5 text-right">{t('products.selling_price')}</th>
+                <th className="px-3.5 py-2.5 text-right">Wholesale</th>
+                <th className="px-3.5 py-2.5 text-right">{t('products.stock_qty')}</th>
+                {canManage && <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>}
               </tr>
             </thead>
-            <tbody>
-              {products.map((p) => (
-                <tr key={p.id} className="border-t border-slate-100 dark:border-slate-800">
-                  <td className="px-3 py-2">
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-slate-400">{p.business_type} · {p.barcode}</div>
-                  </td>
-                  <td className="px-3 py-2">{p.category_name}</td>
-                  <td className="px-3 py-2 text-right">{currency}{Number(p.selling_price).toFixed(2)}</td>
-                  <td className={`px-3 py-2 text-right ${Number(p.stock_qty) <= 0 ? 'text-red-500 font-semibold' : ''}`}>
-                    {p.track_serial ? Number(p.stock_qty) : Number(p.stock_qty).toFixed(2)}
-                  </td>
-                  <td className="px-3 py-2">
-                    {canManage ? (
-                      <>
-                        <button onClick={() => startEdit(p)} className="mr-2 text-brand-600 hover:underline">
-                          {t('common.edit')}
-                        </button>
-                        <button onClick={() => remove(p.id)} className="text-red-500 hover:underline">
-                          {t('common.delete')}
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-xs text-slate-400">—</span>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {products.map((p) => {
+                const stock = Number(p.stock_qty || 0);
+                const isLow = p.low_stock_threshold && stock <= Number(p.low_stock_threshold);
+                return (
+                  <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-3.5 py-2.5 font-medium">
+                      <div>{p.name}</div>
+                      <div className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                        {p.barcode && <span>Bar: {p.barcode}</span>}
+                        {p.brand_name && <span>• {p.brand_name}</span>}
+                      </div>
+                    </td>
+                    <td className="px-3.5 py-2.5 text-slate-500">
+                      {p.category_name || '—'}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-right font-bold text-slate-900 dark:text-white">
+                      {currency}{Number(p.selling_price || 0).toFixed(2)}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-right text-slate-500">
+                      {p.wholesale_price ? `${currency}${Number(p.wholesale_price).toFixed(2)}` : '—'}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-right font-semibold">
+                      <span className={`px-2 py-0.5 rounded ${isLow ? 'bg-red-50 dark:bg-red-950/40 text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                        {stock} {p.unit_code || ''}
+                      </span>
+                    </td>
+                    {canManage && (
+                      <td className="px-3.5 py-2.5 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => startEdit(p)}
+                            title="Edit Product"
+                            className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => remove(p.id)}
+                            title="Delete Product"
+                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
                     )}
-                  </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-slate-400">
-                    {t('common.no_data')}
+                  <td colSpan={6} className="px-3 py-8 text-center text-slate-400">
+                    No products found for this business
                   </td>
                 </tr>
               )}
@@ -275,189 +273,283 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Product Form (Add / Edit) */}
       {canManage && (
-      <form onSubmit={submit} className="rounded-xl bg-white dark:bg-slate-900 p-4 shadow-sm border border-slate-200 dark:border-slate-800 space-y-3 self-start">
-        <h2 className="font-semibold">{form.id ? t('products.edit_product') : t('products.add_product')}</h2>
-        {error && <div className="rounded-md bg-red-50 dark:bg-red-900/30 px-3 py-2 text-sm text-red-700">{error}</div>}
+        <div className="rounded-xl bg-white dark:bg-slate-900 p-5 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4 self-start">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+            <h2 className="font-bold text-sm flex items-center gap-2">
+              <Plus className="w-4 h-4 text-amber-500" />
+              {isEditing ? 'Edit Product' : 'Add New Product'}
+            </h2>
+            {isEditing && (
+              <button
+                onClick={resetForm}
+                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+              >
+                <X className="w-3 h-3" /> Cancel
+              </button>
+            )}
+          </div>
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('settings.business_type')}</label>
-          <select
-            value={form.business_type}
-            onChange={(e) => set('business_type', e.target.value)}
-            className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          >
-            <option value="mobile">{t('settings.mobile')}</option>
-            <option value="furniture">{t('settings.furniture')}</option>
-            <option value="food">{t('settings.food')}</option>
-          </select>
-        </div>
+          {error && (
+            <div className="rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-2 text-xs text-red-600 border border-red-200 dark:border-red-800">
+              {error}
+            </div>
+          )}
 
-        <div>
-          <label className="mb-1 block text-sm font-medium">{t('common.name')} *</label>
-          <input
-            required
-            value={form.name}
-            onChange={(e) => set('name', e.target.value)}
-            className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2"
-          />
-        </div>
+          <form onSubmit={submit} className="space-y-3 text-xs">
+            {/* Product Basic Name */}
+            <div>
+              <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                Product Name *
+              </label>
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. iPhone 15 Pro, Wooden Dining Table"
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+              />
+            </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.category')}</label>
-            <select value={form.category_id} onChange={(e) => set('category_id', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2">
-              <option value="">--</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.brand')}</label>
-            <select value={form.brand_id} onChange={(e) => set('brand_id', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2">
-              <option value="">--</option>
-              {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.unit')}</label>
-            <select value={form.unit_id} onChange={(e) => set('unit_id', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2">
-              <option value="">--</option>
-              {units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.tax')}</label>
-            <select value={form.tax_rate_id} onChange={(e) => set('tax_rate_id', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2">
-              <option value="">--</option>
-              {taxRates.map((tr) => <option key={tr.id} value={tr.id}>{tr.name}</option>)}
-            </select>
-          </div>
-        </div>
+            {/* Category and Brand */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Category
+                </label>
+                <select
+                  value={form.category_id}
+                  onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value="">-- None --</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.parent_id ? `↳ ${c.name}` : c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.purchase_price')}</label>
-            <input type="number" value={form.purchase_price} onChange={(e) => set('purchase_price', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.selling_price')}</label>
-            <input type="number" value={form.selling_price} onChange={(e) => set('selling_price', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.mrp')}</label>
-            <input type="number" value={form.mrp} onChange={(e) => set('mrp', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2" />
-          </div>
-        </div>
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Brand
+                </label>
+                <select
+                  value={form.brand_id}
+                  onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value="">-- None --</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.barcode')}</label>
-            <input value={form.barcode} onChange={(e) => set('barcode', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.low_stock_threshold')}</label>
-            <input type="number" value={form.low_stock_threshold} onChange={(e) => set('low_stock_threshold', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2" />
-          </div>
-        </div>
+            {/* Unit and Tax */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Unit
+                </label>
+                <select
+                  value={form.unit_id}
+                  onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value="">-- None --</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.short_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-        {form.business_type === 'mobile' && (
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={form.track_serial} onChange={(e) => set('track_serial', e.target.checked)} />
-            {t('products.track_serial')}
-          </label>
-        )}
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Tax Rate
+                </label>
+                <select
+                  value={form.tax_rate_id}
+                  onChange={(e) => setForm({ ...form, tax_rate_id: e.target.value })}
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-2.5 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                >
+                  <option value="">-- None (0%) --</option>
+                  {taxRates.map((tRate) => (
+                    <option key={tRate.id} value={tRate.id}>
+                      {tRate.name} ({tRate.percent}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        {showSerials ? (
-          <div className="space-y-2 rounded-md border border-dashed border-slate-300 dark:border-slate-600 p-2">
-            <div className="text-sm font-medium">{t('products.serials')}</div>
-            {form.serials.map((s, i) => (
-              <div key={i} className="grid grid-cols-3 gap-1">
-                <input placeholder={t('products.imei1')} value={s.imei1} onChange={(e) => setSerialRow(i, 'imei1', e.target.value)} className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-sm" />
-                <input placeholder={t('products.imei2')} value={s.imei2} onChange={(e) => setSerialRow(i, 'imei2', e.target.value)} className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-sm" />
-                <div className="flex gap-1">
-                  <input placeholder={t('products.serial_no')} value={s.serial_no} onChange={(e) => setSerialRow(i, 'serial_no', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-sm" />
-                  {form.serials.length > 1 && (
-                    <button type="button" onClick={() => removeSerialRow(i)} className="text-red-500 text-xs">✕</button>
-                  )}
+            {/* Price Adjustments Grid */}
+            <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 space-y-2">
+              <span className="font-bold text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wide block">
+                Price Configuration
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block font-medium text-slate-700 dark:text-slate-300">
+                    Purchase Price ({currency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.purchase_price}
+                    onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block font-medium text-slate-700 dark:text-slate-300">
+                    MRP ({currency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.mrp}
+                    onChange={(e) => setForm({ ...form, mrp: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  />
                 </div>
               </div>
-            ))}
-            <button type="button" onClick={addSerialRow} className="text-xs text-brand-600 hover:underline">
-              {t('products.add_serial_row')}
-            </button>
-          </div>
-        ) : (
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('products.stock_qty')}</label>
-            <input type="number" value={form.stock_qty} onChange={(e) => set('stock_qty', e.target.value)} className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2" />
-          </div>
-        )}
 
-        {attributeFields.length > 0 && (
-          <div className="space-y-2 rounded-md border border-slate-200 dark:border-slate-700 p-2">
-            <div className="text-sm font-medium">{t('products.attributes')}</div>
-            <div className="grid grid-cols-2 gap-2">
-              {attributeFields.map((field) => (
-                <AttributeField
-                  key={field.field_key}
-                  field={field}
-                  value={form.attributes[field.field_key]}
-                  onChange={(v) => setAttr(field.field_key, v)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <div>
+                  <label className="mb-1 block font-medium text-slate-700 dark:text-slate-300">
+                    Retail Price ({currency}) *
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.selling_price}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        selling_price: e.target.value,
+                        retail_price: e.target.value,
+                      })
+                    }
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none font-semibold text-amber-600"
+                  />
+                </div>
 
-        {form.id && form.business_type !== 'mobile' && (
-          <div className="space-y-2 rounded-md border border-dashed border-slate-300 dark:border-slate-600 p-2">
-            <div className="text-sm font-medium">Variants (e.g. Size, Spice Level, Dimensions)</div>
-            {variants.map((v) => (
-              <div key={v.id} className="flex items-center justify-between rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1 text-xs">
-                <span>{v.variant_name}</span>
-                <span className="text-slate-400">
-                  {Number(v.price_adjustment) !== 0 ? `${Number(v.price_adjustment) > 0 ? '+' : ''}${v.price_adjustment}` : ''} stock:{v.stock_qty}
-                </span>
-                <button type="button" onClick={() => removeVariant(v.id)} className="text-red-500">✕</button>
+                <div>
+                  <label className="mb-1 block font-medium text-slate-700 dark:text-slate-300">
+                    Wholesale ({currency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.wholesale_price}
+                    onChange={(e) => setForm({ ...form, wholesale_price: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium text-slate-700 dark:text-slate-300">
+                    Cust. Special ({currency})
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={form.customer_price}
+                    onChange={(e) => setForm({ ...form, customer_price: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1.5 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
               </div>
-            ))}
-            <div className="grid grid-cols-3 gap-1">
-              <input
-                placeholder="Name (e.g. Large / Extra Spicy)"
-                value={newVariant.variant_name}
-                onChange={(e) => setNewVariant({ ...newVariant, variant_name: e.target.value })}
-                className="col-span-3 rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-xs"
-              />
-              <input
-                type="number"
-                placeholder="Price +/-"
-                value={newVariant.price_adjustment}
-                onChange={(e) => setNewVariant({ ...newVariant, price_adjustment: e.target.value })}
-                className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-xs"
-              />
-              <input
-                type="number"
-                placeholder="Stock"
-                value={newVariant.stock_qty}
-                onChange={(e) => setNewVariant({ ...newVariant, stock_qty: e.target.value })}
-                className="rounded-md border border-slate-300 dark:border-slate-600 bg-transparent px-2 py-1 text-xs"
-              />
-              <button type="button" onClick={addVariant} className="rounded-md bg-brand-600 text-white text-xs py-1">
-                {t('common.add')}
+            </div>
+
+            {/* Stock Quantity & Threshold */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Stock Quantity
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={form.stock_qty}
+                  onChange={(e) => setForm({ ...form, stock_qty: e.target.value })}
+                  placeholder="0"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Low Stock Alert
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={form.low_stock_threshold}
+                  onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })}
+                  placeholder="5"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Barcode & SKU */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  Barcode
+                </label>
+                <input
+                  value={form.barcode}
+                  onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                  placeholder="Scan or type"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block font-semibold text-slate-700 dark:text-slate-300">
+                  SKU
+                </label>
+                <input
+                  value={form.sku}
+                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                  placeholder="e.g. MOB-001"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-2 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="submit"
+                className="flex-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 transition-colors shadow-sm"
+              >
+                {isEditing ? 'Update Product' : t('common.save')}
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Reset
               </button>
             </div>
-          </div>
-        )}
-
-        <div className="flex gap-2 pt-1">
-          <button type="submit" className="rounded-md bg-brand-600 px-4 py-2 text-white text-sm">
-            {t('common.save')}
-          </button>
-          <button type="button" onClick={resetForm} className="rounded-md border px-4 py-2 text-sm">
-            {t('common.cancel')}
-          </button>
+          </form>
         </div>
-      </form>
       )}
     </div>
   );

@@ -29,6 +29,10 @@ class StockController
             $where .= ' AND sm.product_id = :pid';
             $params['pid'] = $_GET['product_id'];
         }
+        if (!empty($_GET['business_type'])) {
+            $where .= ' AND p.business_type = :bt';
+            $params['bt'] = $_GET['business_type'];
+        }
         $stmt = $this->pdo->prepare(
             "SELECT sm.*, p.name AS product_name FROM stock_movements sm
              JOIN products p ON p.id = sm.product_id {$where}
@@ -43,13 +47,20 @@ class StockController
     {
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'inventory.view');
-        $stmt = $this->pdo->query(
+        $where = "WHERE p.is_active = 1 AND p.track_serial = 0
+               AND p.stock_qty <= COALESCE(p.low_stock_threshold, s.low_stock_threshold)";
+        $params = [];
+        if (!empty($_GET['business_type'])) {
+            $where .= ' AND p.business_type = :bt';
+            $params['bt'] = $_GET['business_type'];
+        }
+        $stmt = $this->pdo->prepare(
             "SELECT p.*, COALESCE(p.low_stock_threshold, s.low_stock_threshold) AS effective_threshold
              FROM products p, business_settings s
-             WHERE p.is_active = 1 AND p.track_serial = 0
-               AND p.stock_qty <= COALESCE(p.low_stock_threshold, s.low_stock_threshold)
+             {$where}
              ORDER BY p.stock_qty ASC"
         );
+        $stmt->execute($params);
         Response::json($stmt->fetchAll());
     }
 

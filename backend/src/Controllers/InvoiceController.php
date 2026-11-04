@@ -268,13 +268,16 @@ class InvoiceController
             }
         }
 
+        $customerType = in_array($body['customer_type'] ?? '', ['retail', 'wholesale', 'regular'], true) ? $body['customer_type'] : 'retail';
+        $slogan = $body['slogan'] ?? null;
+
         $stmt = $this->pdo->prepare(
             'INSERT INTO invoices
                 (uuid, invoice_no, customer_id, user_id, subtotal, discount_amount, tax_amount, grand_total,
-                 paid_amount, balance_amount, status, source, created_at)
+                 paid_amount, balance_amount, status, slogan, customer_type, source, created_at)
              VALUES
                 (:uuid, :invoice_no, :customer_id, :user_id, :subtotal, :discount_amount, :tax_amount, :grand_total,
-                 :paid_amount, :balance_amount, \'completed\', :source, :created_at)'
+                 :paid_amount, :balance_amount, \'completed\', :slogan, :customer_type, :source, :created_at)'
         );
         $stmt->execute([
             'uuid' => $uuid,
@@ -287,6 +290,8 @@ class InvoiceController
             'grand_total' => $grandTotal,
             'paid_amount' => $paidAmount,
             'balance_amount' => $balanceAmount,
+            'slogan' => $slogan,
+            'customer_type' => $customerType,
             'source' => $source,
             'created_at' => $createdAt,
         ]);

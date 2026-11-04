@@ -77,7 +77,9 @@ CREATE TABLE categories (
 CREATE TABLE brands (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    business_type ENUM('mobile','furniture','food') NULL COMMENT 'NULL = usable under any business type',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_brand_business (business_type)
 ) ENGINE=InnoDB;
 
 CREATE TABLE units (

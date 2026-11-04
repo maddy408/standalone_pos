@@ -19,6 +19,7 @@ import Income from './pages/Income';
 import InvoicePrint from './pages/InvoicePrint';
 import Invoices from './pages/Invoices';
 import Reports from './pages/Reports';
+import MasterData from './pages/MasterData';
 import Users from './pages/Users';
 import RolesPermissions from './pages/RolesPermissions';
 import AuditLog from './pages/AuditLog';
@@ -51,6 +52,7 @@ export default function App() {
                 <Route path="expenses" element={<Expenses />} />
                 <Route path="income" element={<Income />} />
                 <Route path="reports" element={<Reports />} />
+                <Route path="master-data" element={<MasterData />} />
                 <Route path="users" element={<Users />} />
                 <Route path="users/roles" element={<RolesPermissions />} />
                 <Route path="audit-log" element={<AuditLog />} />

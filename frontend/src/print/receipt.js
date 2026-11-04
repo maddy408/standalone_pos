@@ -12,10 +12,14 @@ export function openReceiptWindow(invoice, settings) {
         <td>${it.product_name_snapshot || it.product_name}</td>
         <td style="text-align:right">${it.qty}</td>
         <td style="text-align:right">${currency}${Number(it.unit_price).toFixed(2)}</td>
-        <td style="text-align:right">${currency}${Number(it.line_total).toFixed(2)}</td>
+        <td style="text-align:right">${currency}${Number(it.line_total || it.unit_price * it.qty).toFixed(2)}</td>
       </tr>`
     )
     .join('');
+
+  const sloganHtml = invoice.slogan
+    ? `<div style="text-align:center; font-style: italic; margin: 8px 0; font-size: 11px;">"${invoice.slogan}"</div><hr />`
+    : '';
 
   const html = `
     <html>
@@ -47,11 +51,12 @@ export function openReceiptWindow(invoice, settings) {
       <hr />
       <table class="totals">
         <tr><td>${t('pos.subtotal')}</td><td style="text-align:right">${currency}${Number(invoice.subtotal).toFixed(2)}</td></tr>
-        <tr><td>${t('pos.discount')}</td><td style="text-align:right">${currency}${Number(invoice.discount_amount).toFixed(2)}</td></tr>
-        <tr><td>${t('pos.tax')}</td><td style="text-align:right">${currency}${Number(invoice.tax_amount).toFixed(2)}</td></tr>
+        <tr><td>${t('pos.discount')}</td><td style="text-align:right">${currency}${Number(invoice.discount_amount || 0).toFixed(2)}</td></tr>
+        <tr><td>${t('pos.tax')}</td><td style="text-align:right">${currency}${Number(invoice.tax_amount || 0).toFixed(2)}</td></tr>
         <tr><td>${t('pos.grand_total')}</td><td style="text-align:right">${currency}${Number(invoice.grand_total).toFixed(2)}</td></tr>
       </table>
       <hr />
+      ${sloganHtml}
       <div class="center">${t('receipt.thank_you')}</div>
       <script>window.onload = () => { window.print(); };</script>
     </body>

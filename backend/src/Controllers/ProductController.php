@@ -54,38 +54,39 @@ class ProductController
                 LEFT JOIN units u ON u.id = p.unit_id
                 LEFT JOIN tax_rates t ON t.id = p.tax_rate_id
                 {$where}
-                ORDER BY p.name ASC LIMIT 1000";
+                ORDER BY p.name ASC
+                LIMIT 500";
+
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
-        $rows = $stmt->fetchAll();
+        $products = $stmt->fetchAll();
 
-        $serialStmt = $this->pdo->prepare(
-            "SELECT id, imei1, imei2, serial_no FROM product_serials WHERE product_id = :pid AND status = 'in_stock' LIMIT 100"
-        );
-        $variantStmt = $this->pdo->prepare(
-            'SELECT * FROM product_variants WHERE product_id = :pid AND is_active = 1'
-        );
-        foreach ($rows as &$row) {
-            $row['attributes'] = $row['attributes'] ? json_decode((string) $row['attributes'], true) : [];
-            if ((int) $row['track_serial'] === 1) {
-                $serialStmt->execute(['pid' => $row['id']]);
-                $row['available_serials'] = $serialStmt->fetchAll();
+        // Attach variants and available serials for each product
+        foreach ($products as &$p) {
+            $p['attributes'] = json_decode((string) $p['attributes'], true) ?? (object) [];
+            $vStmt = $this->pdo->prepare('SELECT * FROM product_variants WHERE product_id = :pid AND is_active = 1');
+            $vStmt->execute(['pid' => $p['id']]);
+            $p['variants'] = $vStmt->fetchAll();
+
+            if (!empty($p['track_serial'])) {
+                $sStmt = $this->pdo->prepare(
+                    "SELECT id, imei1, imei2, serial_no FROM product_serials
+                     WHERE product_id = :pid AND status = 'in_stock'"
+                );
+                $sStmt->execute(['pid' => $p['id']]);
+                $p['available_serials'] = $sStmt->fetchAll();
             } else {
-                $row['available_serials'] = [];
+                $p['available_serials'] = [];
             }
-            $variantStmt->execute(['pid' => $row['id']]);
-            $row['variants'] = array_map(function ($v) {
-                $v['attributes'] = $v['attributes'] ? json_decode((string) $v['attributes'], true) : [];
-                return $v;
-            }, $variantStmt->fetchAll());
         }
 
-        Response::json($rows);
+        Response::json($products);
     }
 
     public function show(string $id): void
     {
-        AuthMiddleware::authenticate();
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'products.view');
         $product = $this->fetchProduct((int) $id);
         if (!$product) {
             Response::error('Product not found', 404);
@@ -98,19 +99,12 @@ class ProductController
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'products.manage');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
-
-        $this->pdo->beginTransaction();
         try {
             $id = $this->saveProduct(null, $body);
-            $this->pdo->commit();
-            AuditLogger::log($this->pdo, $claims, 'create', 'products', $id, ['name' => $body['name'] ?? null]);
-            Response::json($this->fetchProduct($id), 201);
+            AuditLogger::log($this->pdo, $claims, 'create', 'products', $id, ['name' => $body['name'] ?? '']);
+            Response::json(['id' => $id], 201);
         } catch (ValidationException $e) {
-            $this->pdo->rollBack();
             Response::error($e->getMessage(), 422);
-        } catch (\Throwable $e) {
-            $this->pdo->rollBack();
-            Response::error('Failed to save product: ' . $e->getMessage(), 500);
         }
     }
 
@@ -119,19 +113,12 @@ class ProductController
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'products.manage');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
-
-        $this->pdo->beginTransaction();
         try {
             $this->saveProduct((int) $id, $body);
-            $this->pdo->commit();
-            AuditLogger::log($this->pdo, $claims, 'update', 'products', (int) $id, ['name' => $body['name'] ?? null]);
-            Response::json($this->fetchProduct((int) $id));
+            AuditLogger::log($this->pdo, $claims, 'update', 'products', (int) $id, ['name' => $body['name'] ?? '']);
+            Response::json(['ok' => true]);
         } catch (ValidationException $e) {
-            $this->pdo->rollBack();
             Response::error($e->getMessage(), 422);
-        } catch (\Throwable $e) {
-            $this->pdo->rollBack();
-            Response::error('Failed to update product: ' . $e->getMessage(), 500);
         }
     }
 
@@ -139,32 +126,33 @@ class ProductController
     {
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'products.manage');
-        // Soft delete — never destroy historical sale/purchase references.
-        $this->pdo->prepare('UPDATE products SET is_active = 0 WHERE id = :id')->execute(['id' => $id]);
+        $stmt = $this->pdo->prepare('UPDATE products SET is_active = 0 WHERE id = :id');
+        $stmt->execute(['id' => $id]);
         AuditLogger::log($this->pdo, $claims, 'delete', 'products', (int) $id);
         Response::json(['ok' => true]);
     }
 
-    /** GET /api/products/{id}/serials?status=in_stock */
-    public function serials(string $id): void
+    private function fetchProduct(int $id): ?array
     {
-        AuthMiddleware::authenticate();
-        $where = 'WHERE product_id = :pid';
-        $params = ['pid' => $id];
-        if (!empty($_GET['status'])) {
-            $where .= ' AND status = :status';
-            $params['status'] = $_GET['status'];
+        $stmt = $this->pdo->prepare('SELECT * FROM products WHERE id = :id AND is_active = 1');
+        $stmt->execute(['id' => $id]);
+        $p = $stmt->fetch();
+        if (!$p) {
+            return null;
         }
-        $stmt = $this->pdo->prepare("SELECT * FROM product_serials {$where} ORDER BY id DESC");
-        $stmt->execute($params);
-        Response::json($stmt->fetchAll());
+        $p['attributes'] = json_decode((string) $p['attributes'], true) ?? (object) [];
+
+        $vStmt = $this->pdo->prepare('SELECT * FROM product_variants WHERE product_id = :pid AND is_active = 1');
+        $vStmt->execute(['pid' => $id]);
+        $p['variants'] = $vStmt->fetchAll();
+
+        $sStmt = $this->pdo->prepare('SELECT * FROM product_serials WHERE product_id = :pid AND status = \'in_stock\'');
+        $sStmt->execute(['pid' => $id]);
+        $p['available_serials'] = $sStmt->fetchAll();
+
+        return $p;
     }
 
-    /**
-     * Variants let Food/Hotel items carry Size+Spice-style combinations and
-     * Furniture items carry dimension/material combinations, without a
-     * separate table per business type — one generic row per combination.
-     */
     public function storeVariant(string $productId): void
     {
         AuthMiddleware::authenticate();
@@ -228,13 +216,14 @@ class ProductController
             throw new ValidationException('business_type is required');
         }
 
-        // HTML <select> "--" options and blank number inputs arrive as '' —
-        // coerce those to null so they bind cleanly to INT/DECIMAL columns.
         foreach (['category_id', 'brand_id', 'unit_id', 'tax_rate_id', 'supplier_id', 'low_stock_threshold'] as $nullable) {
             if (($body[$nullable] ?? null) === '') {
                 $body[$nullable] = null;
             }
         }
+
+        $this->assertCategoryMatchesBusinessType($body['category_id'] ?? null, $body['business_type']);
+        $this->assertBrandMatchesBusinessType($body['brand_id'] ?? null, $body['business_type']);
 
         $attributes = $body['attributes'] ?? [];
         $attributesJson = json_encode($attributes, JSON_UNESCAPED_UNICODE);
@@ -242,16 +231,21 @@ class ProductController
         $serials = $trackSerial ? ($body['serials'] ?? []) : [];
         $stockQty = $trackSerial ? count($serials) : (float) ($body['stock_qty'] ?? 0);
 
+        $retailPrice = (float) ($body['retail_price'] ?? $body['selling_price'] ?? 0);
+        $wholesalePrice = (float) ($body['wholesale_price'] ?? 0);
+        $customerPrice = (float) ($body['customer_price'] ?? 0);
+        $sellingPrice = (float) ($body['selling_price'] ?? $retailPrice);
+
         if ($id === null) {
             $stmt = $this->pdo->prepare(
                 'INSERT INTO products
                     (uuid, business_type, name, category_id, brand_id, unit_id, tax_rate_id, supplier_id,
-                     barcode, sku, purchase_price, selling_price, mrp, stock_qty, low_stock_threshold,
-                     track_serial, attributes)
+                     barcode, sku, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
+                     stock_qty, low_stock_threshold, track_serial, attributes)
                  VALUES
                     (:uuid, :business_type, :name, :category_id, :brand_id, :unit_id, :tax_rate_id, :supplier_id,
-                     :barcode, :sku, :purchase_price, :selling_price, :mrp, :stock_qty, :low_stock_threshold,
-                     :track_serial, :attributes)'
+                     :barcode, :sku, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
+                     :stock_qty, :low_stock_threshold, :track_serial, :attributes)'
             );
             $stmt->execute([
                 'uuid' => $body['uuid'] ?? UuidHelper::v4(),
@@ -265,8 +259,11 @@ class ProductController
                 'barcode' => $body['barcode'] ?? null,
                 'sku' => $body['sku'] ?? null,
                 'purchase_price' => (float) ($body['purchase_price'] ?? 0),
-                'selling_price' => (float) ($body['selling_price'] ?? 0),
+                'selling_price' => $sellingPrice,
                 'mrp' => (float) ($body['mrp'] ?? 0),
+                'retail_price' => $retailPrice,
+                'wholesale_price' => $wholesalePrice,
+                'customer_price' => $customerPrice,
                 'stock_qty' => $stockQty,
                 'low_stock_threshold' => $body['low_stock_threshold'] ?? null,
                 'track_serial' => $trackSerial ? 1 : 0,
@@ -298,12 +295,21 @@ class ProductController
             return $newId;
         }
 
+        // On edit, update stock_qty directly as requested, and record a movement if changed
+        $curStockStmt = $this->pdo->prepare('SELECT stock_qty FROM products WHERE id = :id');
+        $curStockStmt->execute(['id' => $id]);
+        $oldStock = (float) ($curStockStmt->fetchColumn() ?? 0);
+
+        $newStock = isset($body['stock_qty']) ? (float) $body['stock_qty'] : $oldStock;
+
         $stmt = $this->pdo->prepare(
             'UPDATE products SET
                 business_type = :business_type, name = :name, category_id = :category_id, brand_id = :brand_id,
                 unit_id = :unit_id, tax_rate_id = :tax_rate_id, supplier_id = :supplier_id, barcode = :barcode,
                 sku = :sku, purchase_price = :purchase_price, selling_price = :selling_price, mrp = :mrp,
-                low_stock_threshold = :low_stock_threshold, track_serial = :track_serial, attributes = :attributes
+                retail_price = :retail_price, wholesale_price = :wholesale_price, customer_price = :customer_price,
+                stock_qty = :stock_qty, low_stock_threshold = :low_stock_threshold, track_serial = :track_serial,
+                attributes = :attributes
              WHERE id = :id'
         );
         $stmt->execute([
@@ -317,40 +323,52 @@ class ProductController
             'barcode' => $body['barcode'] ?? null,
             'sku' => $body['sku'] ?? null,
             'purchase_price' => (float) ($body['purchase_price'] ?? 0),
-            'selling_price' => (float) ($body['selling_price'] ?? 0),
+            'selling_price' => $sellingPrice,
             'mrp' => (float) ($body['mrp'] ?? 0),
+            'retail_price' => $retailPrice,
+            'wholesale_price' => $wholesalePrice,
+            'customer_price' => $customerPrice,
+            'stock_qty' => $newStock,
             'low_stock_threshold' => $body['low_stock_threshold'] ?? null,
             'track_serial' => !empty($body['track_serial']) ? 1 : 0,
             'attributes' => $attributesJson,
             'id' => $id,
         ]);
 
+        if (abs($newStock - $oldStock) > 0.0001) {
+            $diff = $newStock - $oldStock;
+            $this->pdo->prepare(
+                'INSERT INTO stock_movements (uuid, product_id, qty_change, movement_type, ref_type, notes)
+                 VALUES (:uuid, :pid, :qty, \'adjustment\', \'manual\', \'Manual edit from product form\')'
+            )->execute(['uuid' => UuidHelper::v4(), 'pid' => $id, 'qty' => $diff]);
+        }
+
         return $id;
     }
 
-    private function fetchProduct(int $id): ?array
+    private function assertCategoryMatchesBusinessType(mixed $categoryId, string $businessType): void
     {
-        $stmt = $this->pdo->prepare(
-            'SELECT p.*, c.name AS category_name, b.name AS brand_name, u.short_code AS unit_code,
-                    t.percent AS tax_percent
-             FROM products p
-             LEFT JOIN categories c ON c.id = p.category_id
-             LEFT JOIN brands b ON b.id = p.brand_id
-             LEFT JOIN units u ON u.id = p.unit_id
-             LEFT JOIN tax_rates t ON t.id = p.tax_rate_id
-             WHERE p.id = :id'
-        );
-        $stmt->execute(['id' => $id]);
-        $product = $stmt->fetch();
-        if (!$product) {
-            return null;
+        if ($categoryId === null) {
+            return;
         }
-        $product['attributes'] = $product['attributes'] ? json_decode((string) $product['attributes'], true) : [];
+        $stmt = $this->pdo->prepare('SELECT business_type FROM categories WHERE id = :id');
+        $stmt->execute(['id' => $categoryId]);
+        $row = $stmt->fetch();
+        if ($row && $row['business_type'] !== $businessType) {
+            throw new ValidationException('Category does not belong to the active business type');
+        }
+    }
 
-        $variants = $this->pdo->prepare('SELECT * FROM product_variants WHERE product_id = :id AND is_active = 1');
-        $variants->execute(['id' => $id]);
-        $product['variants'] = $variants->fetchAll();
-
-        return $product;
+    private function assertBrandMatchesBusinessType(mixed $brandId, string $businessType): void
+    {
+        if ($brandId === null) {
+            return;
+        }
+        $stmt = $this->pdo->prepare('SELECT business_type FROM brands WHERE id = :id');
+        $stmt->execute(['id' => $brandId]);
+        $row = $stmt->fetch();
+        if ($row && $row['business_type'] !== null && $row['business_type'] !== $businessType) {
+            throw new ValidationException('Brand does not belong to the active business type');
+        }
     }
 }

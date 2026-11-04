@@ -12,6 +12,7 @@
     "expenses": "Expenses",
     "income": "Income",
     "reports": "Reports",
+    "master_data": "Master Data",
     "users": "Users & Roles",
     "audit_log": "Audit Log",
     "settings": "Master Settings",
@@ -347,6 +348,20 @@
       "lifetime_sales": "Lifetime Sales",
       "lifetime_purchases": "Lifetime Purchases",
       "method": "Method"
+    }
+  },
+  "master_data": {
+    "title": "Master Data",
+    "scoped_hint": "Showing entries for the currently active business type only.",
+    "short_code": "Short Code",
+    "percent": "Percent",
+    "universal": "All business types",
+    "category_bt_hint": "A category's business type is set when it's created and can't be changed afterwards — this keeps every product that uses it valid.",
+    "tabs": {
+      "categories": "Categories",
+      "brands": "Brands",
+      "units": "Units",
+      "tax_rates": "Tax Rates"
     }
   }
 }

@@ -44,14 +44,21 @@ class ReportController
         );
         $byDay->execute(['from' => $from, 'to' => $to]);
 
+        $productFilter = '';
+        $productParams = ['from' => $from, 'to' => $to];
+        if (!empty($_GET['business_type'])) {
+            $productFilter = ' AND p.business_type = :bt';
+            $productParams['bt'] = $_GET['business_type'];
+        }
         $byProduct = $this->pdo->prepare(
             "SELECT p.name AS product_name, SUM(ii.qty) AS qty_sold, SUM(ii.line_total) AS total
              FROM invoice_items ii
              JOIN invoices i ON i.id = ii.invoice_id AND i.status = 'completed' AND i.created_at BETWEEN :from AND :to
              LEFT JOIN products p ON p.id = ii.product_id
+             WHERE 1=1 {$productFilter}
              GROUP BY ii.product_id, p.name ORDER BY total DESC LIMIT 50"
         );
-        $byProduct->execute(['from' => $from, 'to' => $to]);
+        $byProduct->execute($productParams);
 
         Response::json([
             'totals' => $totals->fetch(),
@@ -132,12 +139,19 @@ class ReportController
     {
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'reports.view');
-        $stmt = $this->pdo->query(
+        $where = 'WHERE p.is_active = 1';
+        $params = [];
+        if (!empty($_GET['business_type'])) {
+            $where .= ' AND p.business_type = :bt';
+            $params['bt'] = $_GET['business_type'];
+        }
+        $stmt = $this->pdo->prepare(
             "SELECT p.id, p.name, p.business_type, p.stock_qty, p.purchase_price, p.selling_price,
                     (p.stock_qty * p.purchase_price) AS stock_value_at_cost,
                     (p.stock_qty * p.selling_price) AS stock_value_at_price
-             FROM products p WHERE p.is_active = 1 ORDER BY p.name"
+             FROM products p {$where} ORDER BY p.name"
         );
+        $stmt->execute($params);
         $rows = $stmt->fetchAll();
         $totalCost = array_sum(array_column($rows, 'stock_value_at_cost'));
         $totalPrice = array_sum(array_column($rows, 'stock_value_at_price'));
@@ -150,15 +164,21 @@ class ReportController
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'reports.view');
         [$from, $to] = $this->dateRange();
+        $where = "WHERE sm.movement_type = 'adjustment' AND sm.created_at BETWEEN :from AND :to";
+        $params = ['from' => $from, 'to' => $to];
+        if (!empty($_GET['business_type'])) {
+            $where .= ' AND p.business_type = :bt';
+            $params['bt'] = $_GET['business_type'];
+        }
         $stmt = $this->pdo->prepare(
             "SELECT sm.*, p.name AS product_name, u.full_name AS user_name
              FROM stock_movements sm
              JOIN products p ON p.id = sm.product_id
              LEFT JOIN users u ON u.id = sm.user_id
-             WHERE sm.movement_type = 'adjustment' AND sm.created_at BETWEEN :from AND :to
+             {$where}
              ORDER BY sm.created_at DESC"
         );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute($params);
         Response::json($stmt->fetchAll());
     }
 
@@ -195,6 +215,12 @@ class ReportController
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'reports.view');
         [$from, $to] = $this->dateRange();
+        $productFilter = '';
+        $params = ['from' => $from, 'to' => $to];
+        if (!empty($_GET['business_type'])) {
+            $productFilter = ' AND p.business_type = :bt';
+            $params['bt'] = $_GET['business_type'];
+        }
         $stmt = $this->pdo->prepare(
             "SELECT t.name AS tax_name, t.percent, COALESCE(SUM(ii.tax_amount),0) AS tax_collected,
                     COALESCE(SUM(ii.line_total),0) AS taxable_sales
@@ -202,9 +228,10 @@ class ReportController
              JOIN invoices i ON i.id = ii.invoice_id AND i.status = 'completed' AND i.created_at BETWEEN :from AND :to
              LEFT JOIN products p ON p.id = ii.product_id
              LEFT JOIN tax_rates t ON t.id = p.tax_rate_id
+             WHERE 1=1 {$productFilter}
              GROUP BY t.id, t.name, t.percent ORDER BY tax_collected DESC"
         );
-        $stmt->execute(['from' => $from, 'to' => $to]);
+        $stmt->execute($params);
         Response::json($stmt->fetchAll());
     }
 

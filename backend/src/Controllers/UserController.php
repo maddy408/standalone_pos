@@ -42,13 +42,14 @@ class UserController
         }
 
         $stmt = $this->pdo->prepare(
-            'INSERT INTO users (username, password_hash, full_name, role) VALUES (:username, :hash, :full_name, :role)'
+            'INSERT INTO users (username, password_hash, full_name, role, is_active) VALUES (:username, :hash, :full_name, :role, :is_active)'
         );
         $stmt->execute([
             'username' => $body['username'],
             'hash' => password_hash($body['password'], PASSWORD_BCRYPT),
             'full_name' => $body['full_name'],
             'role' => $role,
+            'is_active' => isset($body['is_active']) ? ((int)$body['is_active'] ? 1 : 0) : 1,
         ]);
         $id = (int) $this->pdo->lastInsertId();
         AuditLogger::log($this->pdo, $claims, 'create', 'users', $id, ['username' => $body['username'], 'role' => $role]);
@@ -61,11 +62,16 @@ class UserController
         PermissionMiddleware::require($claims, 'users.manage');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
+        $isActiveVal = 1;
+        if (isset($body['is_active'])) {
+            $isActiveVal = ($body['is_active'] === true || $body['is_active'] === 1 || $body['is_active'] === '1') ? 1 : 0;
+        }
+
         $sets = ['full_name = :full_name', 'role = :role', 'is_active = :is_active'];
         $params = [
             'full_name' => $body['full_name'] ?? '',
             'role' => in_array($body['role'] ?? '', ['admin', 'manager', 'cashier'], true) ? $body['role'] : 'cashier',
-            'is_active' => !empty($body['is_active']) ? 1 : 0,
+            'is_active' => $isActiveVal,
             'id' => $id,
         ];
         if (!empty($body['password'])) {
