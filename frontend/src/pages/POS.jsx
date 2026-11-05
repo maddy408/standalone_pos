@@ -1083,23 +1083,6 @@ export default function POS() {
           )}
         </div>
 
-        {/* Automatic Offers & Member Savings Banner */}
-        <div className="p-2.5 border-t border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/40 grid grid-cols-2 gap-2 text-[10px]">
-          <div className="p-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] flex items-center gap-2">
-            <Gift className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2] flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate">Automatic Offers</div>
-              <div className="text-[9px] text-[#5A6B82] truncate">Buy 2 Get 1 Free Applied</div>
-            </div>
-          </div>
-          <div className="p-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] flex items-center gap-2">
-            <Crown className="w-4 h-4 text-amber-500 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate">Member Savings</div>
-              <div className="text-[9px] text-emerald-600 font-bold truncate">You saved ₹27.50</div>
-            </div>
-          </div>
-        </div>
 
         {/* Price Breakdown Summary */}
         <div className="p-3 border-t border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-1.5 text-xs">
