@@ -137,8 +137,6 @@ export default function Products() {
     }
   }, [settings?.business_type]);
 
- [settings?.business_type]);
-
   // Barcode Auto Generator
   const generateBarcode = () => {
     const prefix = businessType.toUpperCase().substring(0, 3);
