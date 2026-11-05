@@ -60,6 +60,27 @@ export default function Dashboard() {
     return products.filter((p) => Number(p.stock_qty || 0) <= 0).length;
   }, [products]);
 
+  const [expensesList, setExpensesList] = useState([]);
+  const [incomeList, setIncomeList] = useState([]);
+
+  useEffect(() => {
+    api.get('/expenses').then(({ data }) => setExpensesList(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
+    api.get('/income').then(({ data }) => setIncomeList(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
+  }, []);
+
+  const totalExpense = useMemo(() => {
+    return expensesList.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  }, [expensesList]);
+
+  const totalIncome = useMemo(() => {
+    const extraIncome = incomeList.reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
+    return totalSalesRevenue + extraIncome;
+  }, [incomeList, totalSalesRevenue]);
+
+  const netProfit = useMemo(() => {
+    return totalIncome - totalExpense;
+  }, [totalIncome, totalExpense]);
+
   // Order status distribution
   const orderStats = useMemo(() => {
     const total = invoices.length || 0;
