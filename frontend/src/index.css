@@ -3,31 +3,31 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #F7F5FC;
+  --bg-main: #F4F7FB;
   --card-bg: #FFFFFF;
-  --secondary-surface: #EDE7F7;
-  --border-color: #E8E3EF;
-  --text-main: #282431;
-  --text-secondary: #716B7C;
-  --primary-color: #7652B5;
-  --primary-hover: #5B3B91;
+  --secondary-surface: #E2EDF8;
+  --border-color: #DCE5EF;
+  --text-main: #1C2736;
+  --text-secondary: #5A6B82;
+  --primary-color: #0A4174;
+  --primary-hover: #062E52;
   --text-on-primary: #FFFFFF;
   --surface: #FFFFFF;
-  --surface-alt: #EDE7F7;
+  --surface-alt: #E2EDF8;
 }
 
 .dark {
-  --bg-main: #17151D;
-  --card-bg: #211D2A;
-  --secondary-surface: #2B2536;
-  --border-color: #393244;
-  --text-main: #F5F2F9;
-  --text-secondary: #B8B0C4;
-  --primary-color: #A98ADB;
-  --primary-hover: #C0A5EA;
-  --text-on-primary: #17151D;
-  --surface: #211D2A;
-  --surface-alt: #2B2536;
+  --bg-main: #0B131E;
+  --card-bg: #121E2C;
+  --secondary-surface: #1A2A3D;
+  --border-color: #22354B;
+  --text-main: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --primary-color: #4A8CD2;
+  --primary-hover: #6BA3E0;
+  --text-on-primary: #0B131E;
+  --surface: #121E2C;
+  --surface-alt: #1A2A3D;
 }
 
 html, body, #root {
@@ -51,15 +51,15 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #DDD2F0;
+  background: #C5D8ED;
   border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #393244;
+  background: #22354B;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #C5B3E6;
+  background: #9BBFE0;
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #5B3B91;
+  background: #062E52;
 }

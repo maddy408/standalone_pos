@@ -57,21 +57,21 @@ export default function PwaInstallPrompt() {
   if (!showPrompt || dismissed) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#211D2A] text-[#F5F2F9] px-4 py-2.5 shadow-2xl flex items-center justify-between border-t border-[#393244]">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#121E2C] text-[#F1F5F9] px-4 py-2.5 shadow-2xl flex items-center justify-between border-t border-[#22354B]">
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Download className="w-4 h-4 text-[#A98ADB] animate-bounce" />
+        <Download className="w-4 h-4 text-[#4A8CD2] animate-bounce" />
         <span>Install Universal POS App on your device for fast offline access!</span>
       </div>
       <div className="flex items-center gap-3">
         <button
           onClick={handleClose}
-          className="text-xs text-[#B8B0C4] hover:text-white transition-colors"
+          className="text-xs text-[#94A3B8] hover:text-white transition-colors"
         >
           Close
         </button>
         <button
           onClick={handleInstall}
-          className="bg-[#7652B5] hover:bg-[#5B3B91] text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-colors shadow-sm flex items-center gap-1.5"
+          className="bg-[#0A4174] hover:bg-[#062E52] text-white font-bold px-4 py-1.5 rounded-lg text-xs transition-colors shadow-sm flex items-center gap-1.5"
         >
           <Download className="w-3.5 h-3.5" />
           Install App

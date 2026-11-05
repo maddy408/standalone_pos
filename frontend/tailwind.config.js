@@ -6,17 +6,17 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#F7F5FC',
-          100: '#EDE7F7',
-          200: '#DDD2F0',
-          300: '#C5B3E6',
-          400: '#A98ADB',
-          500: '#7652B5', // Primary Royal Purple
-          600: '#5B3B91', // Hover Purple
-          700: '#482D75',
-          800: '#341E57',
-          900: '#21133B',
-          DEFAULT: '#7652B5',
+          50: '#F4F7FB',
+          100: '#E2EDF8',
+          200: '#C5D8ED',
+          300: '#9BBFE0',
+          400: '#4A8CD2',
+          500: '#0A4174', // Primary Royal Blue
+          600: '#062E52', // Hover Royal Blue
+          700: '#052441',
+          800: '#041A30',
+          900: '#02101F',
+          DEFAULT: '#0A4174',
         },
         surface: {
           DEFAULT: 'var(--card-bg)',

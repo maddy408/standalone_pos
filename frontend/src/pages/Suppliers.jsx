@@ -105,17 +105,17 @@ export default function Suppliers() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Internal Navigation Tabs */}
-      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#DCE5EF] dark:border-[#22354B]">
         <Link
           to="/purchases"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
         >
           <ShoppingBag className="w-3.5 h-3.5" />
           <span>Purchases</span>
         </Link>
         <Link
           to="/suppliers"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-xs"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-xs"
         >
           <Truck className="w-3.5 h-3.5" />
           <span>Suppliers</span>
@@ -126,26 +126,26 @@ export default function Suppliers() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              <Truck className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
+              <Truck className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
               {t('suppliers.title')}
             </h1>
-            <p className="text-xs text-[#716B7C]">Manage vendors, purchase logs & accounts payable</p>
+            <p className="text-xs text-[#5A6B82]">Manage vendors, purchase logs & accounts payable</p>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, phone..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm">
           <table className="min-w-full text-xs">
-            <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
+            <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
               <tr>
                 <th className="px-3.5 py-2.5">{t('common.name')}</th>
                 <th className="px-3.5 py-2.5">Contact</th>
@@ -153,31 +153,31 @@ export default function Suppliers() {
                 <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
+            <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
               {suppliers.map((s) => {
                 const bal = Number(s.balance || 0);
                 return (
-                  <tr key={s.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
+                  <tr key={s.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
                     <td className="px-3.5 py-2.5 font-medium">
                       <div>{s.name}</div>
-                      {s.address && <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] truncate max-w-xs">{s.address}</div>}
+                      {s.address && <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate max-w-xs">{s.address}</div>}
                     </td>
                     <td className="px-3.5 py-2.5 space-y-0.5">
                       {s.phone && (
-                        <div className="flex items-center gap-1.5 text-[#716B7C] dark:text-[#B8B0C4]">
-                          <Phone className="w-3 h-3 text-[#716B7C] dark:text-[#B8B0C4]" />
+                        <div className="flex items-center gap-1.5 text-[#5A6B82] dark:text-[#94A3B8]">
+                          <Phone className="w-3 h-3 text-[#5A6B82] dark:text-[#94A3B8]" />
                           <span>{s.phone}</span>
                         </div>
                       )}
                       {s.email && (
-                        <div className="flex items-center gap-1.5 text-[#716B7C]">
-                          <Mail className="w-3 h-3 text-[#716B7C] dark:text-[#B8B0C4]" />
+                        <div className="flex items-center gap-1.5 text-[#5A6B82]">
+                          <Mail className="w-3 h-3 text-[#5A6B82] dark:text-[#94A3B8]" />
                           <span className="truncate max-w-xs">{s.email}</span>
                         </div>
                       )}
                     </td>
                     <td className="px-3.5 py-2.5 text-right font-bold">
-                      <span className={bal > 0 ? 'text-[#7652B5] dark:text-[#A98ADB] bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded' : 'text-[#716B7C] dark:text-[#B8B0C4]'}>
+                      <span className={bal > 0 ? 'text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D] px-2 py-0.5 rounded' : 'text-[#5A6B82] dark:text-[#94A3B8]'}>
                         {formatCurrency(bal, currency)}
                       </span>
                     </td>
@@ -186,14 +186,14 @@ export default function Suppliers() {
                         <button
                           onClick={() => startEdit(s)}
                           title="Edit Supplier"
-                          className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
+                          className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => viewDetails(s)}
                           title="Purchase History"
-                          className="p-1.5 text-[#716B7C] hover:text-[#282431] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
+                          className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
                         >
                           <FileText className="w-3.5 h-3.5" />
                         </button>
@@ -204,7 +204,7 @@ export default function Suppliers() {
               })}
               {suppliers.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-[#716B7C] dark:text-[#B8B0C4]">
+                  <td colSpan={4} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                     No suppliers found
                   </td>
                 </tr>
@@ -215,15 +215,15 @@ export default function Suppliers() {
 
         {/* Detailed Supplier View */}
         {details && (
-          <div className="rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] p-4 shadow-sm text-xs">
-            <div className="mb-3 flex justify-between items-center pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9] flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <div className="rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] p-4 shadow-sm text-xs">
+            <div className="mb-3 flex justify-between items-center pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
                 Ledger History — {details.name}
               </h3>
               <button
                 onClick={() => setDetails(null)}
-                className="p-1 text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] rounded"
+                className="p-1 text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] rounded"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -231,31 +231,31 @@ export default function Suppliers() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-semibold text-[#282431] dark:text-[#B8B0C4] mb-2">Recent Purchases</h4>
+                <h4 className="font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-2">Recent Purchases</h4>
                 <ul className="space-y-1.5">
                   {(details.purchase_history || []).map((p) => (
-                    <li key={p.id} className="flex justify-between p-2 rounded bg-[#F7F5FC] dark:bg-[#2B2536]/50">
+                    <li key={p.id} className="flex justify-between p-2 rounded bg-[#F4F7FB] dark:bg-[#1A2A3D]/50">
                       <span>{p.purchase_no}</span>
                       <span className="font-semibold">{formatCurrency(p.grand_total, currency)}</span>
                     </li>
                   ))}
                   {(!details.purchase_history || details.purchase_history.length === 0) && (
-                    <li className="text-[#716B7C] dark:text-[#B8B0C4] italic">No purchase history</li>
+                    <li className="text-[#5A6B82] dark:text-[#94A3B8] italic">No purchase history</li>
                   )}
                 </ul>
               </div>
 
               <div>
-                <h4 className="font-semibold text-[#282431] dark:text-[#B8B0C4] mb-2">Recent Payments</h4>
+                <h4 className="font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-2">Recent Payments</h4>
                 <ul className="space-y-1.5">
                   {(details.payment_history || []).map((p) => (
-                    <li key={p.id} className="flex justify-between p-2 rounded bg-[#F7F5FC] dark:bg-[#2B2536]/50">
+                    <li key={p.id} className="flex justify-between p-2 rounded bg-[#F4F7FB] dark:bg-[#1A2A3D]/50">
                       <span>{new Date(p.created_at).toLocaleDateString()}</span>
                       <span className="font-semibold text-emerald-600">{formatCurrency(p.amount, currency)}</span>
                     </li>
                   ))}
                   {(!details.payment_history || details.payment_history.length === 0) && (
-                    <li className="text-[#716B7C] dark:text-[#B8B0C4] italic">No payment history</li>
+                    <li className="text-[#5A6B82] dark:text-[#94A3B8] italic">No payment history</li>
                   )}
                 </ul>
               </div>
@@ -265,10 +265,10 @@ export default function Suppliers() {
       </div>
 
       {/* Supplier Form */}
-      <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
-        <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+      <div className="rounded-xl bg-white dark:bg-[#121E2C] p-5 shadow-sm border border-[#DCE5EF] dark:border-[#22354B] space-y-4 self-start">
+        <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
           <h2 className="font-bold text-sm flex items-center gap-2">
-            <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+            <Plus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
             {isEditing ? 'Edit Supplier' : t('suppliers.add_supplier')}
           </h2>
           {isEditing && (
@@ -278,7 +278,7 @@ export default function Suppliers() {
                 setIsEditing(false);
                 setErrors({});
               }}
-              className="text-xs text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
+              className="text-xs text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] flex items-center gap-1"
             >
               <X className="w-3 h-3" /> Cancel
             </button>
@@ -287,7 +287,7 @@ export default function Suppliers() {
 
         <form onSubmit={submit} className="space-y-3 text-xs">
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Supplier Name *
             </label>
             <input
@@ -295,14 +295,14 @@ export default function Suppliers() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Apex Distributors"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
+                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#DCE5EF] dark:border-[#22354B] focus:ring-[#0A4174]'
               }`}
             />
             {errors.name && <p className="mt-1 text-[11px] text-red-500">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Phone Number (10 Digits)
             </label>
             <input
@@ -311,14 +311,14 @@ export default function Suppliers() {
               onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
               placeholder="e.g. 9876543210"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
+                errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-[#DCE5EF] dark:border-[#22354B] focus:ring-[#0A4174]'
               }`}
             />
             {errors.phone && <p className="mt-1 text-[11px] text-red-500">{errors.phone}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Email Address
             </label>
             <input
@@ -327,26 +327,26 @@ export default function Suppliers() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="e.g. contact@supplier.com"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
+                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#DCE5EF] dark:border-[#22354B] focus:ring-[#0A4174]'
               }`}
             />
             {errors.email && <p className="mt-1 text-[11px] text-red-500">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               GSTIN
             </label>
             <input
               value={form.gstin}
               onChange={(e) => setForm({ ...form, gstin: e.target.value.toUpperCase() })}
               placeholder="e.g. 33AAAAA0000A1Z5"
-              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5] uppercase"
+              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174] uppercase"
             />
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Address
             </label>
             <textarea
@@ -354,14 +354,14 @@ export default function Suppliers() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder="Warehouse / Office address"
-              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5]"
+              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
             />
           </div>
 
           <div className="pt-2 flex gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 transition-colors shadow-sm"
+              className="flex-1 rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-bold py-2 transition-colors shadow-sm"
             >
               {isEditing ? 'Update Supplier' : t('common.save')}
             </button>
@@ -372,7 +372,7 @@ export default function Suppliers() {
                 setIsEditing(false);
                 setErrors({});
               }}
-              className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] px-4 py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+              className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] px-4 py-2 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
             >
               Reset
             </button>

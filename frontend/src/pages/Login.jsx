@@ -31,20 +31,20 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#F7F5FC] dark:bg-[#17151D] p-4 font-sans">
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] dark:bg-[#0B131E] p-4 font-sans">
       <form
         onSubmit={submit}
-        className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#211D2A] p-8 shadow-xl border border-[#E8E3EF] dark:border-[#393244]"
+        className="w-full max-w-sm rounded-3xl bg-white dark:bg-[#121E2C] p-8 shadow-xl border border-[#DCE5EF] dark:border-[#22354B]"
       >
         <div className="flex justify-center mb-5">
-          <div className="w-14 h-14 rounded-2xl bg-[#7652B5] dark:bg-[#A98ADB] text-white dark:text-[#17151D] flex items-center justify-center font-black text-2xl shadow-md">
+          <div className="w-14 h-14 rounded-2xl bg-[#0A4174] dark:bg-[#4A8CD2] text-white dark:text-[#0B131E] flex items-center justify-center font-black text-2xl shadow-md">
             UP
           </div>
         </div>
-        <h1 className="mb-1 text-2xl font-black text-[#282431] dark:text-[#F5F2F9] text-center tracking-tight">
+        <h1 className="mb-1 text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] text-center tracking-tight">
           {t('auth.login_title')}
         </h1>
-        <p className="text-xs text-[#716B7C] dark:text-[#B8B0C4] text-center mb-6">
+        <p className="text-xs text-[#5A6B82] dark:text-[#94A3B8] text-center mb-6">
           Universal POS & Management System
         </p>
 
@@ -56,40 +56,40 @@ export default function Login() {
 
         <div className="space-y-4 text-xs">
           <div>
-            <label className="mb-1.5 block font-semibold text-[#282431] dark:text-[#F5F2F9]">
+            <label className="mb-1.5 block font-semibold text-[#1C2736] dark:text-[#F1F5F9]">
               {t('auth.username')}
             </label>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2.5 focus:ring-2 focus:ring-[#7652B5]/30 focus:border-[#7652B5] focus:outline-none transition-colors"
+              className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-[#1C2736] dark:text-[#F1F5F9] px-3.5 py-2.5 focus:ring-2 focus:ring-[#0A4174]/30 focus:border-[#0A4174] focus:outline-none transition-colors"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block font-semibold text-[#282431] dark:text-[#F5F2F9]">
+            <label className="mb-1.5 block font-semibold text-[#1C2736] dark:text-[#F1F5F9]">
               {t('auth.password')}
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-[#282431] dark:text-[#F5F2F9] px-3.5 py-2.5 focus:ring-2 focus:ring-[#7652B5]/30 focus:border-[#7652B5] focus:outline-none transition-colors"
+              className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-[#1C2736] dark:text-[#F1F5F9] px-3.5 py-2.5 focus:ring-2 focus:ring-[#0A4174]/30 focus:border-[#0A4174] focus:outline-none transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] py-3 font-bold text-white dark:text-[#17151D] shadow-md transition-colors disabled:opacity-50 mt-3 text-sm"
+            className="w-full rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] py-3 font-bold text-white dark:text-[#0B131E] shadow-md transition-colors disabled:opacity-50 mt-3 text-sm"
           >
             {loading ? 'Signing in...' : t('auth.login')}
           </button>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-[#E8E3EF] dark:border-[#393244] text-center text-xs text-[#716B7C] dark:text-[#B8B0C4] bg-[#F7F5FC] dark:bg-[#17151D] p-3 rounded-xl border">
-          Default: <span className="font-mono font-semibold text-[#7652B5] dark:text-[#A98ADB]">admin</span> / <span className="font-mono font-semibold text-[#7652B5] dark:text-[#A98ADB]">Admin@123</span>
+        <div className="mt-6 pt-4 border-t border-[#DCE5EF] dark:border-[#22354B] text-center text-xs text-[#5A6B82] dark:text-[#94A3B8] bg-[#F4F7FB] dark:bg-[#0B131E] p-3 rounded-xl border">
+          Default: <span className="font-mono font-semibold text-[#0A4174] dark:text-[#4A8CD2]">admin</span> / <span className="font-mono font-semibold text-[#0A4174] dark:text-[#4A8CD2]">Admin@123</span>
         </div>
       </form>
     </div>

@@ -49,9 +49,19 @@ export default function MasterData() {
       : tab === 'tax_rates'
       ? '/lookup/tax-rates'
       : `/lookup/${tab}`;
+
   const loadCategories = () => {
     api.get('/categories', { params: { business_type: settings?.business_type || undefined } })
-      .then(({ data }) => setCategoriesList(data));
+      .then(async ({ data }) => {
+        let list = Array.isArray(data) ? data : [];
+        if (list.length === 0 && settings?.business_type) {
+          try {
+            const all = await api.get('/categories');
+            if (Array.isArray(all.data) && all.data.length > 0) list = all.data;
+          } catch {}
+        }
+        setCategoriesList(list);
+      }).catch(() => {});
   };
 
   const load = () => {
@@ -61,7 +71,16 @@ export default function MasterData() {
         params.business_type = settings.business_type;
       }
     }
-    api.get(endpoint, { params }).then(({ data }) => setRows(data));
+    api.get(endpoint, { params }).then(async ({ data }) => {
+      let list = Array.isArray(data) ? data : [];
+      if (list.length === 0 && (tab === 'categories' || tab === 'brands') && settings?.business_type) {
+        try {
+          const all = await api.get(endpoint);
+          if (Array.isArray(all.data) && all.data.length > 0) list = all.data;
+        } catch {}
+      }
+      setRows(list);
+    }).catch(() => {});
     if (tab === 'categories') {
       loadCategories();
     }
@@ -212,10 +231,10 @@ export default function MasterData() {
   return (
     <div className="space-y-5">
       {/* Tab Navigation Bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-[#E8E3EF] dark:border-[#393244] pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#DCE5EF] dark:border-[#22354B] pb-3">
         <Link
           to="/products"
-          className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244]"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] border border-[#DCE5EF] dark:border-[#22354B]"
         >
           <Package className="w-4 h-4" />
           <span>All Products</span>
@@ -229,8 +248,8 @@ export default function MasterData() {
               onClick={() => handleTabChange(tItem.id)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold tracking-wide transition-colors ${
                 active
-                  ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-sm'
-                  : 'bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244]'
+                  ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-sm'
+                  : 'bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] border border-[#DCE5EF] dark:border-[#22354B]'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -244,23 +263,23 @@ export default function MasterData() {
         {/* Table View */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[#716B7C]">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#5A6B82]">
               {TABS.find((x) => x.id === tab)?.label} List
             </h2>
             <div className="relative w-64">
-              <Search className="w-3.5 h-3.5 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm">
             <table className="min-w-full text-xs">
-              <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
+              <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
                 <tr>
                   <th className="px-3.5 py-2.5">Name</th>
                   {tab === 'categories' && <th className="px-3.5 py-2.5">Category Type</th>}
@@ -272,22 +291,22 @@ export default function MasterData() {
                   <th className="px-3.5 py-2.5 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
+              <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
                 {filteredRows.map((r) => {
                   const parentCat = categoriesList.find((c) => c.id === r.parent_id);
                   const isActive = (r.is_active ?? 1) === 1;
                   return (
-                    <tr key={r.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
+                    <tr key={r.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
                       <td className="px-3.5 py-2.5 font-medium">{r.name}</td>
 
                       {tab === 'categories' && (
                         <td className="px-3.5 py-2.5">
                           {r.parent_id ? (
-                            <span className="bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] dark:text-[#A98ADB] font-semibold px-2 py-0.5 rounded text-[10px]">
+                            <span className="bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] dark:text-[#4A8CD2] font-semibold px-2 py-0.5 rounded text-[10px]">
                               Subcategory
                             </span>
                           ) : (
-                            <span className="bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] font-semibold px-2 py-0.5 rounded text-[10px]">
+                            <span className="bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] font-semibold px-2 py-0.5 rounded text-[10px]">
                               Main Category
                             </span>
                           )}
@@ -295,14 +314,14 @@ export default function MasterData() {
                       )}
 
                       {tab === 'categories' && (
-                        <td className="px-3.5 py-2.5 text-[#716B7C]">
+                        <td className="px-3.5 py-2.5 text-[#5A6B82]">
                           {parentCat ? parentCat.name : '—'}
                         </td>
                       )}
 
                       {tab === 'brands' && (
                         <td className="px-3.5 py-2.5">
-                          <span className="capitalize font-medium text-[#716B7C] dark:text-[#B8B0C4]">
+                          <span className="capitalize font-medium text-[#5A6B82] dark:text-[#94A3B8]">
                             {r.business_type || 'Universal'}
                           </span>
                         </td>
@@ -319,8 +338,8 @@ export default function MasterData() {
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[#716B7C] dark:text-[#B8B0C4] font-medium bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded text-[10px]">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#716B7C]"></span>
+                            <span className="inline-flex items-center gap-1 text-[#5A6B82] dark:text-[#94A3B8] font-medium bg-[#E2EDF8] dark:bg-[#1A2A3D] px-2 py-0.5 rounded text-[10px]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#5A6B82]"></span>
                               Inactive
                             </span>
                           )}
@@ -342,7 +361,7 @@ export default function MasterData() {
                               }
                             }}
                             title="Edit"
-                            className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
+                            className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -378,7 +397,7 @@ export default function MasterData() {
                 })}
                 {filteredRows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center text-[#716B7C] dark:text-[#B8B0C4]">
+                    <td colSpan={7} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                       No records found
                     </td>
                   </tr>
@@ -389,16 +408,16 @@ export default function MasterData() {
         </div>
 
         {/* Form Drawer / Box */}
-        <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
-          <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+        <div className="rounded-xl bg-white dark:bg-[#121E2C] p-5 shadow-sm border border-[#DCE5EF] dark:border-[#22354B] space-y-4 self-start">
+          <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <h3 className="font-bold text-sm flex items-center gap-2">
-              <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+              <Plus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
               {isEditing ? `Edit ${tab}` : `Add New ${tab}`}
             </h3>
             {isEditing && (
               <button
                 onClick={resetForms}
-                className="text-xs text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
+                className="text-xs text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] flex items-center gap-1"
               >
                 <X className="w-3 h-3" /> Cancel
               </button>
@@ -416,7 +435,7 @@ export default function MasterData() {
             {tab === 'categories' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Category Name *
                   </label>
                   <input
@@ -424,18 +443,18 @@ export default function MasterData() {
                     value={catForm.name}
                     onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
                     placeholder="e.g. Smart Phones or Screen Protectors"
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Parent Category (Optional - select for Subcategory)
                   </label>
                   <select
                     value={catForm.parent_id}
                     onChange={(e) => setCatForm({ ...catForm, parent_id: e.target.value })}
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   >
                     <option value="">-- None (This is a Main Category) --</option>
                     {categoriesList
@@ -449,13 +468,13 @@ export default function MasterData() {
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Status
                   </label>
                   <select
                     value={catForm.is_active}
                     onChange={(e) => setCatForm({ ...catForm, is_active: Number(e.target.value) })}
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   >
                     <option value={1}>Active</option>
                     <option value={0}>Inactive (Deactivated)</option>
@@ -468,7 +487,7 @@ export default function MasterData() {
             {tab === 'brands' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Brand Name *
                   </label>
                   <input
@@ -476,18 +495,18 @@ export default function MasterData() {
                     value={brandForm.name}
                     onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
                     placeholder="e.g. Apple, Samsung, Godrej"
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Status
                   </label>
                   <select
                     value={brandForm.is_active}
                     onChange={(e) => setBrandForm({ ...brandForm, is_active: Number(e.target.value) })}
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   >
                     <option value={1}>Active</option>
                     <option value={0}>Inactive (Deactivated)</option>
@@ -500,7 +519,7 @@ export default function MasterData() {
             {tab === 'units' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Unit Name *
                   </label>
                   <input
@@ -508,11 +527,11 @@ export default function MasterData() {
                     value={unitForm.name}
                     onChange={(e) => setUnitForm({ ...unitForm, name: e.target.value })}
                     placeholder="e.g. Piece, Box, Kilogram"
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Short Code *
                   </label>
                   <input
@@ -520,7 +539,7 @@ export default function MasterData() {
                     value={unitForm.short_code}
                     onChange={(e) => setUnitForm({ ...unitForm, short_code: e.target.value })}
                     placeholder="e.g. pcs, box, kg"
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
               </>
@@ -530,7 +549,7 @@ export default function MasterData() {
             {tab === 'tax_rates' && (
               <>
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Tax Name *
                   </label>
                   <input
@@ -538,11 +557,11 @@ export default function MasterData() {
                     value={taxForm.name}
                     onChange={(e) => setTaxForm({ ...taxForm, name: e.target.value })}
                     placeholder="e.g. GST 18%, Exempt"
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+                  <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                     Percentage (%) *
                   </label>
                   <input
@@ -552,7 +571,7 @@ export default function MasterData() {
                     value={taxForm.percent}
                     onChange={(e) => setTaxForm({ ...taxForm, percent: e.target.value })}
                     placeholder="e.g. 18"
-                    className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
               </>
@@ -561,14 +580,14 @@ export default function MasterData() {
             <div className="pt-2 flex gap-2">
               <button
                 type="submit"
-                className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 transition-colors shadow-sm"
+                className="flex-1 rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-bold py-2 transition-colors shadow-sm"
               >
                 {isEditing ? 'Save Changes' : 'Save'}
               </button>
               <button
                 type="button"
                 onClick={resetForms}
-                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] px-4 py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] px-4 py-2 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
               >
                 Reset
               </button>

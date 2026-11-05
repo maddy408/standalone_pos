@@ -131,17 +131,17 @@ export default function Customers() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Internal Navigation Tabs */}
-      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#DCE5EF] dark:border-[#22354B]">
         <Link
           to="/customers"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-xs"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-xs"
         >
           <Users className="w-3.5 h-3.5" />
           <span>Customers</span>
         </Link>
         <Link
           to="/collections"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
         >
           <Wallet className="w-3.5 h-3.5" />
           <span>Collection</span>
@@ -152,26 +152,26 @@ export default function Customers() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              <Users className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
+              <Users className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
               {t('customers.title')}
             </h1>
-            <p className="text-xs text-[#716B7C]">Manage directory, opening balances & receivables</p>
+            <p className="text-xs text-[#5A6B82]">Manage directory, opening balances & receivables</p>
           </div>
 
           <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, phone..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm">
           <table className="min-w-full text-xs">
-            <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
+            <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
               <tr>
                 <th className="px-3.5 py-2.5">{t('common.name')}</th>
                 <th className="px-3.5 py-2.5">Contact Info</th>
@@ -180,34 +180,34 @@ export default function Customers() {
                 <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
+            <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
               {customers.map((c) => {
                 const bal = Number(c.balance || 0);
                 return (
-                  <tr key={c.id} className="hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40 transition-colors">
+                  <tr key={c.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
                     <td className="px-3.5 py-2.5 font-medium">
                       <div>{c.name}</div>
-                      {c.address && <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] truncate max-w-xs">{c.address}</div>}
+                      {c.address && <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate max-w-xs">{c.address}</div>}
                     </td>
                     <td className="px-3.5 py-2.5 space-y-0.5">
                       {c.phone && (
-                        <div className="flex items-center gap-1.5 text-[#716B7C] dark:text-[#B8B0C4]">
-                          <Phone className="w-3 h-3 text-[#716B7C] dark:text-[#B8B0C4]" />
+                        <div className="flex items-center gap-1.5 text-[#5A6B82] dark:text-[#94A3B8]">
+                          <Phone className="w-3 h-3 text-[#5A6B82] dark:text-[#94A3B8]" />
                           <span>{c.phone}</span>
                         </div>
                       )}
                       {c.email && (
-                        <div className="flex items-center gap-1.5 text-[#716B7C]">
-                          <Mail className="w-3 h-3 text-[#716B7C] dark:text-[#B8B0C4]" />
+                        <div className="flex items-center gap-1.5 text-[#5A6B82]">
+                          <Mail className="w-3 h-3 text-[#5A6B82] dark:text-[#94A3B8]" />
                           <span className="truncate max-w-xs">{c.email}</span>
                         </div>
                       )}
                     </td>
-                    <td className="px-3.5 py-2.5 text-right font-medium text-[#716B7C] dark:text-[#B8B0C4]">
+                    <td className="px-3.5 py-2.5 text-right font-medium text-[#5A6B82] dark:text-[#94A3B8]">
                       {formatCurrency(c.credit_limit || 0, currency)}
                     </td>
                     <td className="px-3.5 py-2.5 text-right font-bold">
-                      <span className={bal > 0 ? 'text-[#7652B5] dark:text-[#A98ADB] bg-[#EDE7F7] dark:bg-[#2B2536] px-2 py-0.5 rounded' : 'text-[#716B7C] dark:text-[#B8B0C4]'}>
+                      <span className={bal > 0 ? 'text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D] px-2 py-0.5 rounded' : 'text-[#5A6B82] dark:text-[#94A3B8]'}>
                         {formatCurrency(bal, currency)}
                       </span>
                     </td>
@@ -216,7 +216,7 @@ export default function Customers() {
                         <button
                           onClick={() => startEdit(c)}
                           title="Edit Customer"
-                          className="p-1.5 text-[#7652B5] hover:text-[#5B3B91] dark:text-[#A98ADB] dark:hover:text-[#C0A5EA] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded-lg transition-colors"
+                          className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
@@ -236,7 +236,7 @@ export default function Customers() {
               })}
               {customers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center text-[#716B7C] dark:text-[#B8B0C4]">
+                  <td colSpan={5} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                     No customers found
                   </td>
                 </tr>
@@ -247,10 +247,10 @@ export default function Customers() {
       </div>
 
       {/* Customer Form (Add/Edit) */}
-      <div className="rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-sm border border-[#E8E3EF] dark:border-[#393244] space-y-4 self-start">
-        <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+      <div className="rounded-xl bg-white dark:bg-[#121E2C] p-5 shadow-sm border border-[#DCE5EF] dark:border-[#22354B] space-y-4 self-start">
+        <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
           <h2 className="font-bold text-sm flex items-center gap-2">
-            <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+            <Plus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
             {isEditing ? 'Edit Customer' : t('customers.add_customer')}
           </h2>
           {isEditing && (
@@ -260,7 +260,7 @@ export default function Customers() {
                 setIsEditing(false);
                 setErrors({});
               }}
-              className="text-xs text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
+              className="text-xs text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] flex items-center gap-1"
             >
               <X className="w-3 h-3" /> Cancel
             </button>
@@ -269,7 +269,7 @@ export default function Customers() {
 
         <form onSubmit={submit} className="space-y-3 text-xs">
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Customer Name *
             </label>
             <input
@@ -277,14 +277,14 @@ export default function Customers() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Rahul Sharma"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
+                errors.name ? 'border-red-500 focus:ring-red-500' : 'border-[#DCE5EF] dark:border-[#22354B] focus:ring-[#0A4174]'
               }`}
             />
             {errors.name && <p className="mt-1 text-[11px] text-red-500">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Phone Number (10 Digits)
             </label>
             <input
@@ -293,14 +293,14 @@ export default function Customers() {
               onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
               placeholder="e.g. 9876543210"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
+                errors.phone ? 'border-red-500 focus:ring-red-500' : 'border-[#DCE5EF] dark:border-[#22354B] focus:ring-[#0A4174]'
               }`}
             />
             {errors.phone && <p className="mt-1 text-[11px] text-red-500">{errors.phone}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Email Address
             </label>
             <input
@@ -309,14 +309,14 @@ export default function Customers() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="e.g. customer@gmail.com"
               className={`w-full rounded-lg border bg-transparent px-3 py-2 focus:outline-none focus:ring-1 ${
-                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#E8E3EF] dark:border-[#393244] focus:ring-[#7652B5]'
+                errors.email ? 'border-red-500 focus:ring-red-500' : 'border-[#DCE5EF] dark:border-[#22354B] focus:ring-[#0A4174]'
               }`}
             />
             {errors.email && <p className="mt-1 text-[11px] text-red-500">{errors.email}</p>}
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
               Address
             </label>
             <textarea
@@ -324,13 +324,13 @@ export default function Customers() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder="Door No, Street, City"
-              className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5]"
+              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+              <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                 Opening Balance
               </label>
               <input
@@ -343,12 +343,12 @@ export default function Customers() {
                   setForm({ ...form, opening_balance: val === '' ? '' : val.replace(/^0+(?=\d)/, '') });
                 }}
                 placeholder="0"
-                className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5]"
+                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
               />
             </div>
 
             <div>
-              <label className="mb-1 block font-semibold text-[#282431] dark:text-[#B8B0C4]">
+              <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
                 Credit Limit
               </label>
               <input
@@ -361,7 +361,7 @@ export default function Customers() {
                   setForm({ ...form, credit_limit: val === '' ? '' : val.replace(/^0+(?=\d)/, '') });
                 }}
                 placeholder="0"
-                className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#7652B5]"
+                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
               />
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function Customers() {
           <div className="pt-2 flex gap-2">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold py-2 transition-colors shadow-sm"
+              className="flex-1 rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-bold py-2 transition-colors shadow-sm"
             >
               {isEditing ? 'Update Customer' : t('common.save')}
             </button>
@@ -380,7 +380,7 @@ export default function Customers() {
                 setIsEditing(false);
                 setErrors({});
               }}
-              className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] px-4 py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+              className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] px-4 py-2 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
             >
               Reset
             </button>
@@ -391,20 +391,20 @@ export default function Customers() {
       {/* Record Payment Modal */}
       {paying && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white dark:bg-[#211D2A] p-5 shadow-2xl border border-[#E8E3EF] dark:border-[#393244]">
-            <h3 className="mb-1 font-bold text-sm text-[#282431] dark:text-[#F5F2F9] flex items-center gap-2">
+          <div className="w-full max-w-sm rounded-xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B]">
+            <h3 className="mb-1 font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-emerald-500" />
               Collect Payment — {paying.name}
             </h3>
-            <p className="text-xs text-[#716B7C] mb-3">
-              Outstanding Due: <span className="font-bold text-[#7652B5] dark:text-[#A98ADB]">{formatCurrency(paying.balance, currency)}</span>
+            <p className="text-xs text-[#5A6B82] mb-3">
+              Outstanding Due: <span className="font-bold text-[#0A4174] dark:text-[#4A8CD2]">{formatCurrency(paying.balance, currency)}</span>
             </p>
             <input
               type="number"
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
               placeholder="Enter received amount"
-              className="mb-4 w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              className="mb-4 w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
             <div className="flex gap-2 text-xs">
               <button
@@ -415,7 +415,7 @@ export default function Customers() {
               </button>
               <button
                 onClick={() => setPaying(null)}
-                className="flex-1 rounded-lg border border-[#E8E3EF] dark:border-[#393244] py-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                className="flex-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] py-2 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
               >
                 Cancel
               </button>

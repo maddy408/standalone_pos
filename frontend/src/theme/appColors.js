@@ -1,85 +1,85 @@
 /**
  * AppColors - Centralized Color Palette for Universal POS System
- * Theme: White + Soft Royal Purple
+ * Theme: White + Royal Blue
  * 
  * Single source of truth for application colors in both Light and Dark modes.
  */
 
 export const appColors = {
-  // Light Mode Colors (White dominant with Royal Purple accents)
+  // Light Mode Colors (White dominant with Royal Blue (#0A4174) accents)
   light: {
-    bg: '#F7F5FC',
+    bg: '#F4F7FB',
     card: '#FFFFFF',
     table: '#FFFFFF',
     form: '#FFFFFF',
-    secondary: '#EDE7F7',
-    primary: '#7652B5',
-    primaryHover: '#5B3B91',
-    text: '#282431',
-    muted: '#716B7C',
-    border: '#E8E3EF',
+    secondary: '#E2EDF8',
+    primary: '#0A4174',
+    primaryHover: '#062E52',
+    text: '#1C2736',
+    muted: '#5A6B82',
+    border: '#DCE5EF',
     textOnPrimary: '#FFFFFF',
   },
 
-  // Dark Mode Colors (Deep dark surfaces with lavender-purple accents)
+  // Dark Mode Colors (Deep dark surfaces with royal blue accents)
   dark: {
-    bg: '#17151D',
-    card: '#211D2A',
-    table: '#211D2A',
-    form: '#211D2A',
-    secondary: '#2B2536',
-    primary: '#A98ADB',
-    primaryHover: '#C0A5EA',
-    text: '#F5F2F9',
-    muted: '#B8B0C4',
-    border: '#393244',
-    textOnPrimary: '#17151D',
+    bg: '#0B131E',
+    card: '#121E2C',
+    table: '#121E2C',
+    form: '#121E2C',
+    secondary: '#1A2A3D',
+    primary: '#4A8CD2',
+    primaryHover: '#6BA3E0',
+    text: '#F1F5F9',
+    muted: '#94A3B8',
+    border: '#22354B',
+    textOnPrimary: '#0B131E',
   },
 
-  // Royal Purple Scale (Brand primary)
+  // Royal Blue Scale (Brand primary)
   primary: {
-    50: '#F7F5FC',
-    100: '#EDE7F7',
-    200: '#DDD2F0',
-    300: '#C5B3E6',
-    400: '#A98ADB', // Dark mode primary accent
-    500: '#7652B5', // Primary Royal Purple
-    600: '#5B3B91', // Hover Purple
-    700: '#482D75',
-    800: '#341E57',
-    900: '#21133B',
-    DEFAULT: '#7652B5',
+    50: '#F4F7FB',
+    100: '#E2EDF8',
+    200: '#C5D8ED',
+    300: '#9BBFE0',
+    400: '#4A8CD2', // Dark mode primary blue accent
+    500: '#0A4174', // Primary Royal Blue
+    600: '#062E52', // Hover Royal Blue
+    700: '#052441',
+    800: '#041A30',
+    900: '#02101F',
+    DEFAULT: '#0A4174',
   },
 
-  // Secondary Lavender Surface Scale
+  // Secondary Blue Surface Scale
   secondary: {
-    50: '#F7F5FC',
-    100: '#EDE7F7',
-    200: '#DDD2F0',
-    300: '#C5B3E6',
-    400: '#A98ADB',
-    500: '#7652B5',
-    DEFAULT: '#EDE7F7',
+    50: '#F4F7FB',
+    100: '#E2EDF8',
+    200: '#C5D8ED',
+    300: '#9BBFE0',
+    400: '#4A8CD2',
+    500: '#0A4174',
+    DEFAULT: '#E2EDF8',
   },
 
   // Neutral surfaces
   surface: {
     light: '#FFFFFF',
-    lightBg: '#F7F5FC',
-    lightSecondary: '#EDE7F7',
-    lightBorder: '#E8E3EF',
-    dark: '#211D2A',
-    darkBg: '#17151D',
-    darkSecondary: '#2B2536',
-    darkBorder: '#393244',
+    lightBg: '#F4F7FB',
+    lightSecondary: '#E2EDF8',
+    lightBorder: '#DCE5EF',
+    dark: '#121E2C',
+    darkBg: '#0B131E',
+    darkSecondary: '#1A2A3D',
+    darkBorder: '#22354B',
   },
 
   // Typography
   text: {
-    mainLight: '#282431',
-    mutedLight: '#716B7C',
-    mainDark: '#F5F2F9',
-    mutedDark: '#B8B0C4',
+    mainLight: '#1C2736',
+    mutedLight: '#5A6B82',
+    mainDark: '#F1F5F9',
+    mutedDark: '#94A3B8',
   },
 
   // Semantic Status Colors (Preserved)
@@ -101,7 +101,7 @@ export const appColors = {
   // Payment method badge colors
   payment: {
     cash: '#10b981',
-    upi: '#7652B5',
+    upi: '#0A4174',
     card: '#3b82f6',
     credit: '#f59e0b',
   },

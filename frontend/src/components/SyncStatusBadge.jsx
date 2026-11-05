@@ -10,22 +10,22 @@ export default function SyncStatusBadge() {
   useEffect(() => subscribeSyncStatus(setStatus), []);
 
   const color = !status.online
-    ? 'bg-[#716B7C]'
+    ? 'bg-[#5A6B82]'
     : status.pendingCount > 0
-    ? 'bg-[#7652B5] dark:bg-[#A98ADB]'
+    ? 'bg-[#0A4174] dark:bg-[#4A8CD2]'
     : 'bg-emerald-500';
 
   return (
     <div className="flex items-center gap-2">
-      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F7F5FC] dark:bg-[#17151D] border border-[#E8E3EF] dark:border-[#393244]">
+      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F4F7FB] dark:bg-[#0B131E] border border-[#DCE5EF] dark:border-[#22354B]">
         <span className={`h-2 w-2 rounded-full ${color} ${status.online && !status.syncing ? 'animate-pulse' : ''}`} />
-        <span className="text-[11px] font-semibold text-[#716B7C] dark:text-[#B8B0C4] leading-none">
+        <span className="text-[11px] font-semibold text-[#5A6B82] dark:text-[#94A3B8] leading-none">
           {status.online ? t('sync.online') : t('sync.offline')}
         </span>
       </div>
 
       {status.pendingCount > 0 && (
-        <span className="rounded-full bg-[#EDE7F7] dark:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244] text-[#7652B5] dark:text-[#A98ADB] px-2 py-0.5 text-[11px] font-semibold leading-none">
+        <span className="rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] border border-[#DCE5EF] dark:border-[#22354B] text-[#0A4174] dark:text-[#4A8CD2] px-2 py-0.5 text-[11px] font-semibold leading-none">
           {t('sync.pending', { count: status.pendingCount })}
         </span>
       )}
@@ -34,9 +34,9 @@ export default function SyncStatusBadge() {
         type="button"
         onClick={() => syncNow({ silent: true })}
         disabled={status.syncing || !status.online}
-        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-xs font-semibold text-[#282431] dark:text-[#F5F2F9] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:border-[#DDD2F0] dark:hover:border-[#482D75] transition-all disabled:opacity-50 shadow-2xs"
+        className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs font-semibold text-[#1C2736] dark:text-[#F1F5F9] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:border-[#C5D8ED] dark:hover:border-[#052441] transition-all disabled:opacity-50 shadow-2xs"
       >
-        <RefreshCw className={`w-3 h-3 text-[#7652B5] dark:text-[#A98ADB] ${status.syncing ? 'animate-spin' : ''}`} />
+        <RefreshCw className={`w-3 h-3 text-[#0A4174] dark:text-[#4A8CD2] ${status.syncing ? 'animate-spin' : ''}`} />
         <span>{status.syncing ? t('sync.syncing') : t('sync.sync_now')}</span>
       </button>
     </div>

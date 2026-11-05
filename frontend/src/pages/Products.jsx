@@ -101,14 +101,24 @@ export default function Products() {
   const businessType = settings?.business_type || 'mobile';
 
   const loadProducts = () => {
-    if (!settings?.business_type) return;
+    const params = { search: search || undefined };
+    if (settings?.business_type) {
+      params.business_type = settings.business_type;
+    }
     api
-      .get('/products', {
-        params: { search: search || undefined, business_type: settings.business_type },
-      })
-      .then(({ data }) => {
-        setProducts(data);
-        cacheProducts(data);
+      .get('/products', { params })
+      .then(async ({ data }) => {
+        let list = Array.isArray(data) ? data : [];
+        if (list.length === 0 && settings?.business_type) {
+          try {
+            const allRes = await api.get('/products', { params: { search: search || undefined } });
+            if (Array.isArray(allRes.data) && allRes.data.length > 0) {
+              list = allRes.data;
+            }
+          } catch {}
+        }
+        setProducts(list);
+        if (list.length > 0) cacheProducts(list);
       })
       .catch((err) => console.error(err));
   };
@@ -118,22 +128,42 @@ export default function Products() {
   }, [settings?.business_type, search]);
 
   useEffect(() => {
-    if (!settings?.business_type) return;
-    const bt = settings.business_type;
+    const bt = settings?.business_type;
+    const catParams = bt ? { business_type: bt } : {};
 
-    api.get('/categories', { params: { business_type: bt } }).then(({ data }) => setCategories(data));
-    api.get('/lookup/brands', { params: { business_type: bt } }).then(({ data }) => setBrands(data));
-    api.get('/lookup/units').then(({ data }) => setUnits(data));
-    api.get('/lookup/tax-rates').then(({ data }) => setTaxRates(data));
+    api.get('/categories', { params: catParams }).then(async ({ data }) => {
+      let cats = Array.isArray(data) ? data : [];
+      if (cats.length === 0 && bt) {
+        try {
+          const allCats = await api.get('/categories');
+          if (Array.isArray(allCats.data) && allCats.data.length > 0) cats = allCats.data;
+        } catch {}
+      }
+      setCategories(cats);
+    }).catch(() => {});
 
-    // Load dynamic schema fields
-    api.get(`/settings/business-types/${bt}/fields`).then(({ data }) => {
-      setAttributeFields(data);
-    });
+    api.get('/lookup/brands', { params: bt ? { business_type: bt } : {} }).then(async ({ data }) => {
+      let bList = Array.isArray(data) ? data : [];
+      if (bList.length === 0 && bt) {
+        try {
+          const allBrands = await api.get('/lookup/brands');
+          if (Array.isArray(allBrands.data) && allBrands.data.length > 0) bList = allBrands.data;
+        } catch {}
+      }
+      setBrands(bList);
+    }).catch(() => {});
 
-    // Load add-ons if hotel
+    api.get('/lookup/units').then(({ data }) => setUnits(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/lookup/tax-rates').then(({ data }) => setTaxRates(Array.isArray(data) ? data : [])).catch(() => {});
+
+    if (bt) {
+      api.get(`/settings/business-types/${bt}/fields`).then(({ data }) => {
+        setAttributeFields(Array.isArray(data) ? data : []);
+      }).catch(() => {});
+    }
+
     if (bt === 'food') {
-      api.get('/lookup/addons').then(({ data }) => setAddonsList(data));
+      api.get('/lookup/addons').then(({ data }) => setAddonsList(Array.isArray(data) ? data : [])).catch(() => {});
     }
   }, [settings?.business_type]);
 
@@ -369,32 +399,32 @@ export default function Products() {
   };
 
   const businessIcon = {
-    mobile: <Smartphone className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />,
-    furniture: <Sofa className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />,
-    food: <Utensils className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />,
+    mobile: <Smartphone className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />,
+    furniture: <Sofa className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />,
+    food: <Utensils className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />,
   }[businessType];
 
   return (
     <div className="space-y-6">
       {/* Three Existing Products Navigation Options */}
-      <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-[#211D2A] rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm overflow-x-auto scrollbar-thin">
+      <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm overflow-x-auto scrollbar-thin">
         <Link
           to="/products"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-[#7652B5] text-white shadow-sm dark:bg-[#A98ADB] dark:text-[#17151D] flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-[#0A4174] text-white shadow-sm dark:bg-[#4A8CD2] dark:text-[#0B131E] flex-shrink-0"
         >
           <Package className="w-4 h-4" />
           <span>All Products</span>
         </Link>
         <Link
           to="/master-data?tab=categories"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] hover:text-[#282431] dark:hover:bg-[#2B2536] dark:hover:text-[#F5F2F9] flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
         >
           <Layers className="w-4 h-4" />
           <span>Categories & Sub</span>
         </Link>
         <Link
           to="/master-data?tab=brands"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] hover:text-[#282431] dark:hover:bg-[#2B2536] dark:hover:text-[#F5F2F9] flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
         >
           <Tags className="w-4 h-4" />
           <span>Brands Mapping</span>
@@ -402,19 +432,19 @@ export default function Products() {
       </div>
 
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB]">
+          <div className="p-3 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2]">
             {businessIcon}
           </div>
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               Product Creation & Catalog
-              <span className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] border border-[#E8E3EF] dark:border-[#393244]">
+              <span className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] border border-[#DCE5EF] dark:border-[#22354B]">
                 {businessType} mode
               </span>
             </h1>
-            <p className="text-xs text-[#716B7C]">
+            <p className="text-xs text-[#5A6B82]">
               Configured dynamically for {businessType} specs, variants, barcodes & inventory
             </p>
           </div>
@@ -422,18 +452,18 @@ export default function Products() {
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
-            <Search className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, barcode, SKU..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#2B2536] text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#1A2A3D] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
             />
           </div>
           {isEditing && (
             <button
               onClick={resetForm}
-              className="px-3 py-1.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] flex items-center gap-1"
             >
               <Plus className="w-3.5 h-3.5" /> New Product
             </button>
@@ -445,14 +475,14 @@ export default function Products() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Products List (Left side - 5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between text-xs font-bold text-[#716B7C] uppercase tracking-wider px-1">
+          <div className="flex items-center justify-between text-xs font-bold text-[#5A6B82] uppercase tracking-wider px-1">
             <span>Product Inventory ({products.length})</span>
-            <span className="text-[#7652B5] dark:text-[#A98ADB] capitalize">{businessType}</span>
+            <span className="text-[#0A4174] dark:text-[#4A8CD2] capitalize">{businessType}</span>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] shadow-sm max-h-[850px] overflow-y-auto scrollbar-thin">
+          <div className="overflow-x-auto rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm max-h-[850px] overflow-y-auto scrollbar-thin">
             <table className="min-w-full text-xs">
-              <thead className="bg-[#F7F5FC] dark:bg-[#2B2536]/80 sticky top-0 text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4] border-b border-[#E8E3EF] dark:border-[#393244]">
+              <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D]/80 sticky top-0 text-left font-semibold text-[#5A6B82] dark:text-[#94A3B8] border-b border-[#DCE5EF] dark:border-[#22354B]">
                 <tr>
                   <th className="px-3.5 py-2.5">Product</th>
                   <th className="px-3.5 py-2.5 text-right">Price ({currency})</th>
@@ -460,7 +490,7 @@ export default function Products() {
                   <th className="px-3.5 py-2.5 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
+              <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
                 {products.map((p) => {
                   const isLow = p.low_stock_threshold && Number(p.stock_qty || 0) <= Number(p.low_stock_threshold);
                   const isSelected = form.id === p.id;
@@ -470,25 +500,25 @@ export default function Products() {
                       onClick={() => startEdit(p)}
                       className={`cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-[#EDE7F7] dark:bg-[#2B2536] border-l-4 border-[#7652B5] dark:border-[#A98ADB]'
-                          : 'hover:bg-[#F7F5FC]/50 dark:hover:bg-[#2B2536]/40'
+                          ? 'bg-[#E2EDF8] dark:bg-[#1A2A3D] border-l-4 border-[#0A4174] dark:border-[#4A8CD2]'
+                          : 'hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40'
                       }`}
                     >
                       <td className="px-3.5 py-2.5">
-                        <div className="font-semibold text-[#282431] dark:text-[#F5F2F9] line-clamp-1">{p.name}</div>
-                        <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] flex items-center gap-2">
+                        <div className="font-semibold text-[#1C2736] dark:text-[#F1F5F9] line-clamp-1">{p.name}</div>
+                        <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] flex items-center gap-2">
                           {p.category_name && <span>{p.category_name}</span>}
                           {p.barcode && <span className="font-mono">#{p.barcode}</span>}
                           {p.variants?.length > 0 && (
-                            <span className="text-[#7652B5] dark:text-[#A98ADB] font-bold">({p.variants.length} var)</span>
+                            <span className="text-[#0A4174] dark:text-[#4A8CD2] font-bold">({p.variants.length} var)</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-3.5 py-2.5 text-right font-bold text-[#7652B5] dark:text-[#A98ADB]">
+                      <td className="px-3.5 py-2.5 text-right font-bold text-[#0A4174] dark:text-[#4A8CD2]">
                         {formatCurrency(p.selling_price || 0, currency)}
                       </td>
                       <td className="px-3.5 py-2.5 text-right font-medium">
-                        <span className={`px-1.5 py-0.5 rounded ${isLow ? 'bg-red-50 dark:bg-red-950/40 text-red-500 font-bold' : 'text-[#716B7C] dark:text-[#B8B0C4]'}`}>
+                        <span className={`px-1.5 py-0.5 rounded ${isLow ? 'bg-red-50 dark:bg-red-950/40 text-red-500 font-bold' : 'text-[#5A6B82] dark:text-[#94A3B8]'}`}>
                           {Number(p.stock_qty || 0)} {p.unit_code || ''}
                         </span>
                       </td>
@@ -497,7 +527,7 @@ export default function Products() {
                           <button
                             onClick={() => startEdit(p)}
                             title="Edit"
-                            className="p-1 text-[#7652B5] dark:text-[#A98ADB] hover:bg-[#EDE7F7] dark:bg-[#2B2536] dark:hover:bg-[#2B2536] rounded transition-colors"
+                            className="p-1 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -515,7 +545,7 @@ export default function Products() {
                 })}
                 {products.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-[#716B7C] dark:text-[#B8B0C4] italic">
+                    <td colSpan={4} className="py-12 text-center text-[#5A6B82] dark:text-[#94A3B8] italic">
                       No products found. Use the form to create your first item.
                     </td>
                   </tr>
@@ -526,21 +556,21 @@ export default function Products() {
         </div>
 
         {/* Dynamic Comprehensive Product Form (Right side - 7 cols) */}
-        <div className="lg:col-span-7 bg-white dark:bg-[#211D2A] rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm p-6 space-y-5">
+        <div className="lg:col-span-7 bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm p-6 space-y-5">
           {/* Form Action Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+          <div className="flex items-center justify-between pb-3 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <div>
-              <h2 className="font-bold text-base flex items-center gap-2 text-[#282431] dark:text-[#F5F2F9]">
-                <Plus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+              <h2 className="font-bold text-base flex items-center gap-2 text-[#1C2736] dark:text-[#F1F5F9]">
+                <Plus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
                 {isEditing ? `Edit Product: ${form.name}` : `Create New ${businessType.toUpperCase()} Product`}
               </h2>
-              <p className="text-xs text-[#716B7C]">Fill common information, pricing, variants & business specifications</p>
+              <p className="text-xs text-[#5A6B82]">Fill common information, pricing, variants & business specifications</p>
             </div>
             {isEditing && (
               <button
                 type="button"
                 onClick={resetForm}
-                className="text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#716B7C] flex items-center gap-1"
+                className="text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] flex items-center gap-1"
               >
                 <X className="w-3.5 h-3.5" /> Cancel
               </button>
@@ -548,7 +578,7 @@ export default function Products() {
           </div>
 
           {/* Form Section Navigation Pills */}
-          <div className="flex flex-wrap gap-1.5 border-b border-[#E8E3EF] dark:border-[#393244] pb-3">
+          <div className="flex flex-wrap gap-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] pb-3">
             {[
               { id: 'basic', label: '1. Basic Info' },
               { id: 'pricing', label: '2. Pricing & Tax' },
@@ -564,8 +594,8 @@ export default function Products() {
                 onClick={() => setActiveFormSection(sec.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
                   activeFormSection === sec.id
-                    ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-sm'
-                    : 'bg-[#EDE7F7] dark:bg-[#2B2536] text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#282431] dark:hover:text-white'
+                    ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-sm'
+                    : 'bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#1C2736] dark:hover:text-white'
                 }`}
               >
                 {sec.label}
@@ -593,7 +623,7 @@ export default function Products() {
             {activeFormSection === 'basic' && (
               <div className="space-y-4 animate-in fade-in duration-150">
                 <div>
-                  <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                  <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                     Product Name *
                   </label>
                   <input
@@ -607,17 +637,17 @@ export default function Products() {
                         ? 'e.g. Solid Teak Wood Dining Table, Ergonomic Office Chair'
                         : 'e.g. Special Chicken Biryani, Butter Naan'
                     }
-                    className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none font-medium"
+                    className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none font-medium"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Category</label>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Category</label>
                     <select
                       value={form.category_id}
                       onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     >
                       <option value="">-- Select Category --</option>
                       {categories.map((c) => (
@@ -629,11 +659,11 @@ export default function Products() {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Brand</label>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Brand</label>
                     <select
                       value={form.brand_id}
                       onChange={(e) => setForm({ ...form, brand_id: e.target.value })}
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     >
                       <option value="">-- Select Brand --</option>
                       {brands.map((b) => (
@@ -647,22 +677,22 @@ export default function Products() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">SKU</label>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">SKU</label>
                     <input
                       value={form.sku}
                       onChange={(e) => setForm({ ...form, sku: e.target.value })}
                       placeholder="e.g. MOB-0012"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="font-semibold text-[#282431] dark:text-[#B8B0C4]">Barcode</label>
+                      <label className="font-semibold text-[#1C2736] dark:text-[#94A3B8]">Barcode</label>
                       <button
                         type="button"
                         onClick={generateBarcode}
-                        className="text-[10px] text-[#7652B5] dark:text-[#A98ADB] hover:underline flex items-center gap-0.5"
+                        className="text-[10px] text-[#0A4174] dark:text-[#4A8CD2] hover:underline flex items-center gap-0.5"
                       >
                         <Barcode className="w-3 h-3" /> Auto Gen
                       </button>
@@ -671,23 +701,23 @@ export default function Products() {
                       value={form.barcode}
                       onChange={(e) => setForm({ ...form, barcode: e.target.value })}
                       placeholder="Type or auto-generate"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none font-mono"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none font-mono"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">HSN Code</label>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">HSN Code</label>
                     <input
                       value={form.hsn_code}
                       onChange={(e) => setForm({ ...form, hsn_code: e.target.value })}
                       placeholder="e.g. 85171200"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                  <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                     Product Description
                   </label>
                   <textarea
@@ -695,7 +725,7 @@ export default function Products() {
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Enter detailed description, key specifications, or highlights..."
-                    className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                    className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
                 </div>
 
@@ -706,14 +736,14 @@ export default function Products() {
             {/* SECTION 2: PRICING & TAXATION */}
             {activeFormSection === 'pricing' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-4 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] space-y-3">
-                  <div className="font-bold text-xs uppercase text-[#716B7C] tracking-wider">
+                <div className="p-4 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B] space-y-3">
+                  <div className="font-bold text-xs uppercase text-[#5A6B82] tracking-wider">
                     Price Tiers ({currency})
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         Retail Selling Price *
                       </label>
                       <input
@@ -723,12 +753,12 @@ export default function Products() {
                         value={form.retail_price}
                         onChange={(e) => setForm({ ...form, retail_price: e.target.value, selling_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 font-bold text-[#7652B5] dark:text-[#A98ADB] focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 font-bold text-[#0A4174] dark:text-[#4A8CD2] focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         Wholesale Price
                       </label>
                       <input
@@ -737,12 +767,12 @@ export default function Products() {
                         value={form.wholesale_price}
                         onChange={(e) => setForm({ ...form, wholesale_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         Customer Special Price
                       </label>
                       <input
@@ -751,14 +781,14 @@ export default function Products() {
                         value={form.customer_price}
                         onChange={(e) => setForm({ ...form, customer_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         Purchase Price ({currency})
                       </label>
                       <input
@@ -767,12 +797,12 @@ export default function Products() {
                         value={form.purchase_price}
                         onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         MRP ({currency})
                       </label>
                       <input
@@ -781,24 +811,24 @@ export default function Products() {
                         value={form.mrp}
                         onChange={(e) => setForm({ ...form, mrp: e.target.value })}
                         placeholder="0.00"
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Tax Configuration */}
-                <div className="p-4 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] space-y-3">
-                  <div className="font-bold text-xs uppercase text-[#716B7C] tracking-wider">
+                <div className="p-4 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B] space-y-3">
+                  <div className="font-bold text-xs uppercase text-[#5A6B82] tracking-wider">
                     Taxation & GST
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Tax Rate</label>
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Tax Rate</label>
                       <select
                         value={form.tax_rate_id}
                         onChange={(e) => setForm({ ...form, tax_rate_id: e.target.value })}
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       >
                         <option value="">-- None (0%) --</option>
                         {taxRates.map((tRate) => (
@@ -810,11 +840,11 @@ export default function Products() {
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Tax Calculation</label>
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Tax Calculation</label>
                       <select
                         value={form.tax_inclusive ? '1' : '0'}
                         onChange={(e) => setForm({ ...form, tax_inclusive: e.target.value === '1' })}
-                        className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       >
                         <option value="0">Tax Exclusive (Added on top)</option>
                         <option value="1">Tax Inclusive (Included in price)</option>
@@ -830,11 +860,11 @@ export default function Products() {
               <div className="space-y-4 animate-in fade-in duration-150">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">Stock Unit</label>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Stock Unit</label>
                     <select
                       value={form.unit_id}
                       onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     >
                       <option value="">-- Select Unit (Pcs, Set, Pair, Kg...) --</option>
                       {units.map((u) => (
@@ -846,7 +876,7 @@ export default function Products() {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                       Current Stock Qty
                     </label>
                     <input
@@ -855,12 +885,12 @@ export default function Products() {
                       value={form.stock_qty}
                       onChange={(e) => setForm({ ...form, stock_qty: e.target.value })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 font-bold focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 font-bold focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                       Opening Stock
                     </label>
                     <input
@@ -869,14 +899,14 @@ export default function Products() {
                       value={form.opening_stock}
                       onChange={(e) => setForm({ ...form, opening_stock: e.target.value })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                       Low Stock Alert
                     </label>
                     <input
@@ -885,12 +915,12 @@ export default function Products() {
                       value={form.low_stock_threshold}
                       onChange={(e) => setForm({ ...form, low_stock_threshold: e.target.value })}
                       placeholder="e.g. 5"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                       Minimum Stock
                     </label>
                     <input
@@ -899,12 +929,12 @@ export default function Products() {
                       value={form.min_stock}
                       onChange={(e) => setForm({ ...form, min_stock: e.target.value })}
                       placeholder="e.g. 2"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                       Maximum Stock
                     </label>
                     <input
@@ -913,21 +943,21 @@ export default function Products() {
                       value={form.max_stock}
                       onChange={(e) => setForm({ ...form, max_stock: e.target.value })}
                       placeholder="e.g. 100"
-                      className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Mobile Shop: Unique IMEI / Serial Number Tracking */}
                 {businessType === 'mobile' && (
-                  <div className="p-4 rounded-xl bg-[#EDE7F7]/50 dark:bg-[#2B2536]/50 dark:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244] dark:border-[#393244] space-y-3">
+                  <div className="p-4 rounded-xl bg-[#E2EDF8]/50 dark:bg-[#1A2A3D]/50 dark:bg-[#1A2A3D] border border-[#DCE5EF] dark:border-[#22354B] dark:border-[#22354B] space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-xs text-[#7652B5] dark:text-[#C5B3E6] flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-[#0A4174] dark:text-[#9BBFE0] flex items-center gap-1.5">
                           <Smartphone className="w-4 h-4" />
                           Individual Device IMEI & Serial Tracking
                         </div>
-                        <p className="text-[11px] text-[#716B7C]">
+                        <p className="text-[11px] text-[#5A6B82]">
                           Enable for phones/tablets. Disable for phone covers, cables, chargers & accessories.
                         </p>
                       </div>
@@ -938,46 +968,46 @@ export default function Products() {
                           onChange={(e) => setForm({ ...form, track_serial: e.target.checked })}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-[#EDE7F7] peer-focus:outline-none rounded-full peer dark:bg-[#393244] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#E8E3EF] dark:border-[#393244] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#7652B5] dark:bg-[#A98ADB]"></div>
+                        <div className="w-11 h-6 bg-[#E2EDF8] peer-focus:outline-none rounded-full peer dark:bg-[#22354B] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-[#DCE5EF] dark:border-[#22354B] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0A4174] dark:bg-[#4A8CD2]"></div>
                       </label>
                     </div>
 
                     {form.track_serial && (
                       <div className="space-y-3 pt-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-xs text-[#282431] dark:text-[#B8B0C4]">
+                          <span className="font-semibold text-xs text-[#1C2736] dark:text-[#94A3B8]">
                             Registered Devices / IMEIs ({form.serials?.length || 0})
                           </span>
                           <button
                             type="button"
                             onClick={addSerialRow}
-                            className="text-xs font-bold text-[#7652B5] dark:text-[#A98ADB] hover:underline flex items-center gap-1"
+                            className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline flex items-center gap-1"
                           >
                             <Plus className="w-3.5 h-3.5" /> + Add Device IMEI
                           </button>
                         </div>
 
                         {form.serials?.map((s, idx) => (
-                          <div key={idx} className="p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] space-y-2">
+                          <div key={idx} className="p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-2">
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                               <input
                                 value={s.imei1}
                                 onChange={(e) => updateSerialRow(idx, { imei1: e.target.value })}
                                 placeholder="Primary IMEI 1 (15 digits)"
-                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                                className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                               />
                               <input
                                 value={s.imei2}
                                 onChange={(e) => updateSerialRow(idx, { imei2: e.target.value })}
                                 placeholder="Secondary IMEI 2 (Optional)"
-                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                                className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                               />
                               <div className="flex gap-1">
                                 <input
                                   value={s.serial_no}
                                   onChange={(e) => updateSerialRow(idx, { serial_no: e.target.value })}
                                   placeholder="Serial Number / S/N"
-                                  className="flex-1 rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                                  className="flex-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                                 />
                                 {form.serials.length > 1 && (
                                   <button
@@ -995,20 +1025,20 @@ export default function Products() {
                                 value={s.color}
                                 onChange={(e) => updateSerialRow(idx, { color: e.target.value })}
                                 placeholder="Device Color (e.g. Titanium Blue)"
-                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-[11px]"
+                                className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-[11px]"
                               />
                               <input
                                 type="number"
                                 value={s.warranty_months}
                                 onChange={(e) => updateSerialRow(idx, { warranty_months: e.target.value })}
                                 placeholder="Warranty (Months)"
-                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-[11px]"
+                                className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-[11px]"
                               />
                               <input
                                 type="date"
                                 value={s.warranty_start}
                                 onChange={(e) => updateSerialRow(idx, { warranty_start: e.target.value })}
-                                className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-[11px]"
+                                className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-[11px]"
                               />
                             </div>
                           </div>
@@ -1023,14 +1053,14 @@ export default function Products() {
             {/* SECTION 4: DYNAMIC BUSINESS SPECIFICATIONS */}
             {activeFormSection === 'specs' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-3.5 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {businessIcon}
-                    <span className="font-bold text-xs uppercase text-[#282431] dark:text-[#B8B0C4]">
+                    <span className="font-bold text-xs uppercase text-[#1C2736] dark:text-[#94A3B8]">
                       {businessType} Specific Attributes
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#716B7C] font-medium">
+                  <span className="text-[11px] text-[#5A6B82] font-medium">
                     {attributeFields.length} dynamic fields configured
                   </span>
                 </div>
@@ -1049,7 +1079,7 @@ export default function Products() {
                       }
                       return (
                         <div key={field.field_key}>
-                          <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                          <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                             {label} {field.is_required ? '*' : ''}
                           </label>
                           <select
@@ -1060,7 +1090,7 @@ export default function Products() {
                                 attributes: { ...form.attributes, [field.field_key]: e.target.value },
                               })
                             }
-                            className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                            className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                           >
                             <option value="">-- Choose {field.label_en} --</option>
                             {options.map((opt) => (
@@ -1076,7 +1106,7 @@ export default function Products() {
                     if (field.field_type === 'textarea') {
                       return (
                         <div key={field.field_key} className="sm:col-span-2">
-                          <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                          <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                             {label}
                           </label>
                           <textarea
@@ -1088,7 +1118,7 @@ export default function Products() {
                                 attributes: { ...form.attributes, [field.field_key]: e.target.value },
                               })
                             }
-                            className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                            className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                           />
                         </div>
                       );
@@ -1096,7 +1126,7 @@ export default function Products() {
 
                     return (
                       <div key={field.field_key}>
-                        <label className="block font-semibold text-[#282431] dark:text-[#B8B0C4] mb-1">
+                        <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                           {label} {field.is_required ? '*' : ''}
                         </label>
                         <input
@@ -1108,7 +1138,7 @@ export default function Products() {
                               attributes: { ...form.attributes, [field.field_key]: e.target.value },
                             })
                           }
-                          className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                          className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                         />
                       </div>
                     );
@@ -1120,19 +1150,19 @@ export default function Products() {
             {/* SECTION 5: REUSABLE PRODUCT VARIANTS */}
             {activeFormSection === 'variants' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244]">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B]">
                   <div>
-                    <span className="font-bold text-xs uppercase text-[#282431] dark:text-[#B8B0C4] block">
+                    <span className="font-bold text-xs uppercase text-[#1C2736] dark:text-[#94A3B8] block">
                       Product Variants
                     </span>
-                    <span className="text-[11px] text-[#716B7C]">
+                    <span className="text-[11px] text-[#5A6B82]">
                       e.g. Size (Small/Large), RAM/Storage (8GB/128GB), Color (Teak/Walnut)
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={addVariantRow}
-                    className="px-3 py-1.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-bold flex items-center gap-1 shadow-sm"
+                    className="px-3 py-1.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-bold flex items-center gap-1 shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" /> + Add Variant
                   </button>
@@ -1140,9 +1170,9 @@ export default function Products() {
 
                 <div className="space-y-2.5">
                   {form.variants?.map((v, i) => (
-                    <div key={i} className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] space-y-2">
+                    <div key={i} className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-[#7652B5] dark:text-[#A98ADB]">Variant #{i + 1}</span>
+                        <span className="font-bold text-xs text-[#0A4174] dark:text-[#4A8CD2]">Variant #{i + 1}</span>
                         <button
                           type="button"
                           onClick={() => removeVariantRow(i)}
@@ -1158,7 +1188,7 @@ export default function Products() {
                             value={v.variant_name}
                             onChange={(e) => updateVariantRow(i, { variant_name: e.target.value })}
                             placeholder="Variant Name (e.g. 256GB Space Gray / Half / 6-Seater)"
-                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-medium"
+                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-medium"
                           />
                         </div>
                         <div>
@@ -1166,7 +1196,7 @@ export default function Products() {
                             value={v.sku}
                             onChange={(e) => updateVariantRow(i, { sku: e.target.value })}
                             placeholder="Variant SKU"
-                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs"
+                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs"
                           />
                         </div>
                         <div>
@@ -1174,50 +1204,50 @@ export default function Products() {
                             value={v.barcode}
                             onChange={(e) => updateVariantRow(i, { barcode: e.target.value })}
                             placeholder="Variant Barcode"
-                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-mono"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] block">Price Adjust ({currency})</label>
+                          <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Price Adjust ({currency})</label>
                           <input
                             type="number"
                             step="any"
                             value={v.price_adjustment}
                             onChange={(e) => updateVariantRow(i, { price_adjustment: e.target.value })}
                             placeholder="+/- 0.00"
-                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-xs"
+                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] block">Exact Selling Price ({currency})</label>
+                          <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Exact Selling Price ({currency})</label>
                           <input
                             type="number"
                             step="any"
                             value={v.selling_price}
                             onChange={(e) => updateVariantRow(i, { selling_price: e.target.value })}
                             placeholder="Override Price"
-                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-xs font-bold text-[#7652B5] dark:text-[#A98ADB]"
+                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2]"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] block">Variant Stock</label>
+                          <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Variant Stock</label>
                           <input
                             type="number"
                             step="any"
                             value={v.stock_qty}
                             onChange={(e) => updateVariantRow(i, { stock_qty: e.target.value })}
                             placeholder="0"
-                            className="w-full rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2.5 py-1 text-xs"
+                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs"
                           />
                         </div>
                       </div>
                     </div>
                   ))}
                   {(!form.variants || form.variants.length === 0) && (
-                    <div className="p-8 text-center text-[#716B7C] dark:text-[#B8B0C4] border border-dashed border-[#E8E3EF] dark:border-[#393244] rounded-xl">
+                    <div className="p-8 text-center text-[#5A6B82] dark:text-[#94A3B8] border border-dashed border-[#DCE5EF] dark:border-[#22354B] rounded-xl">
                       No variants added. This product will be sold as a single standard item.
                     </div>
                   )}
@@ -1228,20 +1258,20 @@ export default function Products() {
             {/* SECTION 6: HOTEL / RESTAURANT ADD-ONS MANAGEMENT */}
             {businessType === 'food' && activeFormSection === 'addons' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-3.5 rounded-xl bg-[#EDE7F7]/50 dark:bg-[#2B2536]/50 dark:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244] dark:border-[#393244] flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-[#E2EDF8]/50 dark:bg-[#1A2A3D]/50 dark:bg-[#1A2A3D] border border-[#DCE5EF] dark:border-[#22354B] dark:border-[#22354B] flex items-center justify-between">
                   <div>
-                    <span className="font-bold text-xs text-[#7652B5] dark:text-[#C5B3E6] block">
+                    <span className="font-bold text-xs text-[#0A4174] dark:text-[#9BBFE0] block">
                       Food Add-ons & Extra Toppings
                     </span>
-                    <span className="text-[11px] text-[#716B7C]">
+                    <span className="text-[11px] text-[#5A6B82]">
                       Configured add-on items appear dynamically during POS billing for customization
                     </span>
                   </div>
                 </div>
 
                 {/* Quick Add-on Creator Box */}
-                <div className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC]/60 dark:bg-[#2B2536]/40 space-y-2">
-                  <span className="font-bold text-[11px] text-[#282431] dark:text-[#B8B0C4] block">
+                <div className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/60 dark:bg-[#1A2A3D]/40 space-y-2">
+                  <span className="font-bold text-[11px] text-[#1C2736] dark:text-[#94A3B8] block">
                     Create Reusable Food Add-on
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
@@ -1249,7 +1279,7 @@ export default function Products() {
                       value={newAddonGroup.name}
                       onChange={(e) => setNewAddonGroup({ ...newAddonGroup, name: e.target.value })}
                       placeholder="Add-on Name (e.g. Extra Cheese)"
-                      className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1.5 text-xs"
+                      className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1.5 text-xs"
                     />
                     <input
                       type="number"
@@ -1257,18 +1287,18 @@ export default function Products() {
                       value={newAddonGroup.price}
                       onChange={(e) => setNewAddonGroup({ ...newAddonGroup, price: e.target.value })}
                       placeholder={`Extra Price (${currency})`}
-                      className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1.5 text-xs"
+                      className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1.5 text-xs"
                     />
                     <input
                       value={newAddonGroup.group_name}
                       onChange={(e) => setNewAddonGroup({ ...newAddonGroup, group_name: e.target.value })}
                       placeholder="Group (e.g. Toppings / Sides)"
-                      className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] px-2.5 py-1.5 text-xs"
+                      className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1.5 text-xs"
                     />
                     <button
                       type="button"
                       onClick={handleCreateAddon}
-                      className="rounded-lg bg-[#7652B5] dark:bg-[#A98ADB] hover:bg-[#5B3B91] dark:hover:bg-[#C0A5EA] font-bold text-white dark:text-[#17151D] py-1.5 text-xs shadow-sm"
+                      className="rounded-lg bg-[#0A4174] dark:bg-[#4A8CD2] hover:bg-[#062E52] dark:hover:bg-[#6BA3E0] font-bold text-white dark:text-[#0B131E] py-1.5 text-xs shadow-sm"
                     >
                       + Save Add-on
                     </button>
@@ -1277,15 +1307,15 @@ export default function Products() {
 
                 {/* Add-ons List */}
                 <div className="space-y-1.5">
-                  <span className="font-semibold text-xs text-[#282431] dark:text-[#B8B0C4] block">
+                  <span className="font-semibold text-xs text-[#1C2736] dark:text-[#94A3B8] block">
                     Available Add-ons in System ({addonsList.length})
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {addonsList.map((a) => (
-                      <div key={a.id} className="p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] flex items-center justify-between">
+                      <div key={a.id} className="p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] flex items-center justify-between">
                         <div>
-                          <span className="font-bold text-[#282431] dark:text-[#F5F2F9] block">{a.name}</span>
-                          <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">{a.group_name || 'General'}</span>
+                          <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9] block">{a.name}</span>
+                          <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">{a.group_name || 'General'}</span>
                         </div>
                         <span className="font-bold text-xs text-emerald-600">
                           +{formatCurrency(a.price, currency)}
@@ -1300,60 +1330,60 @@ export default function Products() {
             {/* SECTION 7: SALES CHANNELS & OTHER SETTINGS */}
             {activeFormSection === 'settings' && (
               <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-4 rounded-xl bg-[#F7F5FC] dark:bg-[#2B2536]/40 border border-[#E8E3EF] dark:border-[#393244] space-y-3">
-                  <span className="font-bold text-xs uppercase text-[#716B7C] tracking-wider block">
+                <div className="p-4 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B] space-y-3">
+                  <span className="font-bold text-xs uppercase text-[#5A6B82] tracking-wider block">
                     Sales Channel Visibility & Policies
                   </span>
 
                   <div className="space-y-2.5">
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">POS Sale Enabled</span>
-                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Display and sell this item on the POS Billing cashier screen</span>
+                        <span className="font-bold block text-[#1C2736] dark:text-[#F1F5F9]">POS Sale Enabled</span>
+                        <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Display and sell this item on the POS Billing cashier screen</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={form.pos_enabled}
                         onChange={(e) => setForm({ ...form, pos_enabled: e.target.checked })}
-                        className="w-4 h-4 accent-[#7652B5] rounded"
+                        className="w-4 h-4 accent-[#0A4174] rounded"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">Online Sale Enabled</span>
-                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Expose product on online catalog & sync to external web channels</span>
+                        <span className="font-bold block text-[#1C2736] dark:text-[#F1F5F9]">Online Sale Enabled</span>
+                        <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Expose product on online catalog & sync to external web channels</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={form.online_enabled}
                         onChange={(e) => setForm({ ...form, online_enabled: e.target.checked })}
-                        className="w-4 h-4 accent-[#7652B5] rounded"
+                        className="w-4 h-4 accent-[#0A4174] rounded"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">Product Returnable</span>
-                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Allow customers to return this product for refund or credit note</span>
+                        <span className="font-bold block text-[#1C2736] dark:text-[#F1F5F9]">Product Returnable</span>
+                        <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Allow customers to return this product for refund or credit note</span>
                       </div>
                       <input
                         type="checkbox"
                         checked={form.is_returnable}
                         onChange={(e) => setForm({ ...form, is_returnable: e.target.checked })}
-                        className="w-4 h-4 accent-[#7652B5] rounded"
+                        className="w-4 h-4 accent-[#0A4174] rounded"
                       />
                     </label>
 
-                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] cursor-pointer">
+                    <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] cursor-pointer">
                       <div>
-                        <span className="font-bold block text-[#282431] dark:text-[#F5F2F9]">Product Status (Active / Inactive)</span>
-                        <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">Inactive products are hidden from daily operations</span>
+                        <span className="font-bold block text-[#1C2736] dark:text-[#F1F5F9]">Product Status (Active / Inactive)</span>
+                        <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Inactive products are hidden from daily operations</span>
                       </div>
                       <select
                         value={form.is_active}
                         onChange={(e) => setForm({ ...form, is_active: Number(e.target.value) })}
-                        className="rounded-lg border border-[#E8E3EF] dark:border-[#393244] bg-transparent px-2 py-1 text-xs font-semibold"
+                        className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-xs font-semibold"
                       >
                         <option value={1}>Active</option>
                         <option value={0}>Inactive</option>
@@ -1365,7 +1395,7 @@ export default function Products() {
             )}
 
             {/* Bottom Form Actions */}
-            <div className="pt-4 border-t border-[#E8E3EF] dark:border-[#393244] flex items-center justify-between gap-3">
+            <div className="pt-4 border-t border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between gap-3">
               <div className="flex gap-2">
                 {activeFormSection !== 'basic' && (
                   <button
@@ -1375,7 +1405,7 @@ export default function Products() {
                       const idx = sections.indexOf(activeFormSection);
                       if (idx > 0) setActiveFormSection(sections[idx - 1]);
                     }}
-                    className="px-3 py-2 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                    className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
                   >
                     ← Previous
                   </button>
@@ -1388,7 +1418,7 @@ export default function Products() {
                       const idx = sections.indexOf(activeFormSection);
                       if (idx < sections.length - 1) setActiveFormSection(sections[idx + 1]);
                     }}
-                    className="px-3 py-2 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                    className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
                   >
                     Next →
                   </button>
@@ -1398,14 +1428,14 @@ export default function Products() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] font-black text-xs shadow-md transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-black text-xs shadow-md transition-colors"
                 >
                   {isEditing ? 'Save Product Changes' : 'Create Product Now'}
                 </button>
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                  className="px-4 py-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
                 >
                   Reset
                 </button>

@@ -30,11 +30,14 @@ export default function Dashboard() {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const currency = settings?.currency_symbol || '₹';
+
   const [summary, setSummary] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [income, setIncome] = useState([]);
   const [dateFilter, setDateFilter] = useState('all_time');
   const [salesTimeframe, setSalesTimeframe] = useState('7_days');
 
@@ -47,6 +50,8 @@ export default function Dashboard() {
     api.get('/products').then(({ data }) => setProducts(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/categories').then(({ data }) => setCategories(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/customers').then(({ data }) => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/expenses').then(({ data }) => setExpenses(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
+    api.get('/income').then(({ data }) => setIncome(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
   }, []);
 
   // Compute metrics from existing data
@@ -56,30 +61,21 @@ export default function Dashboard() {
       .reduce((sum, i) => sum + Number(i.grand_total || 0), 0);
   }, [invoices]);
 
+  const totalIncome = useMemo(() => {
+    return income.reduce((sum, it) => sum + Number(it.amount || 0), 0);
+  }, [income]);
+
+  const totalExpense = useMemo(() => {
+    return expenses.reduce((sum, it) => sum + Number(it.amount || 0), 0);
+  }, [expenses]);
+
+  const netProfit = useMemo(() => {
+    return totalSalesRevenue + totalIncome - totalExpense;
+  }, [totalSalesRevenue, totalIncome, totalExpense]);
+
   const outOfStockCount = useMemo(() => {
     return products.filter((p) => Number(p.stock_qty || 0) <= 0).length;
   }, [products]);
-
-  const [expensesList, setExpensesList] = useState([]);
-  const [incomeList, setIncomeList] = useState([]);
-
-  useEffect(() => {
-    api.get('/expenses').then(({ data }) => setExpensesList(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
-    api.get('/income').then(({ data }) => setIncomeList(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
-  }, []);
-
-  const totalExpense = useMemo(() => {
-    return expensesList.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  }, [expensesList]);
-
-  const totalIncome = useMemo(() => {
-    const extraIncome = incomeList.reduce((sum, inc) => sum + Number(inc.amount || 0), 0);
-    return totalSalesRevenue + extraIncome;
-  }, [incomeList, totalSalesRevenue]);
-
-  const netProfit = useMemo(() => {
-    return totalIncome - totalExpense;
-  }, [totalIncome, totalExpense]);
 
   // Order status distribution
   const orderStats = useMemo(() => {
@@ -167,17 +163,17 @@ export default function Dashboard() {
       {/* Dashboard Heading & Filter Pills (matches Screenshot 1) */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#282431] dark:text-[#F5F2F9] tracking-tight">
+          <h1 className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
             Dashboard
           </h1>
-          <p className="text-xs text-[#716B7C] dark:text-[#B8B0C4] mt-0.5">
+          <p className="text-xs text-[#5A6B82] dark:text-[#94A3B8] mt-0.5">
             Real-time business performance, billing velocity, and store analytics
           </p>
         </div>
 
         {/* Date Filter Pills */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 bg-white dark:bg-[#211D2A] p-1 rounded-full border border-[#E8E3EF] dark:border-[#393244] shadow-2xs">
+          <div className="flex items-center gap-1 bg-white dark:bg-[#121E2C] p-1 rounded-full border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs">
             {[
               { id: 'all_time', label: 'All Time' },
               { id: 'today', label: 'Today' },
@@ -191,8 +187,8 @@ export default function Dashboard() {
                 onClick={() => setDateFilter(f.id)}
                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                   dateFilter === f.id
-                    ? 'bg-[#282431] text-white dark:bg-[#F5F2F9] dark:text-[#17151D]'
-                    : 'text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#282431] dark:hover:text-white'
+                    ? 'bg-[#1C2736] text-white dark:bg-[#F1F5F9] dark:text-[#0B131E]'
+                    : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#1C2736] dark:hover:text-white'
                 }`}
               >
                 {f.label}
@@ -202,7 +198,7 @@ export default function Dashboard() {
 
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#211D2A] border border-[#E8E3EF] dark:border-[#393244] text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] shadow-2xs"
           >
             <Calendar className="w-3.5 h-3.5" />
             <span>All Time (No Filter)</span>
@@ -214,123 +210,123 @@ export default function Dashboard() {
       {/* Row 1: 8 KPI Cards (matches Screenshot 1 top row) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {/* 1. TODAY'S SALES */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Today's Sales</span>
-            <div className="w-6 h-6 rounded-full bg-[#EDE7F7] text-[#7652B5] flex items-center justify-center text-xs font-black">
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Today's Sales</span>
+            <div className="w-6 h-6 rounded-full bg-[#E2EDF8] text-[#0A4174] flex items-center justify-center text-xs font-black">
               ₹
             </div>
           </div>
           <div className="my-2">
-            <div className="text-base font-black text-[#282431] dark:text-[#F5F2F9]">
+            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9]">
               {formatCurrency(summary?.today_sales_total ?? 0, currency)}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
             <span className="text-emerald-600 font-semibold">• Daily POS</span>
-            <BarChart3 className="w-3 h-3 text-[#7652B5]" />
+            <BarChart3 className="w-3 h-3 text-[#0A4174]" />
           </div>
         </div>
 
         {/* 2. THIS MONTH */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">This Month</span>
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">This Month</span>
             <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-black">
               M
             </div>
           </div>
           <div className="my-2">
-            <div className="text-base font-black text-[#282431] dark:text-[#F5F2F9]">
+            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9]">
               {formatCurrency(totalSalesRevenue || 0, currency)}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
             <span className="text-emerald-600 font-semibold">• Current Month</span>
             <BarChart3 className="w-3 h-3 text-emerald-600" />
           </div>
         </div>
 
         {/* 3. TOTAL SALES */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Total Sales</span>
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Total Sales</span>
             <div className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">
               $
             </div>
           </div>
           <div className="my-2">
-            <div className="text-base font-black text-[#282431] dark:text-[#F5F2F9] truncate">
+            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9] truncate">
               {formatCurrency(totalSalesRevenue, currency)}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
-            <span className="text-[#716B7C] font-semibold">Lifetime Revenue</span>
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
+            <span className="text-[#5A6B82] font-semibold">Lifetime Revenue</span>
             <BarChart3 className="w-3 h-3 text-blue-600" />
           </div>
         </div>
 
         {/* 4. ORDERS */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Orders</span>
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Orders</span>
             <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-black">
               O
             </div>
           </div>
           <div className="my-2">
-            <div className="text-base font-black text-[#282431] dark:text-[#F5F2F9]">
+            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9]">
               {invoices.length || summary?.today_invoice_count || 0}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
             <span className="text-amber-600 font-semibold">{orderStats.pending} pending</span>
             <BarChart3 className="w-3 h-3 text-amber-600" />
           </div>
         </div>
 
         {/* 5. CUSTOMERS */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Customers</span>
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Customers</span>
             <div className="w-6 h-6 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center text-xs font-black">
               C
             </div>
           </div>
           <div className="my-2">
-            <div className="text-base font-black text-[#282431] dark:text-[#F5F2F9]">
+            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9]">
               {customers.length || (summary?.outstanding_from_customers > 0 ? 1 : 0)}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
             <span className="text-cyan-600 font-semibold">+0 Today</span>
             <BarChart3 className="w-3 h-3 text-cyan-600" />
           </div>
         </div>
 
         {/* 6. PRODUCTS */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Products</span>
-            <div className="w-6 h-6 rounded-full bg-[#EDE7F7] text-[#7652B5] flex items-center justify-center text-xs font-black">
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Products</span>
+            <div className="w-6 h-6 rounded-full bg-[#E2EDF8] text-[#0A4174] flex items-center justify-center text-xs font-black">
               P
             </div>
           </div>
           <div className="my-2">
-            <div className="text-base font-black text-[#282431] dark:text-[#F5F2F9]">
+            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9]">
               {products.length || summary?.product_count || 0}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
-            <span className="text-[#7652B5] font-semibold">Active SKUs</span>
-            <BarChart3 className="w-3 h-3 text-[#7652B5]" />
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
+            <span className="text-[#0A4174] font-semibold">Active SKUs</span>
+            <BarChart3 className="w-3 h-3 text-[#0A4174]" />
           </div>
         </div>
 
         {/* 7. LOW STOCK */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Low Stock</span>
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Low Stock</span>
             <div className="w-6 h-6 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-black">
               !
             </div>
@@ -340,16 +336,16 @@ export default function Dashboard() {
               {summary?.low_stock_count ?? 0}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
             <span className="text-amber-600 font-semibold">Reorder alert</span>
             <BarChart3 className="w-3 h-3 text-amber-600" />
           </div>
         </div>
 
         {/* 8. OUT OF STOCK */}
-        <div className="bg-white dark:bg-[#211D2A] p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#716B7C] uppercase">Out of Stock</span>
+            <span className="text-[10px] font-bold text-[#5A6B82] uppercase">Out of Stock</span>
             <div className="w-6 h-6 rounded-full bg-red-50 text-red-600 flex items-center justify-center text-xs font-black">
               ✕
             </div>
@@ -359,7 +355,7 @@ export default function Dashboard() {
               {outOfStockCount}
             </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-[#716B7C] pt-1 border-t border-[#E8E3EF]/50">
+          <div className="flex items-center justify-between text-[10px] text-[#5A6B82] pt-1 border-t border-[#DCE5EF]/50">
             <span className="text-red-500 font-semibold">Zero inventory</span>
             <BarChart3 className="w-3 h-3 text-red-500" />
           </div>
@@ -369,16 +365,16 @@ export default function Dashboard() {
       {/* Row 2: 3 Wide Financial Overview Cards (matches Screenshot 1) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* TOTAL INCOME */}
-        <div className="bg-white dark:bg-[#211D2A] p-4 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex items-center justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-4 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#716B7C]">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#5A6B82]">
               <span>TOTAL INCOME</span>
               <span className="text-emerald-500">↗</span>
             </div>
-            <div className="text-xl font-black text-[#282431] dark:text-[#F5F2F9] mt-1">
+            <div className="text-xl font-black text-[#1C2736] dark:text-[#F1F5F9] mt-1">
               {formatCurrency(totalIncome, currency)}
             </div>
-            <p className="text-[10px] text-[#716B7C] mt-1">All recorded revenue</p>
+            <p className="text-[10px] text-[#5A6B82] mt-1">All recorded revenue</p>
           </div>
           <div className="w-24 h-10">
             <svg viewBox="0 0 100 40" className="w-full h-full">
@@ -389,16 +385,16 @@ export default function Dashboard() {
         </div>
 
         {/* TOTAL EXPENSE */}
-        <div className="bg-white dark:bg-[#211D2A] p-4 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex items-center justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-4 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#716B7C]">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#5A6B82]">
               <span>TOTAL EXPENSE</span>
               <span className="text-red-400">↘</span>
             </div>
-            <div className="text-xl font-black text-[#282431] dark:text-[#F5F2F9] mt-1">
+            <div className="text-xl font-black text-[#1C2736] dark:text-[#F1F5F9] mt-1">
               {formatCurrency(totalExpense, currency)}
             </div>
-            <p className="text-[10px] text-[#716B7C] mt-1">All recorded expenses</p>
+            <p className="text-[10px] text-[#5A6B82] mt-1">All recorded expenses</p>
           </div>
           <div className="w-24 h-10">
             <svg viewBox="0 0 100 40" className="w-full h-full">
@@ -409,16 +405,16 @@ export default function Dashboard() {
         </div>
 
         {/* NET PROFIT */}
-        <div className="bg-white dark:bg-[#211D2A] p-4 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex items-center justify-between">
+        <div className="bg-white dark:bg-[#121E2C] p-4 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#716B7C]">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#5A6B82]">
               <span>NET PROFIT</span>
               <span className="text-sky-500">↗</span>
             </div>
-            <div className="text-xl font-black text-[#282431] dark:text-[#F5F2F9] mt-1">
+            <div className="text-xl font-black text-[#1C2736] dark:text-[#F1F5F9] mt-1">
               {formatCurrency(netProfit, currency)}
             </div>
-            <p className="text-[10px] text-[#716B7C] mt-1">Income - Expense</p>
+            <p className="text-[10px] text-[#5A6B82] mt-1">Income - Expense</p>
           </div>
           <div className="w-24 h-10">
             <svg viewBox="0 0 100 40" className="w-full h-full">
@@ -432,13 +428,13 @@ export default function Dashboard() {
       {/* Row 3: Sales Overview (50%) + Order Status (25%) + Quick Actions (25%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Sales Overview Line Chart (50% -> 6 cols) */}
-        <div className="lg:col-span-6 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+        <div className="lg:col-span-6 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
+          <div className="flex items-center justify-between pb-3 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <div>
-              <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">Sales Overview</h2>
-              <p className="text-[11px] text-[#716B7C] dark:text-[#B8B0C4]">Total sales for the last 7 days</p>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Sales Overview</h2>
+              <p className="text-[11px] text-[#5A6B82] dark:text-[#94A3B8]">Total sales for the last 7 days</p>
             </div>
-            <div className="flex items-center gap-1 text-xs text-[#716B7C] border border-[#E8E3EF] dark:border-[#393244] px-2.5 py-1 rounded-full">
+            <div className="flex items-center gap-1 text-xs text-[#5A6B82] border border-[#DCE5EF] dark:border-[#22354B] px-2.5 py-1 rounded-full">
               <span>Last 7 Days</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </div>
@@ -453,8 +449,8 @@ export default function Dashboard() {
                   const y = 130 - idx * 25;
                   return (
                     <g key={val}>
-                      <line x1="35" y1={y} x2="425" y2={y} stroke="#E8E3EF" strokeDasharray="3 3" />
-                      <text x="5" y={y + 3} fill="#716B7C" fontSize="9" fontWeight="600">
+                      <line x1="35" y1={y} x2="425" y2={y} stroke="#DCE5EF" strokeDasharray="3 3" />
+                      <text x="5" y={y + 3} fill="#5A6B82" fontSize="9" fontWeight="600">
                         {val >= 1000 ? `₹${val / 1000}k` : `₹${val}`}
                       </text>
                     </g>
@@ -463,9 +459,9 @@ export default function Dashboard() {
 
                 {/* Purple Area Gradient & Line */}
                 <defs>
-                  <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#7652B5" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#7652B5" stopOpacity="0" />
+                  <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0A4174" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#0A4174" stopOpacity="0" />
                   </linearGradient>
                 </defs>
 
@@ -473,12 +469,12 @@ export default function Dashboard() {
                 {points.length > 0 && (
                   <path
                     d={`${svgPath} L ${points[points.length - 1].x} 130 L ${points[0].x} 130 Z`}
-                    fill="url(#purpleGradient)"
+                    fill="url(#blueGradient)"
                   />
                 )}
 
                 {/* Smooth Curve */}
-                <path d={svgPath} fill="none" stroke="#7652B5" strokeWidth="2.5" />
+                <path d={svgPath} fill="none" stroke="#0A4174" strokeWidth="2.5" />
 
                 {/* Data point dots */}
                 {points.map((p) => (
@@ -487,7 +483,7 @@ export default function Dashboard() {
                     cx={p.x}
                     cy={p.y}
                     r="3.5"
-                    fill="#7652B5"
+                    fill="#0A4174"
                     stroke="#FFFFFF"
                     strokeWidth="1.5"
                   />
@@ -496,7 +492,7 @@ export default function Dashboard() {
             </div>
 
             {/* X-axis date labels */}
-            <div className="flex justify-between pl-8 pr-4 text-[10px] text-[#716B7C] font-semibold mt-1">
+            <div className="flex justify-between pl-8 pr-4 text-[10px] text-[#5A6B82] font-semibold mt-1">
               {salesChartData.days.map((d) => (
                 <span key={d.dateKey}>{d.label}</span>
               ))}
@@ -505,16 +501,16 @@ export default function Dashboard() {
         </div>
 
         {/* Order Status Donut Chart (25% -> 3 cols) */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
-          <div className="pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-            <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">Order Status</h2>
+        <div className="lg:col-span-3 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
+          <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Order Status</h2>
           </div>
 
           {/* Donut Graphic */}
           <div className="flex items-center justify-center py-4 relative">
             <svg viewBox="0 0 120 120" className="w-32 h-32 transform -rotate-90">
               {/* Background ring */}
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#E8E3EF" strokeWidth="14" />
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#DCE5EF" strokeWidth="14" />
               {/* Cyan / Processing slice (50%) */}
               <circle
                 cx="60"
@@ -539,42 +535,42 @@ export default function Dashboard() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-xl font-black text-[#282431] dark:text-[#F5F2F9] leading-none">
+              <span className="text-xl font-black text-[#1C2736] dark:text-[#F1F5F9] leading-none">
                 {orderStats.total || 2}
               </span>
-              <span className="text-[9px] text-[#716B7C] uppercase font-bold mt-0.5">
+              <span className="text-[9px] text-[#5A6B82] uppercase font-bold mt-0.5">
                 Total Orders
               </span>
             </div>
           </div>
 
           {/* Status Legend */}
-          <div className="space-y-1.5 text-[11px] pt-1 border-t border-[#E8E3EF] dark:border-[#393244]">
+          <div className="space-y-1.5 text-[11px] pt-1 border-t border-[#DCE5EF] dark:border-[#22354B]">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
-                <span className="text-[#716B7C]">Pending</span>
+                <span className="text-[#5A6B82]">Pending</span>
               </span>
               <span className="font-bold">0 (0%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="text-[#716B7C]">Delivered</span>
+                <span className="text-[#5A6B82]">Delivered</span>
               </span>
               <span className="font-bold">0 (0%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-cyan-500" />
-                <span className="text-[#716B7C]">Processing</span>
+                <span className="text-[#5A6B82]">Processing</span>
               </span>
               <span className="font-bold">1 (50%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span className="text-[#716B7C]">Cancelled</span>
+                <span className="text-[#5A6B82]">Cancelled</span>
               </span>
               <span className="font-bold">1 (50%)</span>
             </div>
@@ -582,16 +578,16 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Actions (25% -> 3 cols) - Stacked Colorful Pills */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs flex flex-col justify-between">
-          <div className="pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-            <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">Quick Actions</h2>
+        <div className="lg:col-span-3 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs flex flex-col justify-between">
+          <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Quick Actions</h2>
           </div>
 
           <div className="space-y-2 py-1">
-            {/* + Add New Product [Purple] */}
+            {/* + Add New Product [Blue] */}
             <Link
               to="/products"
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] text-white text-xs font-bold shadow-sm transition-all"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] text-white text-xs font-bold shadow-sm transition-all"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Add New Product</span>
@@ -639,13 +635,13 @@ export default function Dashboard() {
       {/* Row 4: Popular Items (40%) + Top Categories (30%) + Recent Activity (30%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Popular Items (5 cols) */}
-        <div className="lg:col-span-5 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
+        <div className="lg:col-span-5 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <div>
-              <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">Popular Items</h2>
-              <p className="text-[10px] text-[#716B7C]">Top performing catalog products ranked by order volume and sales</p>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Popular Items</h2>
+              <p className="text-[10px] text-[#5A6B82]">Top performing catalog products ranked by order volume and sales</p>
             </div>
-            <Link to="/products" className="text-xs font-bold text-[#7652B5] hover:underline">
+            <Link to="/products" className="text-xs font-bold text-[#0A4174] hover:underline">
               View All
             </Link>
           </div>
@@ -655,21 +651,21 @@ export default function Dashboard() {
               products.slice(0, 5).map((p, idx) => (
                 <div
                   key={p.id}
-                  className="p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC]/60 dark:bg-[#17151D] flex flex-col items-center text-center relative group"
+                  className="p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/60 dark:bg-[#0B131E] flex flex-col items-center text-center relative group"
                 >
-                  <span className="w-4 h-4 rounded-full bg-[#7652B5] text-white text-[9px] font-bold flex items-center justify-center absolute top-1.5 left-1.5">
+                  <span className="w-4 h-4 rounded-full bg-[#0A4174] text-white text-[9px] font-bold flex items-center justify-center absolute top-1.5 left-1.5">
                     {idx + 1}
                   </span>
-                  <div className="w-8 h-8 rounded-lg bg-[#EDE7F7] text-[#7652B5] dark:bg-[#2B2536] dark:text-[#A98ADB] flex items-center justify-center my-1.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#E2EDF8] text-[#0A4174] dark:bg-[#1A2A3D] dark:text-[#4A8CD2] flex items-center justify-center my-1.5">
                     <Package className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-bold text-[#282431] dark:text-[#F5F2F9] line-clamp-2 leading-tight">
+                  <span className="text-[10px] font-bold text-[#1C2736] dark:text-[#F1F5F9] line-clamp-2 leading-tight">
                     {p.name}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="col-span-5 py-6 text-center text-xs text-[#716B7C] dark:text-[#B8B0C4]">
+              <div className="col-span-5 py-6 text-center text-xs text-[#5A6B82] dark:text-[#94A3B8]">
                 No products found in database
               </div>
             )}
@@ -677,10 +673,10 @@ export default function Dashboard() {
         </div>
 
         {/* Top Categories (4 cols) */}
-        <div className="lg:col-span-4 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-            <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">Top Categories</h2>
-            <Link to="/master-data?tab=categories" className="text-xs font-bold text-[#7652B5] hover:underline">
+        <div className="lg:col-span-4 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Top Categories</h2>
+            <Link to="/master-data?tab=categories" className="text-xs font-bold text-[#0A4174] hover:underline">
               View All
             </Link>
           </div>
@@ -690,20 +686,20 @@ export default function Dashboard() {
               topCategories.map((c) => (
                 <div key={c.name} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#282431] dark:text-[#F5F2F9]">{c.name}</span>
-                    <span className="font-bold text-[#716B7C]">{c.percent}%</span>
+                    <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{c.name}</span>
+                    <span className="font-bold text-[#5A6B82]">{c.percent}%</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[#EDE7F7] dark:bg-[#2B2536] overflow-hidden">
+                  <div className="w-full h-2 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] overflow-hidden">
                     <div
                       style={{ width: `${c.percent}%` }}
                       className="h-full rounded-full bg-[#0D9488]"
                     />
                   </div>
-                  <div className="text-[10px] text-[#716B7C]">{c.count} products</div>
+                  <div className="text-[10px] text-[#5A6B82]">{c.count} products</div>
                 </div>
               ))
             ) : (
-              <div className="py-6 text-center text-xs text-[#716B7C] dark:text-[#B8B0C4]">
+              <div className="py-6 text-center text-xs text-[#5A6B82] dark:text-[#94A3B8]">
                 No categories found in database
               </div>
             )}
@@ -711,10 +707,10 @@ export default function Dashboard() {
         </div>
 
         {/* Recent Activity (3 cols) */}
-        <div className="lg:col-span-3 bg-white dark:bg-[#211D2A] p-5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-2xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-            <h2 className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">Recent Activity</h2>
-            <Link to="/invoices" className="text-xs font-bold text-[#7652B5] hover:underline">
+        <div className="lg:col-span-3 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-2xs space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Recent Activity</h2>
+            <Link to="/invoices" className="text-xs font-bold text-[#0A4174] hover:underline">
               View All
             </Link>
           </div>
@@ -723,7 +719,7 @@ export default function Dashboard() {
             {invoices.length > 0 ? (
               invoices.slice(0, 3).map((inv) => (
                 <div key={inv.id || inv.uuid} className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-[#EDE7F7] text-[#7652B5] dark:bg-[#2B2536] dark:text-[#A98ADB] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-[#E2EDF8] text-[#0A4174] dark:bg-[#1A2A3D] dark:text-[#4A8CD2] flex items-center justify-center flex-shrink-0 mt-0.5">
                     {inv.status === 'cancelled' ? (
                       <XCircle className="w-3.5 h-3.5 text-rose-500" />
                     ) : (
@@ -731,20 +727,20 @@ export default function Dashboard() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[#282431] dark:text-[#F5F2F9] leading-tight">
+                    <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] leading-tight">
                       {inv.status === 'cancelled' ? 'Order cancelled' : 'Invoice generated'}
                     </div>
-                    <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] truncate">
+                    <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate">
                       #{inv.invoice_no || inv.uuid?.slice(0, 8)} - {formatCurrency(inv.grand_total, currency)}
                     </div>
                   </div>
-                  <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] flex-shrink-0">
+                  <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] flex-shrink-0">
                     {inv.created_at ? new Date(inv.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recent'}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="py-6 text-center text-xs text-[#716B7C] dark:text-[#B8B0C4]">
+              <div className="py-6 text-center text-xs text-[#5A6B82] dark:text-[#94A3B8]">
                 No recent activity recorded
               </div>
             )}

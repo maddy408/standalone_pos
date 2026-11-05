@@ -114,15 +114,32 @@ export default function POS() {
   const [dbCategories, setDbCategories] = useState([]);
 
   const loadProducts = async () => {
-    if (!settings?.business_type) return;
     try {
-      const { data } = await api.get('/products', {
-        params: { business_type: settings.business_type },
-      });
-      setProducts(data);
-      cacheProducts(data);
+      let data = [];
+      if (settings?.business_type) {
+        const res = await api.get('/products', {
+          params: { business_type: settings.business_type },
+        });
+        data = res.data;
+      }
+
+      // If business_type is not configured or returned 0 products,
+      // load all active products so existing database records are never omitted or hidden
+      if (!Array.isArray(data) || data.length === 0) {
+        const resAll = await api.get('/products');
+        if (Array.isArray(resAll.data) && resAll.data.length > 0) {
+          data = resAll.data;
+        }
+      }
+
+      const productList = Array.isArray(data) ? data : [];
+      setProducts(productList);
+      if (productList.length > 0) {
+        cacheProducts(productList);
+      }
     } catch {
-      setProducts(await getCachedProducts());
+      const cached = await getCachedProducts();
+      setProducts(Array.isArray(cached) ? cached : []);
     }
   };
 
@@ -572,13 +589,13 @@ export default function POS() {
   return (
     <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-6rem)] overflow-hidden font-sans">
       {/* Main Catalog View (matches reference screenshot 2) */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-[#211D2A] rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm overflow-hidden">
         {/* Top Header: Customer Type Options + Quick Sale & Hold Bills */}
-        <div className="p-4 border-b border-[#E8E3EF] dark:border-[#393244] space-y-3.5 bg-white dark:bg-[#211D2A]">
+        <div className="p-4 border-b border-[#DCE5EF] dark:border-[#22354B] space-y-3.5 bg-white dark:bg-[#121E2C]">
           {/* Row 1: Customer Type pills + Quick Sale & Hold Bills */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-[#282431] dark:text-[#F5F2F9]">
+              <span className="text-xs font-black uppercase tracking-wider text-[#1C2736] dark:text-[#F1F5F9]">
                 CUSTOMER TYPE:
               </span>
               <div className="flex items-center gap-1.5">
@@ -596,8 +613,8 @@ export default function POS() {
                       onClick={() => setCustomerType(ct.id)}
                       className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                         active
-                          ? 'bg-[#7652B5] text-white shadow-sm dark:bg-[#A98ADB] dark:text-[#17151D]'
-                          : 'bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] border border-[#E8E3EF] dark:border-[#393244]'
+                          ? 'bg-[#0A4174] text-white shadow-sm dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                          : 'bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] border border-[#DCE5EF] dark:border-[#22354B]'
                       }`}
                     >
                       {ct.label}
@@ -614,7 +631,7 @@ export default function POS() {
                   setSelectedCustomerId('');
                   setCustomerSearch('Walk-in Customer');
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] text-xs font-bold shadow-sm transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-sm transition-all"
               >
                 <Zap className="w-3.5 h-3.5 fill-current" />
                 <span>+ Quick Sale</span>
@@ -623,9 +640,9 @@ export default function POS() {
               <button
                 type="button"
                 onClick={() => setShowHeldModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#211D2A] border border-[#E8E3EF] dark:border-[#393244] text-[#282431] dark:text-[#F5F2F9] text-xs font-bold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-all shadow-xs"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B] text-[#1C2736] dark:text-[#F1F5F9] text-xs font-bold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-all shadow-xs"
               >
-                <Clock className="w-3.5 h-3.5 text-[#7652B5] dark:text-[#A98ADB]" />
+                <Clock className="w-3.5 h-3.5 text-[#0A4174] dark:text-[#4A8CD2]" />
                 <span>Hold Bills ({heldBills.length})</span>
               </button>
             </div>
@@ -635,7 +652,7 @@ export default function POS() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search customer input */}
             <div className="relative flex-1 min-w-[200px]">
-              <User className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3.5 top-2.5" />
+              <User className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3.5 top-2.5" />
               <input
                 value={customerSearch}
                 onFocus={() => setCustomerDropdownOpen(true)}
@@ -644,27 +661,27 @@ export default function POS() {
                   setCustomerDropdownOpen(true);
                 }}
                 placeholder="Search customer name / phone..."
-                className="w-full pl-9 pr-8 py-2 rounded-full border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-xs focus:ring-2 focus:ring-[#7652B5] focus:outline-none"
+                className="w-full pl-9 pr-8 py-2 rounded-full border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-xs focus:ring-2 focus:ring-[#0A4174] focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowNewCustomer(true)}
                 title="Add New Customer"
-                className="absolute right-2 top-1.5 p-1 rounded-full text-[#7652B5] dark:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                className="absolute right-2 top-1.5 p-1 rounded-full text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
               >
                 <UserPlus className="w-3.5 h-3.5" />
               </button>
 
               {/* Customer Dropdown */}
               {customerDropdownOpen && (
-                <div className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white dark:bg-[#211D2A] border border-[#E8E3EF] dark:border-[#393244] rounded-xl shadow-xl z-30 text-xs divide-y divide-[#E8E3EF] dark:divide-[#393244]">
+                <div className="absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B] rounded-xl shadow-xl z-30 text-xs divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
                   <div
                     onClick={() => {
                       setSelectedCustomerId('');
                       setCustomerSearch('Walk-in Customer');
                       setCustomerDropdownOpen(false);
                     }}
-                    className="p-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] cursor-pointer font-medium text-[#716B7C] dark:text-[#B8B0C4]"
+                    className="p-2 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] cursor-pointer font-medium text-[#5A6B82] dark:text-[#94A3B8]"
                   >
                     Walk-in Customer (General)
                   </div>
@@ -676,14 +693,14 @@ export default function POS() {
                         setCustomerSearch(`${c.name} (${c.phone || 'No phone'})`);
                         setCustomerDropdownOpen(false);
                       }}
-                      className="p-2 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] cursor-pointer flex justify-between items-center"
+                      className="p-2 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] cursor-pointer flex justify-between items-center"
                     >
                       <div>
-                        <div className="font-semibold text-[#282431] dark:text-[#F5F2F9]">{c.name}</div>
-                        <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">{c.phone || c.email || 'No phone'}</div>
+                        <div className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{c.name}</div>
+                        <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">{c.phone || c.email || 'No phone'}</div>
                       </div>
                       {Number(c.balance || 0) > 0 && (
-                        <span className="text-[10px] text-[#7652B5] dark:text-[#A98ADB] font-bold">
+                        <span className="text-[10px] text-[#0A4174] dark:text-[#4A8CD2] font-bold">
                           Due: {formatCurrency(c.balance, currency)}
                         </span>
                       )}
@@ -695,7 +712,7 @@ export default function POS() {
 
             {/* Search product input */}
             <div className="relative flex-1 min-w-[260px]">
-              <Search className="w-4 h-4 text-[#716B7C] dark:text-[#B8B0C4] absolute left-3.5 top-2.5" />
+              <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3.5 top-2.5" />
               <input
                 ref={searchRef}
                 value={search}
@@ -717,19 +734,19 @@ export default function POS() {
                   }
                 }}
                 placeholder="Search product by name, SKU or barcode (Press Enter)..."
-                className="w-full pl-9 pr-14 py-2 rounded-full border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] text-xs focus:ring-2 focus:ring-[#7652B5] focus:outline-none"
+                className="w-full pl-9 pr-14 py-2 rounded-full border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-xs focus:ring-2 focus:ring-[#0A4174] focus:outline-none"
               />
               <div className="absolute right-3 top-2 flex items-center gap-1.5">
                 {search && (
                   <button
                     type="button"
                     onClick={() => setSearch('')}
-                    className="p-0.5 text-[#716B7C] hover:text-[#282431] dark:hover:text-[#F5F2F9]"
+                    className="p-0.5 text-[#5A6B82] hover:text-[#1C2736] dark:hover:text-[#F1F5F9]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-[#716B7C] dark:text-[#B8B0C4] bg-[#EDE7F7] dark:bg-[#2B2536]">
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-mono text-[#5A6B82] dark:text-[#94A3B8] bg-[#E2EDF8] dark:bg-[#1A2A3D]">
                   F2
                 </span>
               </div>
@@ -741,7 +758,7 @@ export default function POS() {
                 type="button"
                 onClick={() => setScannerOpen(true)}
                 title="Camera & Photo Scanner"
-                className="p-2 rounded-full border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+                className="p-2 rounded-full border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
               >
                 <Camera className="w-4 h-4" />
               </button>
@@ -749,7 +766,7 @@ export default function POS() {
                 type="button"
                 onClick={() => setPrinterModal(true)}
                 title="WiFi Thermal Printer"
-                className="p-2 rounded-full border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+                className="p-2 rounded-full border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
               >
                 <Wifi className="w-4 h-4" />
               </button>
@@ -757,7 +774,7 @@ export default function POS() {
                 type="button"
                 onClick={() => setPrinterModal(true)}
                 title="Bluetooth Printer"
-                className="p-2 rounded-full border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+                className="p-2 rounded-full border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
               >
                 <Bluetooth className="w-4 h-4" />
               </button>
@@ -776,8 +793,8 @@ export default function POS() {
                 }}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
                   selectedCategory === 'all' && !filterTopSelling
-                    ? 'bg-[#7652B5] text-white shadow-xs dark:bg-[#A98ADB] dark:text-[#17151D]'
-                    : 'bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] border border-[#E8E3EF] dark:border-[#393244]'
+                    ? 'bg-[#0A4174] text-white shadow-xs dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                    : 'bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] border border-[#DCE5EF] dark:border-[#22354B]'
                 }`}
               >
                 All Items
@@ -789,8 +806,8 @@ export default function POS() {
                 onClick={() => setFilterTopSelling((prev) => !prev)}
                 className={`inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
                   filterTopSelling
-                    ? 'bg-[#7652B5] text-white shadow-xs dark:bg-[#A98ADB] dark:text-[#17151D]'
-                    : 'bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] border border-[#E8E3EF] dark:border-[#393244]'
+                    ? 'bg-[#0A4174] text-white shadow-xs dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                    : 'bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] border border-[#DCE5EF] dark:border-[#22354B]'
                 }`}
               >
                 <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
@@ -802,7 +819,7 @@ export default function POS() {
                 <button
                   type="button"
                   onClick={() => setCategoryDropdownOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#211D2A] text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] border border-[#E8E3EF] dark:border-[#393244]"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] border border-[#DCE5EF] dark:border-[#22354B]"
                 >
                   <span>
                     {selectedCategory === 'all'
@@ -813,14 +830,14 @@ export default function POS() {
                 </button>
 
                 {categoryDropdownOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 w-48 max-h-56 overflow-y-auto bg-white dark:bg-[#211D2A] border border-[#E8E3EF] dark:border-[#393244] rounded-xl shadow-xl z-30 text-xs py-1 scrollbar-thin">
+                  <div className="absolute left-0 top-full mt-1.5 w-48 max-h-56 overflow-y-auto bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B] rounded-xl shadow-xl z-30 text-xs py-1 scrollbar-thin">
                     <button
                       type="button"
                       onClick={() => {
                         setSelectedCategory('all');
                         setCategoryDropdownOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] font-semibold text-[#7652B5] dark:text-[#A98ADB]"
+                      className="w-full text-left px-3 py-1.5 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] font-semibold text-[#0A4174] dark:text-[#4A8CD2]"
                     >
                       All Categories
                     </button>
@@ -832,8 +849,8 @@ export default function POS() {
                           setSelectedCategory(cat);
                           setCategoryDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-1.5 hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] ${
-                          selectedCategory === cat ? 'font-bold text-[#7652B5] dark:text-[#A98ADB] bg-[#EDE7F7]/60' : 'text-[#716B7C] dark:text-[#B8B0C4]'
+                        className={`w-full text-left px-3 py-1.5 hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] ${
+                          selectedCategory === cat ? 'font-bold text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8]/60' : 'text-[#5A6B82] dark:text-[#94A3B8]'
                         }`}
                       >
                         {cat}
@@ -845,14 +862,14 @@ export default function POS() {
             </div>
 
             {/* View Mode Toggle: List vs Grid */}
-            <div className="flex items-center rounded-lg border border-[#E8E3EF] dark:border-[#393244] p-0.5 bg-[#F7F5FC] dark:bg-[#17151D]">
+            <div className="flex items-center rounded-lg border border-[#DCE5EF] dark:border-[#22354B] p-0.5 bg-[#F4F7FB] dark:bg-[#0B131E]">
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-[#7652B5] text-white shadow-xs dark:bg-[#A98ADB] dark:text-[#17151D]'
-                    : 'text-[#716B7C] dark:text-[#B8B0C4]'
+                    ? 'bg-[#0A4174] text-white shadow-xs dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                    : 'text-[#5A6B82] dark:text-[#94A3B8]'
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
@@ -863,8 +880,8 @@ export default function POS() {
                 onClick={() => setViewMode('grid')}
                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-[#7652B5] text-white shadow-xs dark:bg-[#A98ADB] dark:text-[#17151D]'
-                    : 'text-[#716B7C] dark:text-[#B8B0C4]'
+                    ? 'bg-[#0A4174] text-white shadow-xs dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                    : 'text-[#5A6B82] dark:text-[#94A3B8]'
                 }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
@@ -875,7 +892,7 @@ export default function POS() {
         </div>
 
         {/* Product Catalog Display (matches Screenshot 2 grid cards) */}
-        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin bg-[#F7F5FC]/40 dark:bg-[#17151D]/30">
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin bg-[#F4F7FB]/40 dark:bg-[#0B131E]/30">
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredProducts.map((p) => {
@@ -887,7 +904,7 @@ export default function POS() {
                 return (
                   <div
                     key={p.id}
-                    className="p-3.5 rounded-2xl border border-[#E8E3EF] dark:border-[#393244] hover:border-[#7652B5] dark:hover:border-[#A98ADB] bg-white dark:bg-[#211D2A] shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative"
+                    className="p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] bg-white dark:bg-[#121E2C] shadow-xs hover:shadow-md transition-all flex flex-col justify-between group relative"
                   >
                     <div>
                       {/* Top Right In Stock Badge */}
@@ -908,7 +925,7 @@ export default function POS() {
                         const imgUrl = getProductImage(p);
                         if (imgUrl) {
                           return (
-                            <div className="w-full h-28 mb-2 rounded-xl overflow-hidden bg-[#F7F5FC] dark:bg-[#17151D] flex items-center justify-center border border-[#E8E3EF] dark:border-[#393244] relative group-hover:border-[#7652B5] dark:group-hover:border-[#A98ADB] transition-colors">
+                            <div className="w-full h-28 mb-2 rounded-xl overflow-hidden bg-[#F4F7FB] dark:bg-[#0B131E] flex items-center justify-center border border-[#DCE5EF] dark:border-[#22354B] relative group-hover:border-[#0A4174] dark:group-hover:border-[#4A8CD2] transition-colors">
                               <img
                                 src={imgUrl}
                                 alt={p.name}
@@ -920,10 +937,10 @@ export default function POS() {
                                 }}
                               />
                               <div style={{ display: 'none' }} className="flex-col items-center justify-center py-2 text-center w-full h-full">
-                                <div className="w-10 h-10 rounded-xl bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] flex items-center justify-center mb-1">
+                                <div className="w-10 h-10 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center mb-1">
                                   <ShoppingBag className="w-5 h-5 stroke-[1.5]" />
                                 </div>
-                                <span className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4] font-medium truncate max-w-[120px]">
+                                <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-medium truncate max-w-[120px]">
                                   {p.brand_name || p.category_name || 'General'}
                                 </span>
                               </div>
@@ -932,10 +949,10 @@ export default function POS() {
                         }
                         return (
                           <div className="flex flex-col items-center justify-center py-2 text-center">
-                            <div className="w-12 h-12 rounded-xl bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] flex items-center justify-center mb-1">
+                            <div className="w-12 h-12 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center mb-1">
                               <ShoppingBag className="w-6 h-6 stroke-[1.5]" />
                             </div>
-                            <span className="text-[11px] text-[#716B7C] dark:text-[#B8B0C4] font-medium truncate max-w-[140px]">
+                            <span className="text-[11px] text-[#5A6B82] dark:text-[#94A3B8] font-medium truncate max-w-[140px]">
                               {p.brand_name || p.category_name || 'General'}
                             </span>
                           </div>
@@ -943,16 +960,16 @@ export default function POS() {
                       })()}
 
                       {/* Product Name */}
-                      <div className="font-bold text-xs text-[#282431] dark:text-[#F5F2F9] line-clamp-2 mt-1 mb-2 group-hover:text-[#7652B5] dark:group-hover:text-[#A98ADB] transition-colors">
+                      <div className="font-bold text-xs text-[#1C2736] dark:text-[#F1F5F9] line-clamp-2 mt-1 mb-2 group-hover:text-[#0A4174] dark:group-hover:text-[#4A8CD2] transition-colors">
                         {p.name}
                       </div>
 
                       {/* Price & SKU / Stock */}
                       <div className="flex items-baseline justify-between text-xs mt-1">
-                        <span className="font-extrabold text-sm text-[#7652B5] dark:text-[#A98ADB]">
+                        <span className="font-extrabold text-sm text-[#0A4174] dark:text-[#4A8CD2]">
                           {formatCurrency(price, currency)}
                         </span>
-                        <div className="text-right text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">
+                        <div className="text-right text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
                           {p.sku && <div>SKU: {p.sku}</div>}
                           <div>Stock: {stock}</div>
                         </div>
@@ -960,13 +977,13 @@ export default function POS() {
                     </div>
 
                     {/* Bottom Actions: Quantity Stepper & Add to Cart button */}
-                    <div className="mt-3 pt-2.5 border-t border-[#E8E3EF] dark:border-[#393244] space-y-2">
+                    <div className="mt-3 pt-2.5 border-t border-[#DCE5EF] dark:border-[#22354B] space-y-2">
                       {/* Quantity Stepper */}
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
                           onClick={() => updateCardQty(p.id, -1)}
-                          className="w-6 h-6 rounded-md border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-center text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                          className="w-6 h-6 rounded-md border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-center text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -974,7 +991,7 @@ export default function POS() {
                         <button
                           type="button"
                           onClick={() => updateCardQty(p.id, 1)}
-                          className="w-6 h-6 rounded-md border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-center text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536]"
+                          className="w-6 h-6 rounded-md border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-center text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -984,7 +1001,7 @@ export default function POS() {
                       <button
                         type="button"
                         onClick={() => handleProductClick(p)}
-                        className="w-full py-2 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
+                        className="w-full py-2 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add to Cart</span>
@@ -995,11 +1012,11 @@ export default function POS() {
               })}
 
               {filteredProducts.length === 0 && (
-                <div className="col-span-full py-16 text-center text-[#716B7C] dark:text-[#B8B0C4] text-xs space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-[#EDE7F7] dark:bg-[#2B2536] text-[#7652B5] dark:text-[#A98ADB] flex items-center justify-center mx-auto">
+                <div className="col-span-full py-16 text-center text-[#5A6B82] dark:text-[#94A3B8] text-xs space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center mx-auto">
                     <Package className="w-6 h-6" />
                   </div>
-                  <p className="font-semibold text-sm text-[#282431] dark:text-[#F5F2F9]">
+                  <p className="font-semibold text-sm text-[#1C2736] dark:text-[#F1F5F9]">
                     {products.length === 0 ? 'No products available in database' : 'No products match your search or filter'}
                   </p>
                   {(search || selectedCategory !== 'all' || filterTopSelling) && (
@@ -1010,7 +1027,7 @@ export default function POS() {
                         setSelectedCategory('all');
                         setFilterTopSelling(false);
                       }}
-                      className="px-4 py-1.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] text-white dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] dark:text-[#17151D] text-xs font-bold transition-all shadow-xs"
+                      className="px-4 py-1.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] text-white dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] dark:text-[#0B131E] text-xs font-bold transition-all shadow-xs"
                     >
                       Reset Filters
                     </button>
@@ -1020,9 +1037,9 @@ export default function POS() {
             </div>
           ) : (
             /* Table List View */
-            <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A]">
+            <div className="overflow-x-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C]">
               <table className="min-w-full text-xs">
-                <thead className="bg-[#F7F5FC] dark:bg-[#2B2536] text-left font-semibold text-[#716B7C] dark:text-[#B8B0C4]">
+                <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
                   <tr>
                     <th className="px-3.5 py-2.5">Product</th>
                     <th className="px-3.5 py-2.5">Category</th>
@@ -1032,7 +1049,7 @@ export default function POS() {
                     <th className="px-3.5 py-2.5 text-center">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E8E3EF] dark:divide-[#393244]">
+                <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
                   {filteredProducts.map((p) => {
                     const price = getProductPrice(p);
                     const stock = Number(p.stock_qty || 0);
@@ -1041,12 +1058,12 @@ export default function POS() {
                       <tr
                         key={p.id}
                         onClick={() => handleProductClick(p)}
-                        className="hover:bg-[#EDE7F7]/40 dark:hover:bg-[#2B2536]/50 cursor-pointer transition-colors"
+                        className="hover:bg-[#E2EDF8]/40 dark:hover:bg-[#1A2A3D]/50 cursor-pointer transition-colors"
                       >
-                        <td className="px-3.5 py-2.5 font-bold text-[#282431] dark:text-[#F5F2F9]">{p.name}</td>
-                        <td className="px-3.5 py-2.5 text-[#716B7C] dark:text-[#B8B0C4]">{p.category_name || 'General'}</td>
-                        <td className="px-3.5 py-2.5 font-mono text-[#716B7C] dark:text-[#B8B0C4]">{p.barcode || '—'}</td>
-                        <td className="px-3.5 py-2.5 text-right font-extrabold text-[#7652B5] dark:text-[#A98ADB]">
+                        <td className="px-3.5 py-2.5 font-bold text-[#1C2736] dark:text-[#F1F5F9]">{p.name}</td>
+                        <td className="px-3.5 py-2.5 text-[#5A6B82] dark:text-[#94A3B8]">{p.category_name || 'General'}</td>
+                        <td className="px-3.5 py-2.5 font-mono text-[#5A6B82] dark:text-[#94A3B8]">{p.barcode || '—'}</td>
+                        <td className="px-3.5 py-2.5 text-right font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">
                           {formatCurrency(price, currency)}
                         </td>
                         <td className="px-3.5 py-2.5 text-right font-medium">
@@ -1063,7 +1080,7 @@ export default function POS() {
                               e.stopPropagation();
                               handleProductClick(p);
                             }}
-                            className="px-3 py-1 rounded-lg bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] font-bold text-[11px] shadow-2xs hover:opacity-90"
+                            className="px-3 py-1 rounded-lg bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] font-bold text-[11px] shadow-2xs hover:opacity-90"
                           >
                             + Add to Cart
                           </button>
@@ -1073,7 +1090,7 @@ export default function POS() {
                   })}
                   {filteredProducts.length === 0 && (
                     <tr>
-                      <td colSpan="6" className="py-12 text-center text-[#716B7C] dark:text-[#B8B0C4] text-xs">
+                      <td colSpan="6" className="py-12 text-center text-[#5A6B82] dark:text-[#94A3B8] text-xs">
                         {products.length === 0 ? 'No products available in database' : 'No products match your search or filter'}
                       </td>
                     </tr>
@@ -1086,12 +1103,12 @@ export default function POS() {
       </div>
 
       {/* Right Column: Billing Section / Cart */}
-      <div className="w-full lg:w-96 flex flex-col bg-white dark:bg-[#211D2A] rounded-2xl border border-[#E8E3EF] dark:border-[#393244] shadow-sm overflow-hidden flex-shrink-0">
+      <div className="w-full lg:w-96 flex flex-col bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm overflow-hidden flex-shrink-0">
         {/* Current Bill Cart Section */}
-        <div className="p-4 border-b border-[#E8E3EF] dark:border-[#393244] flex items-center justify-between">
+        <div className="p-4 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
-            <span className="text-sm font-bold text-[#282431] dark:text-[#F5F2F9]">
+            <ShoppingCart className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+            <span className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">
               Current Bill ({cart.reduce((s, it) => s + it.qty, 0)} Items)
             </span>
           </div>
@@ -1110,20 +1127,20 @@ export default function POS() {
           {cart.map((line) => (
             <div
               key={line.key}
-              className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC]/70 dark:bg-[#17151D]/60 text-xs space-y-2"
+              className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/70 dark:bg-[#0B131E]/60 text-xs space-y-2"
             >
               <div className="flex justify-between items-start gap-2">
                 <div>
-                  <span className="font-bold text-[#282431] dark:text-[#F5F2F9] leading-snug">
+                  <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9] leading-snug">
                     {line.product_name}
                   </span>
-                  <div className="text-[10px] text-[#716B7C] dark:text-[#B8B0C4]">
+                  <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
                     {formatCurrency(lineUnitWithAddons(line), currency)} each
                   </div>
                 </div>
                 <button
                   onClick={() => removeLine(line.key)}
-                  className="text-[#716B7C] dark:text-[#B8B0C4] hover:text-red-500 transition-colors p-0.5"
+                  className="text-[#5A6B82] dark:text-[#94A3B8] hover:text-red-500 transition-colors p-0.5"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1133,21 +1150,21 @@ export default function POS() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => updateLineQty(line.key, -1)}
-                    className="w-5 h-5 rounded border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-center text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#393244]"
+                    className="w-5 h-5 rounded border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-center text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#22354B]"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
                   <span className="font-bold text-xs min-w-[20px] text-center">{line.qty}</span>
                   <button
                     onClick={() => updateLineQty(line.key, 1)}
-                    className="w-5 h-5 rounded border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-center text-[#716B7C] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#393244]"
+                    className="w-5 h-5 rounded border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-center text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#22354B]"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>
 
                 <div className="text-right">
-                  <span className="font-black text-[#7652B5] dark:text-[#A98ADB]">
+                  <span className="font-black text-[#0A4174] dark:text-[#4A8CD2]">
                     {formatCurrency(line.qty * lineUnitWithAddons(line), currency)}
                   </span>
                 </div>
@@ -1156,31 +1173,31 @@ export default function POS() {
           ))}
 
           {cart.length === 0 && (
-            <div className="py-16 text-center text-[#716B7C] dark:text-[#B8B0C4] text-xs flex flex-col items-center gap-2">
-              <ShoppingCart className="w-10 h-10 stroke-[1.5] text-[#716B7C] opacity-40" />
+            <div className="py-16 text-center text-[#5A6B82] dark:text-[#94A3B8] text-xs flex flex-col items-center gap-2">
+              <ShoppingCart className="w-10 h-10 stroke-[1.5] text-[#5A6B82] opacity-40" />
               <span className="font-medium">Cart is empty</span>
-              <span className="text-[11px] text-[#716B7C]">Click products or scan barcodes to begin sale</span>
+              <span className="text-[11px] text-[#5A6B82]">Click products or scan barcodes to begin sale</span>
             </div>
           )}
         </div>
 
         {/* Totals, Discount & Checkout */}
-        <div className="p-4 border-t border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC]/50 dark:bg-[#17151D]/80 space-y-3">
+        <div className="p-4 border-t border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/80 space-y-3">
           {/* Discount Section */}
           {canDiscount && (
             <div className="flex items-center justify-between gap-2 text-xs">
-              <label className="font-semibold text-[#282431] dark:text-[#B8B0C4] whitespace-nowrap">
+              <label className="font-semibold text-[#1C2736] dark:text-[#94A3B8] whitespace-nowrap">
                 Bill Discount:
               </label>
               <div className="flex items-center gap-1.5 flex-1 max-w-[170px]">
-                <div className="flex rounded border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#2B2536] p-0.5">
+                <div className="flex rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#1A2A3D] p-0.5">
                   <button
                     type="button"
                     onClick={() => setDiscountType('fixed')}
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       discountType === 'fixed'
-                        ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D]'
-                        : 'text-[#716B7C] dark:text-[#B8B0C4]'
+                        ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                        : 'text-[#5A6B82] dark:text-[#94A3B8]'
                     }`}
                   >
                     {currency}
@@ -1190,8 +1207,8 @@ export default function POS() {
                     onClick={() => setDiscountType('percent')}
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       discountType === 'percent'
-                        ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D]'
-                        : 'text-[#716B7C] dark:text-[#B8B0C4]'
+                        ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+                        : 'text-[#5A6B82] dark:text-[#94A3B8]'
                     }`}
                   >
                     %
@@ -1204,7 +1221,7 @@ export default function POS() {
                   value={discountValue}
                   onChange={(e) => setDiscountValue(e.target.value)}
                   placeholder={discountType === 'percent' ? '10%' : '100'}
-                  className="w-full rounded-md border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#2B2536] px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-[#7652B5] font-semibold"
+                  className="w-full rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#1A2A3D] px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-[#0A4174] font-semibold"
                 />
               </div>
             </div>
@@ -1226,8 +1243,8 @@ export default function POS() {
                   onClick={() => setPaymentMethod(m.id)}
                   className={`py-1.5 rounded-lg text-[11px] font-bold flex flex-col items-center gap-0.5 transition-colors ${
                     active
-                      ? 'bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-sm'
-                      : 'bg-white dark:bg-[#2B2536] border border-[#E8E3EF] dark:border-[#393244] text-[#716B7C] dark:text-[#B8B0C4]'
+                      ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-sm'
+                      : 'bg-white dark:bg-[#1A2A3D] border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82] dark:text-[#94A3B8]'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -1239,8 +1256,8 @@ export default function POS() {
 
           {/* Grand Total Display */}
           <div className="flex justify-between items-baseline pt-1">
-            <span className="text-xs font-semibold text-[#716B7C]">Net Payable:</span>
-            <span className="text-xl font-black text-[#282431] dark:text-[#F5F2F9]">
+            <span className="text-xs font-semibold text-[#5A6B82]">Net Payable:</span>
+            <span className="text-xl font-black text-[#1C2736] dark:text-[#F1F5F9]">
               {formatCurrency(totals.grandTotal, currency)}
             </span>
           </div>
@@ -1250,7 +1267,7 @@ export default function POS() {
             <button
               onClick={holdBill}
               disabled={cart.length === 0}
-              className="px-3 py-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-[#282431] dark:text-[#B8B0C4] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 text-xs font-bold"
+              className="px-3 py-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-[#1C2736] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 text-xs font-bold"
             >
               <Pause className="w-3.5 h-3.5" />
               <span>Hold</span>
@@ -1258,7 +1275,7 @@ export default function POS() {
             <button
               onClick={completeSale}
               disabled={cart.length === 0}
-              className="flex-1 py-2.5 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] dark:bg-[#A98ADB] dark:hover:bg-[#C0A5EA] text-white dark:text-[#17151D] disabled:opacity-50 font-black text-xs shadow-md transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] disabled:opacity-50 font-black text-xs shadow-md transition-all flex items-center justify-center gap-2"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Complete Sale</span>
@@ -1270,13 +1287,13 @@ export default function POS() {
       {/* Held Bills Modal */}
       {showHeldModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-2xl border border-[#E8E3EF] dark:border-[#393244] space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9] flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121E2C] p-6 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
                 Held Bills ({heldBills.length})
               </h3>
-              <button onClick={() => setShowHeldModal(false)} className="text-[#716B7C] hover:text-[#282431]">
+              <button onClick={() => setShowHeldModal(false)} className="text-[#5A6B82] hover:text-[#1C2736]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1284,21 +1301,21 @@ export default function POS() {
               {heldBills.map((b) => (
                 <div
                   key={b.uuid}
-                  className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] flex items-center justify-between hover:bg-[#EDE7F7]/40"
+                  className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between hover:bg-[#E2EDF8]/40"
                 >
                   <div>
-                    <div className="font-bold text-[#282431] dark:text-[#F5F2F9]">{b.customer_name}</div>
-                    <div className="text-[10px] text-[#716B7C]">
+                    <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{b.customer_name}</div>
+                    <div className="text-[10px] text-[#5A6B82]">
                       {b.cart?.length || 0} items • {new Date(b.held_at).toLocaleTimeString()}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-black text-sm text-[#7652B5] dark:text-[#A98ADB]">
+                    <span className="font-black text-sm text-[#0A4174] dark:text-[#4A8CD2]">
                       {formatCurrency(b.totals?.grandTotal || 0, currency)}
                     </span>
                     <button
                       onClick={() => recallBill(b)}
-                      className="px-2.5 py-1 rounded-lg bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] text-xs font-bold"
+                      className="px-2.5 py-1 rounded-lg bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] text-xs font-bold"
                     >
                       Recall
                     </button>
@@ -1306,7 +1323,7 @@ export default function POS() {
                 </div>
               ))}
               {heldBills.length === 0 && (
-                <div className="py-8 text-center text-[#716B7C]">No bills currently on hold.</div>
+                <div className="py-8 text-center text-[#5A6B82]">No bills currently on hold.</div>
               )}
             </div>
           </div>
@@ -1316,25 +1333,25 @@ export default function POS() {
       {/* Customizer Modal for food / variants */}
       {customizer && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#211D2A] p-5 shadow-2xl border border-[#E8E3EF] dark:border-[#393244] space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9]">{customizer.product.name}</h3>
-              <button onClick={() => setCustomizer(null)} className="text-[#716B7C]">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9]">{customizer.product.name}</h3>
+              <button onClick={() => setCustomizer(null)} className="text-[#5A6B82]">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {customizer.product.variants?.length > 0 && (
               <div className="space-y-1 text-xs">
-                <span className="font-semibold text-[#716B7C] block">Select Variant:</span>
+                <span className="font-semibold text-[#5A6B82] block">Select Variant:</span>
                 <div className="space-y-1 max-h-36 overflow-y-auto">
                   {customizer.product.variants.map((v) => (
                     <label
                       key={v.id}
                       className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer ${
                         customizer.variantId === v.id
-                          ? 'border-[#7652B5] bg-[#EDE7F7]/60 dark:bg-[#2B2536]'
-                          : 'border-[#E8E3EF] dark:border-[#393244]'
+                          ? 'border-[#0A4174] bg-[#E2EDF8]/60 dark:bg-[#1A2A3D]'
+                          : 'border-[#DCE5EF] dark:border-[#22354B]'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -1343,11 +1360,11 @@ export default function POS() {
                           name="pos_variant"
                           checked={customizer.variantId === v.id}
                           onChange={() => setCustomizer((c) => ({ ...c, variantId: v.id }))}
-                          className="accent-[#7652B5]"
+                          className="accent-[#0A4174]"
                         />
-                        <span className="font-semibold text-[#282431] dark:text-[#F5F2F9]">{v.variant_name}</span>
+                        <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{v.variant_name}</span>
                       </div>
-                      <span className="text-[11px] font-bold text-[#7652B5] dark:text-[#A98ADB]">
+                      <span className="text-[11px] font-bold text-[#0A4174] dark:text-[#4A8CD2]">
                         {v.selling_price && Number(v.selling_price) > 0
                           ? formatCurrency(v.selling_price, currency)
                           : Number(v.price_adjustment) !== 0
@@ -1363,13 +1380,13 @@ export default function POS() {
             <div className="pt-2 flex gap-2 text-xs">
               <button
                 onClick={() => setCustomizer(null)}
-                className="flex-1 py-2 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-[#716B7C]"
+                className="flex-1 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82]"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmCustomizer}
-                className="flex-1 py-2 rounded-xl bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] font-bold"
+                className="flex-1 py-2 rounded-xl bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] font-bold"
               >
                 Add to Cart
               </button>
@@ -1381,12 +1398,12 @@ export default function POS() {
       {/* Serial Picker Modal */}
       {serialPicker && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#211D2A] p-5 shadow-2xl border border-[#E8E3EF] dark:border-[#393244] space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9]">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9]">
                 Select IMEI / Serial: {serialPicker.name}
               </h3>
-              <button onClick={() => setSerialPicker(null)} className="text-[#716B7C]">
+              <button onClick={() => setSerialPicker(null)} className="text-[#5A6B82]">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1398,7 +1415,7 @@ export default function POS() {
                     addToCart(serialPicker, s);
                     setSerialPicker(null);
                   }}
-                  className="p-2.5 rounded-xl border border-[#E8E3EF] dark:border-[#393244] hover:border-[#7652B5] hover:bg-[#EDE7F7]/50 cursor-pointer flex justify-between items-center"
+                  className="p-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] hover:border-[#0A4174] hover:bg-[#E2EDF8]/50 cursor-pointer flex justify-between items-center"
                 >
                   <span className="font-mono font-semibold">{s.imei1 || s.serial_no}</span>
                   <span className="text-[10px] text-emerald-600 font-bold">Pick</span>
@@ -1412,47 +1429,47 @@ export default function POS() {
       {/* Add Customer Modal */}
       {showNewCustomer && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-2xl border border-[#E8E3EF] dark:border-[#393244] space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9] flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-6 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
                 Add New Customer
               </h3>
-              <button onClick={() => setShowNewCustomer(false)} className="text-[#716B7C]">
+              <button onClick={() => setShowNewCustomer(false)} className="text-[#5A6B82]">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <form onSubmit={saveNewCustomer} className="space-y-3 text-xs">
               <div>
-                <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">Customer Name *</label>
+                <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#F1F5F9]">Customer Name *</label>
                 <input
                   required
                   value={newCustomerForm.name}
                   onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })}
                   placeholder="e.g. John Doe"
-                  className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                  className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="mb-1 block font-semibold text-[#282431] dark:text-[#F5F2F9]">Phone Number</label>
+                <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#F1F5F9]">Phone Number</label>
                 <input
                   value={newCustomerForm.phone}
                   onChange={(e) => setNewCustomerForm({ ...newCustomerForm, phone: e.target.value })}
                   placeholder="+91 98765 43210"
-                  className="w-full rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-[#F7F5FC] dark:bg-[#17151D] px-3 py-2 text-xs focus:ring-1 focus:ring-[#7652B5] focus:outline-none"
+                  className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                 />
               </div>
               <div className="pt-2 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowNewCustomer(false)}
-                  className="flex-1 py-2 rounded-xl border border-[#E8E3EF] dark:border-[#393244] text-[#716B7C]"
+                  className="flex-1 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] font-bold"
+                  className="flex-1 py-2 rounded-xl bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] font-bold"
                 >
                   Save Customer
                 </button>
@@ -1465,50 +1482,50 @@ export default function POS() {
       {/* Thermal Printer Settings Modal */}
       {printerModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#211D2A] p-6 shadow-2xl border border-[#E8E3EF] dark:border-[#393244] space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#E8E3EF] dark:border-[#393244]">
-              <h3 className="font-bold text-sm text-[#282431] dark:text-[#F5F2F9] flex items-center gap-2">
-                <Printer className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-6 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <Printer className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
                 Wireless Thermal Printers
               </h3>
-              <button onClick={() => setPrinterModal(false)} className="text-[#716B7C]">
+              <button onClick={() => setPrinterModal(false)} className="text-[#5A6B82]">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-2 text-xs">
               <div
                 onClick={() => setConnectedPrinter('WiFi ESC/POS (192.168.1.200)')}
-                className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] hover:border-[#7652B5] flex items-center justify-between cursor-pointer"
+                className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] hover:border-[#0A4174] flex items-center justify-between cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
                   <Wifi className="w-4 h-4 text-emerald-500" />
                   <div>
-                    <div className="font-bold text-[#282431] dark:text-[#F5F2F9]">WiFi Thermal 80mm</div>
-                    <div className="text-[10px] text-[#716B7C]">192.168.1.200:9100</div>
+                    <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">WiFi Thermal 80mm</div>
+                    <div className="text-[10px] text-[#5A6B82]">192.168.1.200:9100</div>
                   </div>
                 </div>
                 <span className="text-[10px] text-emerald-600 font-bold">Connect</span>
               </div>
               <div
                 onClick={() => setConnectedPrinter('Bluetooth POS-80')}
-                className="p-3 rounded-xl border border-[#E8E3EF] dark:border-[#393244] hover:border-[#7652B5] flex items-center justify-between cursor-pointer"
+                className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] hover:border-[#0A4174] flex items-center justify-between cursor-pointer"
               >
                 <div className="flex items-center gap-2.5">
-                  <Bluetooth className="w-4 h-4 text-[#7652B5]" />
+                  <Bluetooth className="w-4 h-4 text-[#0A4174]" />
                   <div>
-                    <div className="font-bold text-[#282431] dark:text-[#F5F2F9]">Bluetooth Mobile POS</div>
-                    <div className="text-[10px] text-[#716B7C]">Paired BT Device (COM3)</div>
+                    <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">Bluetooth Mobile POS</div>
+                    <div className="text-[10px] text-[#5A6B82]">Paired BT Device (COM3)</div>
                   </div>
                 </div>
-                <span className="text-[10px] text-[#7652B5] font-bold">Connect</span>
+                <span className="text-[10px] text-[#0A4174] font-bold">Connect</span>
               </div>
             </div>
-            <div className="p-2.5 rounded-lg bg-[#EDE7F7] dark:bg-[#2B2536] text-[11px] text-[#7652B5] dark:text-[#A98ADB] font-medium">
+            <div className="p-2.5 rounded-lg bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[11px] text-[#0A4174] dark:text-[#4A8CD2] font-medium">
               Active: <span className="font-bold">{connectedPrinter}</span>
             </div>
             <button
               onClick={() => setPrinterModal(false)}
-              className="w-full py-2 rounded-xl bg-[#7652B5] hover:bg-[#5B3B91] text-white font-bold text-xs"
+              className="w-full py-2 rounded-xl bg-[#0A4174] hover:bg-[#062E52] text-white font-bold text-xs"
             >
               Done
             </button>
