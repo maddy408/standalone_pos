@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
@@ -12,7 +13,8 @@ import {
   X,
   Phone,
   Mail,
-  AlertCircle
+  AlertCircle,
+  ShoppingBag
 } from 'lucide-react';
 
 const BLANK = { id: null, name: '', phone: '', email: '', address: '', gstin: '' };
@@ -102,6 +104,23 @@ export default function Suppliers() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Internal Navigation Tabs */}
+      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+        <Link
+          to="/purchases"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+        >
+          <ShoppingBag className="w-3.5 h-3.5" />
+          <span>Purchases</span>
+        </Link>
+        <Link
+          to="/suppliers"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-xs"
+        >
+          <Truck className="w-3.5 h-3.5" />
+          <span>Suppliers</span>
+        </Link>
+      </div>
       {/* Suppliers Table */}
       <div className="lg:col-span-2 space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

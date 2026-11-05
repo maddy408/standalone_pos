@@ -11,6 +11,7 @@ import MasterSettings from './pages/MasterSettings';
 import Products from './pages/Products';
 import POS from './pages/POS';
 import Customers from './pages/Customers';
+import Collection from './pages/Collection';
 import Suppliers from './pages/Suppliers';
 import Purchases from './pages/Purchases';
 import Inventory from './pages/Inventory';
@@ -46,6 +47,8 @@ export default function App() {
                 <Route path="products" element={<Products />} />
                 <Route path="invoices" element={<Invoices />} />
                 <Route path="customers" element={<Customers />} />
+                <Route path="collection" element={<Collection />} />
+                <Route path="collections" element={<Collection />} />
                 <Route path="suppliers" element={<Suppliers />} />
                 <Route path="purchases" element={<Purchases />} />
                 <Route path="inventory" element={<Inventory />} />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
@@ -10,7 +11,8 @@ import {
   X,
   RotateCcw,
   CheckCircle2,
-  DollarSign
+  DollarSign,
+  Truck
 } from 'lucide-react';
 
 export default function Purchases() {
@@ -29,6 +31,7 @@ export default function Purchases() {
   const currency = settings?.currency_symbol || '₹';
 
   const load = () => api.get('/purchases').then(({ data }) => setPurchases(data));
+
   const loadProducts = () => {
     if (!settings?.business_type) return;
     api.get('/products', { params: { business_type: settings.business_type } }).then(({ data }) => setProducts(data));
@@ -143,6 +146,23 @@ export default function Purchases() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Internal Navigation Tabs */}
+      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+        <Link
+          to="/purchases"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-xs"
+        >
+          <ShoppingBag className="w-3.5 h-3.5" />
+          <span>Purchases</span>
+        </Link>
+        <Link
+          to="/suppliers"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+        >
+          <Truck className="w-3.5 h-3.5" />
+          <span>Suppliers</span>
+        </Link>
+      </div>
       {/* Purchases List */}
       <div className="lg:col-span-2 space-y-4">
         <div>

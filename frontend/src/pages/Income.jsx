@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
@@ -37,6 +39,23 @@ export default function Income() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Internal Navigation Tabs */}
+      <div className="lg:col-span-3 flex items-center gap-2 pb-3 border-b border-[#E8E3EF] dark:border-[#393244]">
+        <Link
+          to="/expenses"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+        >
+          <ArrowDownCircle className="w-3.5 h-3.5" />
+          <span>Expenses</span>
+        </Link>
+        <Link
+          to="/income"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-xs"
+        >
+          <ArrowUpCircle className="w-3.5 h-3.5" />
+          <span>Income</span>
+        </Link>
+      </div>
       <div className="lg:col-span-2">
         <h1 className="mb-3 text-xl font-bold">{t('income.title')}</h1>
         <div className="overflow-x-auto rounded-xl border border-[#E8E3EF] dark:border-[#393244] bg-white dark:bg-[#211D2A]">

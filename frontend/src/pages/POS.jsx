@@ -111,6 +111,8 @@ export default function POS() {
   const searchRef = useRef(null);
   const categoryDropdownRef = useRef(null);
   const currency = settings?.currency_symbol || '₹';
+  const [dbCategories, setDbCategories] = useState([]);
+
   const loadProducts = async () => {
     if (!settings?.business_type) return;
     try {
@@ -121,6 +123,17 @@ export default function POS() {
       cacheProducts(data);
     } catch {
       setProducts(await getCachedProducts());
+    }
+  };
+
+  const loadCategories = async (businessTypeOverride) => {
+    try {
+      const bt = businessTypeOverride ?? settings?.business_type;
+      const params = bt ? { business_type: bt } : {};
+      const { data } = await api.get('/categories', { params });
+      if (Array.isArray(data)) setDbCategories(data);
+    } catch {
+      // offline / lookup fallback
     }
   };
 
@@ -135,8 +148,10 @@ export default function POS() {
   };
 
   useEffect(() => {
+    setSelectedCategory('all');
     loadProducts();
     loadCustomers();
+    loadCategories();
     refreshHeldBills();
     api.get('/lookup/addons').then(({ data }) => setAddons(data.filter((a) => a.is_active))).catch(() => {});
     searchRef.current?.focus();
@@ -199,16 +214,33 @@ export default function POS() {
     return Number(product.selling_price || product.retail_price || product.mrp || 0);
   };
 
-  // Categories list derived from products and database categories
+  // Categories list derived from database categories and products, strictly filtered by business_type
   const categoryList = useMemo(() => {
-    const list = Array.from(new Set(products.map((p) => p.category_name).filter(Boolean)));
-    return list;
-  }, [products]);
+    const bt = settings?.business_type;
+    const filteredDbCats = bt
+      ? dbCategories.filter((c) => !c.business_type || c.business_type === bt)
+      : dbCategories;
+    const fromApi = filteredDbCats.map((c) => c.name).filter(Boolean);
+    const validCategorySet = new Set(filteredDbCats.map((c) => c.name));
+
+    const filteredProds = bt
+      ? products.filter((p) => !p.business_type || p.business_type === bt)
+      : products;
+    const fromProducts = filteredProds
+      .map((p) => p.category_name)
+      .filter((name) => Boolean(name) && (!bt || validCategorySet.size === 0 || validCategorySet.has(name)));
+
+    return Array.from(new Set([...fromApi, ...fromProducts]));
+  }, [products, dbCategories, settings?.business_type]);
 
   // Filter products by search, category, and top-selling
   const filteredProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
+    const bt = settings?.business_type;
     return products.filter((p) => {
+      if (bt && p.business_type && p.business_type !== bt) {
+        return false;
+      }
       const pName = (p.name || '').toLowerCase();
       const pBarcode = (p.barcode || '').toLowerCase();
       const pSku = (p.sku || '').toLowerCase();
@@ -221,7 +253,7 @@ export default function POS() {
 
       return matchesSearch && matchesCategory && matchesTopSelling;
     });
-  }, [products, search, selectedCategory, filterTopSelling]);
+  }, [products, search, selectedCategory, filterTopSelling, settings?.business_type]);
 
   // Filter customers for dropdown search
   const filteredCustomers = useMemo(() => {

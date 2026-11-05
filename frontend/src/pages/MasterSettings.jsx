@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../theme/ThemeProvider';
 import { changeLanguage } from '../i18n';
 import { getAllOutboxItems, retryOutboxItem, discardOutboxItem } from '../db/db';
 import { syncNow, subscribeSyncStatus, refreshPendingCount } from '../db/syncService';
-import { Settings, Building, Receipt, Globe, Printer, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Settings, Building, Receipt, Globe, Printer, RefreshCw, CheckCircle2, Users as UsersIcon } from 'lucide-react';
 
 const BUSINESS_TYPES = ['mobile', 'furniture', 'food'];
 
@@ -70,8 +71,8 @@ export default function MasterSettings() {
   };
 
   return (
-    <div className="max-w-3xl space-y-6 font-sans">
-      <div className="flex items-center justify-between">
+    <div className="w-full space-y-6 font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-black text-[#282431] dark:text-[#F5F2F9] tracking-tight flex items-center gap-2">
             <Settings className="w-5 h-5 text-[#7652B5] dark:text-[#A98ADB]" />
@@ -81,12 +82,37 @@ export default function MasterSettings() {
             Configure enterprise parameters, printer connectors & appearance
           </p>
         </div>
-        {saved && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-sm">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{t('settings.saved')}</span>
-          </div>
-        )}
+
+        <div className="flex items-center gap-3">
+          <Link
+            to="/users"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-[#211D2A] border border-[#E8E3EF] dark:border-[#393244] text-[#282431] dark:text-[#F5F2F9] text-xs font-bold hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] hover:border-[#7652B5] dark:hover:border-[#A98ADB] transition-all shadow-xs"
+          >
+            <UsersIcon className="w-4 h-4 text-[#7652B5] dark:text-[#A98ADB]" />
+            <span>Manage Users & Roles</span>
+          </Link>
+
+          {saved && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-bold shadow-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{t('settings.saved')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Settings Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-[#E8E3EF] dark:border-[#393244] pb-2">
+        <span className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#7652B5] text-white dark:bg-[#A98ADB] dark:text-[#17151D] shadow-xs">
+          General Settings
+        </span>
+        <Link
+          to="/users"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#716B7C] dark:text-[#B8B0C4] hover:text-[#7652B5] dark:hover:text-[#A98ADB] hover:bg-[#EDE7F7] dark:hover:bg-[#2B2536] transition-colors"
+        >
+          <UsersIcon className="w-3.5 h-3.5" />
+          <span>Users & Roles</span>
+        </Link>
       </div>
 
       {/* Business Type Mode */}
