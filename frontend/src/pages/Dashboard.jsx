@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [invoices, setInvoices] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [dateFilter, setDateFilter] = useState('all_time');
   const [salesTimeframe, setSalesTimeframe] = useState('7_days');
 
@@ -45,6 +46,7 @@ export default function Dashboard() {
     }).catch(() => {});
     api.get('/products').then(({ data }) => setProducts(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/categories').then(({ data }) => setCategories(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/customers').then(({ data }) => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
   }, []);
 
   // Compute metrics from existing data
