@@ -39,7 +39,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     api.get('/dashboard/summary').then(({ data }) => setSummary(data)).catch(() => {});
-    api.get('/invoices', { params: { limit: 100 } }).then(({ data }) => setInvoices(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/invoices', { params: { limit: 100 } }).then(({ data }) => {
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setInvoices(list);
+    }).catch(() => {});
     api.get('/products').then(({ data }) => setProducts(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/categories').then(({ data }) => setCategories(Array.isArray(data) ? data : [])).catch(() => {});
   }, []);
