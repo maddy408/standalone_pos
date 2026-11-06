@@ -53,6 +53,7 @@ const BLANK_FORM = {
   hsn_code: '',
   purchase_price: '',
   mrp: '',
+  discount_percent: '',
   selling_price: '',
   retail_price: '',
   wholesale_price: '',
@@ -268,6 +269,9 @@ export default function Products() {
       wholesale_price: p.wholesale_price ? String(Number(p.wholesale_price)) : '',
       customer_price: p.customer_price ? String(Number(p.customer_price)) : '',
       mrp: p.mrp ? String(Number(p.mrp)) : '',
+      discount_percent: (p.mrp && (p.selling_price || p.retail_price) && Number(p.mrp) > Number(p.selling_price || p.retail_price))
+        ? String(Math.round(((Number(p.mrp) - Number(p.selling_price || p.retail_price)) / Number(p.mrp)) * 100))
+        : '',
       stock_qty: p.stock_qty !== undefined && p.stock_qty !== null ? String(Number(p.stock_qty)) : '',
       opening_stock: p.opening_stock ? String(Number(p.opening_stock)) : '',
       low_stock_threshold: p.low_stock_threshold ? String(Number(p.low_stock_threshold)) : '',
@@ -824,7 +828,31 @@ export default function Products() {
                     Price Tiers ({currency})
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
+                        MRP ({currency})
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={form.mrp}
+                        onChange={(e) => {
+                          const newMrp = e.target.value;
+                          const sp = Number(form.retail_price || form.selling_price || 0);
+                          let disc = form.discount_percent;
+                          if (newMrp && Number(newMrp) > 0 && sp > 0 && Number(newMrp) > sp) {
+                            disc = String(Math.round(((Number(newMrp) - sp) / Number(newMrp)) * 100));
+                          } else if (newMrp && sp >= Number(newMrp)) {
+                            disc = '0';
+                          }
+                          setForm({ ...form, mrp: newMrp, discount_percent: disc });
+                        }}
+                        placeholder="0.00"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 font-bold focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                      />
+                    </div>
+
                     <div>
                       <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         Retail Selling Price *
@@ -834,12 +862,71 @@ export default function Products() {
                         type="number"
                         step="any"
                         value={form.retail_price}
-                        onChange={(e) => setForm({ ...form, retail_price: e.target.value, selling_price: e.target.value })}
+                        onChange={(e) => {
+                          const newSp = e.target.value;
+                          const mrpVal = Number(form.mrp || 0);
+                          let disc = form.discount_percent;
+                          if (mrpVal > 0 && newSp !== '' && mrpVal > Number(newSp)) {
+                            disc = String(Math.round(((mrpVal - Number(newSp)) / mrpVal) * 100));
+                          } else if (mrpVal > 0 && Number(newSp) >= mrpVal) {
+                            disc = '0';
+                          }
+                          setForm({ ...form, retail_price: newSp, selling_price: newSp, discount_percent: disc });
+                        }}
                         placeholder="0.00"
                         className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 font-bold text-[#0A4174] dark:text-[#4A8CD2] focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />
                     </div>
 
+                    <div>
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
+                        Discount %
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          max="100"
+                          value={form.discount_percent}
+                          onChange={(e) => {
+                            const newDisc = e.target.value;
+                            const mrpVal = Number(form.mrp || 0);
+                            let newSp = form.retail_price;
+                            if (mrpVal > 0 && newDisc !== '') {
+                              const calcSp = Math.round((mrpVal - (mrpVal * Number(newDisc)) / 100) * 100) / 100;
+                              newSp = String(Math.max(0, calcSp));
+                            }
+                            setForm({
+                              ...form,
+                              discount_percent: newDisc,
+                              retail_price: newSp,
+                              selling_price: newSp,
+                            });
+                          }}
+                          placeholder="e.g. 15"
+                          className="w-full rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 font-bold text-emerald-700 dark:text-emerald-400 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                        />
+                        <span className="absolute right-3 top-2 text-xs font-bold text-emerald-600">%</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
+                        Purchase Price ({currency})
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={form.purchase_price}
+                        onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     <div>
                       <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                         Wholesale Price
@@ -863,36 +950,6 @@ export default function Products() {
                         step="any"
                         value={form.customer_price}
                         onChange={(e) => setForm({ ...form, customer_price: e.target.value })}
-                        placeholder="0.00"
-                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                    <div>
-                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
-                        Purchase Price ({currency})
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={form.purchase_price}
-                        onChange={(e) => setForm({ ...form, purchase_price: e.target.value })}
-                        placeholder="0.00"
-                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
-                        MRP ({currency})
-                      </label>
-                      <input
-                        type="number"
-                        step="any"
-                        value={form.mrp}
-                        onChange={(e) => setForm({ ...form, mrp: e.target.value })}
                         placeholder="0.00"
                         className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                       />

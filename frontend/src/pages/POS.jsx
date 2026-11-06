@@ -103,6 +103,10 @@ export default function POS() {
   const [heldBills, setHeldBills] = useState([]);
   const [showHeldModal, setShowHeldModal] = useState(false);
 
+  // Quick Sale Modal
+  const [showQuickSale, setShowQuickSale] = useState(false);
+  const [quickSaleForm, setQuickSaleForm] = useState({ name: '', qty: '1', price: '' });
+
   // Status & Hardware Modals
   const [message, setMessage] = useState('');
   const [printerModal, setPrinterModal] = useState(false);
@@ -316,6 +320,7 @@ export default function POS() {
 
   const addToCart = (product, serial = null, variant = null, selectedAddons = [], qtyToAdd = 1) => {
     let unitPrice = getProductPrice(product);
+    const mrp = Number(product.mrp || 0);
     if (variant) {
       if (variant.selling_price && Number(variant.selling_price) > 0) {
         unitPrice = Number(variant.selling_price);
@@ -324,6 +329,8 @@ export default function POS() {
       }
     }
     const taxPercent = Number(product.tax_percent || 0);
+    const discountPercent = mrp > unitPrice ? Math.round(((mrp - unitPrice) / mrp) * 100) : 0;
+    const discountAmount = mrp > unitPrice ? (mrp - unitPrice) : 0;
 
     if (serial) {
       setCart((c) => [
@@ -332,13 +339,14 @@ export default function POS() {
           key: `${product.id}-${serial.id}`,
           product_id: product.id,
           serial_id: serial.id,
-          barcode: serial.ime1 || serial.serial_no || product.barcode || product.sku,
+          barcode: serial.ime1 || serial.serial_no || product.barcode || product.sku || '—',
           product_name: `${product.name} (IMEI: ${serial.ime1 || serial.serial_no})`,
           weight_label: product.unit_code || product.attributes?.net_weight || '',
           qty: 1,
+          mrp: mrp > 0 ? mrp : unitPrice,
           unit_price: unitPrice,
-          discount_percent: 0,
-          discount_amount: 0,
+          discount_percent: discountPercent,
+          discount_amount: discountAmount,
           tax_percent: taxPercent,
           tax_amount: Math.round(((unitPrice * taxPercent) / 100) * 100) / 100,
         },
@@ -371,9 +379,10 @@ export default function POS() {
           weight_label: product.unit_code || product.attributes?.net_weight || (product.category_name === 'Fruits & Veg' ? '1kg' : ''),
           image: getProductImage(product),
           qty: qtyToAdd,
+          mrp: mrp > 0 ? mrp : unitPrice,
           unit_price: unitPrice,
-          discount_percent: 0,
-          discount_amount: 0,
+          discount_percent: discountPercent,
+          discount_amount: discountAmount,
           tax_percent: taxPercent,
           tax_amount: taxAmount,
           addons: selectedAddons,
@@ -517,6 +526,36 @@ export default function POS() {
     setPaymentMethod('cash');
     setSelectedCustomerId('');
     setCustomerSearch('');
+  };
+
+  // Add Quick Sale Line Item to Cart
+  const handleAddQuickSale = (e) => {
+    e?.preventDefault();
+    const qty = Math.max(1, Number(quickSaleForm.qty) || 1);
+    const unitPrice = Math.max(0, Number(quickSaleForm.price) || 0);
+    const customCount = cart.filter((l) => l.is_custom).length + 1;
+    const itemName = quickSaleForm.name.trim() || `Item ${customCount}`;
+
+    const customLine = {
+      key: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      product_id: null,
+      is_custom: true,
+      barcode: 'QUICK',
+      product_name: itemName,
+      weight_label: '',
+      qty,
+      mrp: unitPrice,
+      unit_price: unitPrice,
+      discount_percent: 0,
+      discount_amount: 0,
+      tax_percent: 0,
+      tax_amount: 0,
+      addons: [],
+    };
+
+    setCart((prev) => [...prev, customLine]);
+    setQuickSaleForm({ name: '', qty: '1', price: '' });
+    setShowQuickSale(false);
   };
 
   const saveNewCustomer = async (e) => {
@@ -717,6 +756,19 @@ export default function POS() {
             >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F8</span>
               <span>Payment</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const customCount = cart.filter((l) => l.is_custom).length + 1;
+                setQuickSaleForm({ name: `Item ${customCount}`, qty: '1', price: '' });
+                setShowQuickSale(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition-all shadow-xs cursor-pointer"
+              title="Add Quick Sale Item"
+            >
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              <span>+ Quick Sale</span>
             </button>
           </div>
         </div>
@@ -1045,9 +1097,12 @@ export default function POS() {
         {/* Cart Items Table Header */}
         <div className="px-3 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/40 dark:bg-[#0B131E]/30 grid grid-cols-12 gap-1 text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8]">
           <div className="col-span-1 text-center">No.</div>
-          <div className="col-span-4">Product</div>
-          <div className="col-span-3 text-center">Qty</div>
-          <div className="col-span-3 text-right">Total</div>
+          <div className="col-span-3">Product</div>
+          <div className="col-span-2">Barcode</div>
+          <div className="col-span-2 text-center">Qty</div>
+          <div className="col-span-1 text-right">Price</div>
+          <div className="col-span-1 text-center">Disc.</div>
+          <div className="col-span-1 text-right">Total</div>
           <div className="col-span-1 text-center">
             {cart.length > 0 && (
               <button onClick={clearCart} title="Clear All" className="hover:text-red-500">
@@ -1067,23 +1122,30 @@ export default function POS() {
               </div>
 
               {/* Product Info */}
-              <div className="col-span-4 min-w-0 pr-1">
-                <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate leading-tight">
+              <div className="col-span-3 min-w-0 pr-1">
+                <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate leading-tight" title={line.product_name}>
                   {line.product_name}
                 </div>
-                <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-mono leading-none pt-0.5">
-                  {formatCurrency(lineUnitWithAddons(line), currency)}
-                </div>
+                {line.weight_label && (
+                  <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] truncate">
+                    {line.weight_label}
+                  </div>
+                )}
+              </div>
+
+              {/* Barcode / SKU */}
+              <div className="col-span-2 min-w-0 font-mono text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate" title={line.barcode}>
+                {line.barcode || '—'}
               </div>
 
               {/* Quantity Stepper [-] [editable input] [+] */}
-              <div className="col-span-3 flex items-center justify-center gap-1">
+              <div className="col-span-2 flex items-center justify-center gap-0.5">
                 <button
                   type="button"
                   onClick={() => updateLineQty(line.key, -1)}
-                  className="w-5 h-5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] flex items-center justify-center hover:bg-[#E2EDF8]"
+                  className="w-4 h-4 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] flex items-center justify-center hover:bg-[#E2EDF8]"
                 >
-                  <Minus className="w-2.5 h-2.5" />
+                  <Minus className="w-2 h-2" />
                 </button>
                 <input
                   type="number"
@@ -1091,19 +1153,35 @@ export default function POS() {
                   step="any"
                   value={line.qty}
                   onChange={(e) => setLineQtyDirect(line.key, e.target.value)}
-                  className="pos-qty-input w-10 py-0.5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-center font-bold text-xs text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+                  className="pos-qty-input w-8 py-0.5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-center font-bold text-[11px] text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
                 />
                 <button
                   type="button"
                   onClick={() => updateLineQty(line.key, 1)}
-                  className="w-5 h-5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] flex items-center justify-center hover:bg-[#E2EDF8]"
+                  className="w-4 h-4 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] flex items-center justify-center hover:bg-[#E2EDF8]"
                 >
-                  <Plus className="w-2.5 h-2.5" />
+                  <Plus className="w-2 h-2" />
                 </button>
               </div>
 
+              {/* Unit Selling Price */}
+              <div className="col-span-1 text-right font-semibold text-[#1C2736] dark:text-[#F1F5F9] text-[11px]">
+                {formatCurrency(lineUnitWithAddons(line), currency)}
+              </div>
+
+              {/* Discount % */}
+              <div className="col-span-1 text-center">
+                {line.discount_percent > 0 ? (
+                  <span className="inline-block px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
+                    {line.discount_percent}%
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">0%</span>
+                )}
+              </div>
+
               {/* Line Total */}
-              <div className="col-span-3 text-right font-extrabold text-[#0A4174] dark:text-[#4A8CD2] text-xs">
+              <div className="col-span-1 text-right font-extrabold text-[#0A4174] dark:text-[#4A8CD2] text-[11px]">
                 {formatCurrency(line.qty * lineUnitWithAddons(line), currency)}
               </div>
 
@@ -1114,7 +1192,7 @@ export default function POS() {
                   onClick={() => removeLine(line.key)}
                   className="p-1 text-[#5A6B82] hover:text-red-500 rounded transition-colors"
                 >
-                  <Trash2 className="w-3.5 h-3.5 mx-auto" />
+                  <Trash2 className="w-3 h-3 mx-auto" />
                 </button>
               </div>
             </div>
@@ -1443,6 +1521,103 @@ export default function POS() {
                   className="flex-1 py-2 rounded-xl bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] font-bold"
                 >
                   Save Customer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Sale Modal */}
+      {showQuickSale && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500 fill-current" />
+                Quick Sale / Manual Item
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowQuickSale(false)}
+                className="text-[#5A6B82] hover:text-[#1C2736]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddQuickSale} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
+                  Item Name
+                </label>
+                <input
+                  type="text"
+                  value={quickSaleForm.name}
+                  onChange={(e) => setQuickSaleForm({ ...quickSaleForm, name: e.target.value })}
+                  placeholder="e.g. Item 1"
+                  className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 text-[#1C2736] dark:text-[#F1F5F9] font-medium focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
+                    Quantity *
+                  </label>
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    step="any"
+                    value={quickSaleForm.qty}
+                    onChange={(e) => setQuickSaleForm({ ...quickSaleForm, qty: e.target.value })}
+                    placeholder="1"
+                    className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 text-[#1C2736] dark:text-[#F1F5F9] font-bold text-center focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
+                    Unit Price ({currency}) *
+                  </label>
+                  <input
+                    required
+                    autoFocus
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={quickSaleForm.price}
+                    onChange={(e) => setQuickSaleForm({ ...quickSaleForm, price: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 font-bold text-[#0A4174] dark:text-[#4A8CD2] focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Total preview calculation (e.g. 2 * 30 = 60) */}
+              <div className="p-2.5 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] flex items-center justify-between text-xs">
+                <span className="text-[#5A6B82] dark:text-[#94A3B8] font-medium">
+                  {Number(quickSaleForm.qty || 1)} × {formatCurrency(quickSaleForm.price || 0, currency)}
+                </span>
+                <span className="text-sm font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">
+                  Total: {formatCurrency((Number(quickSaleForm.qty) || 1) * (Number(quickSaleForm.price) || 0), currency)}
+                </span>
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickSale(false)}
+                  className="flex-1 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold"
+                >
+                  Add to Cart
                 </button>
               </div>
             </form>
