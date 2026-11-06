@@ -234,10 +234,50 @@ class CustomerController
             }
 
             $this->pdo->commit();
-            Response::json(['ok' => true, 'extra_income_credited' => $extraIncome]);
+            Response::json([
+                'ok' => true,
+                'payment_id' => $this->pdo->lastInsertId(),
+                'uuid' => $cpayUuid,
+                'extra_income_credited' => $extraIncome
+            ]);
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             Response::error($e->getMessage(), 500);
         }
+    }
+
+    /** Returns all customer credit collections with customer name, payment method and invoice info. */
+    public function paymentsList(): void
+    {
+        AuthMiddleware::authenticate();
+        $where = 'WHERE 1=1';
+        $params = [];
+        if (!empty($_GET['customer_id'])) {
+            $where .= ' AND cp.customer_id = :cid';
+            $params['cid'] = (int) $_GET['customer_id'];
+        }
+        if (!empty($_GET['from'])) {
+            $where .= ' AND cp.created_at >= :from';
+            $params['from'] = $_GET['from'] . ' 00:00:00';
+        }
+        if (!empty($_GET['to'])) {
+            $where .= ' AND cp.created_at <= :to';
+            $params['to'] = $_GET['to'] . ' 23:59:59';
+        }
+
+        $stmt = $this->pdo->prepare(
+            "SELECT cp.*, c.name AS customer_name, c.phone AS customer_phone,
+                    pm.name AS payment_method_name,
+                    i.invoice_no
+             FROM customer_payments cp
+             JOIN customers c ON c.id = cp.customer_id
+             LEFT JOIN payment_methods pm ON pm.id = cp.payment_method_id
+             LEFT JOIN invoices i ON i.id = cp.invoice_id
+             {$where}
+             ORDER BY cp.created_at DESC, cp.id DESC
+             LIMIT 500"
+        );
+        $stmt->execute($params);
+        Response::json($stmt->fetchAll());
     }
 }

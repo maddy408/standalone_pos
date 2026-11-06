@@ -365,7 +365,7 @@ export default function Dashboard() {
 
           <Link
             to="/pos"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-bold text-xs shadow-md shadow-[#0A4174]/20 transition-all hover:scale-[1.02] active:scale-95"
+            className="btn-luminous-blue inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all hover:scale-[1.03] active:scale-95"
           >
             <ShoppingCart className="w-4 h-4" />
             <span>Open POS Terminal</span>
@@ -382,12 +382,12 @@ export default function Dashboard() {
             <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
               Total Revenue
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center font-black text-sm shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-[#E0F2FE] dark:bg-[#1A2A3D] text-[#0284C7] dark:text-[#38BDF8] flex items-center justify-center font-black text-sm shadow-xs border border-sky-200/50">
               ₹
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
+            <div className="text-3xl font-black tracking-tight text-gradient-revenue drop-shadow-xs">
               {formatCurrency(totalSalesRevenue, currency)}
             </div>
             <div className={`flex items-center gap-1.5 text-xs font-bold mt-1 ${revenueGrowth.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -398,8 +398,8 @@ export default function Dashboard() {
           {/* Dynamic Sparkline curve */}
           <div className="w-full h-8 mt-2">
             <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d={revenueSparkline.fill} fill="rgba(10, 65, 116, 0.12)" />
-              <path d={revenueSparkline.line} fill="none" stroke="#0A4174" strokeWidth="2.5" strokeLinecap="round" />
+              <path d={revenueSparkline.fill} fill="rgba(6, 182, 212, 0.15)" />
+              <path d={revenueSparkline.line} fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
@@ -410,12 +410,12 @@ export default function Dashboard() {
             <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
               Total Invoices
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-sm shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center font-black text-sm shadow-xs border border-purple-200/50">
               <FileText className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
+            <div className="text-3xl font-black tracking-tight text-gradient-invoices drop-shadow-xs">
               {filteredInvoices.length}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
@@ -426,8 +426,8 @@ export default function Dashboard() {
           {/* Dynamic Sparkline curve */}
           <div className="w-full h-8 mt-2">
             <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d={ordersSparkline.fill} fill="rgba(37, 99, 235, 0.12)" />
-              <path d={ordersSparkline.line} fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
+              <path d={ordersSparkline.fill} fill="rgba(147, 51, 234, 0.15)" />
+              <path d={ordersSparkline.line} fill="none" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
@@ -438,12 +438,12 @@ export default function Dashboard() {
             <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
               Customers
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm shadow-xs border border-emerald-200/50">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
+            <div className="text-3xl font-black tracking-tight text-gradient-customers drop-shadow-xs">
               {customers.length}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
@@ -454,8 +454,8 @@ export default function Dashboard() {
           {/* Sparkline curve */}
           <div className="w-full h-8 mt-2">
             <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d="M 0 24 Q 25 20 50 14 T 100 4 L 100 25 L 0 25 Z" fill="rgba(16, 185, 129, 0.12)" />
-              <path d="M 0 24 Q 25 20 50 14 T 100 4" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 0 24 Q 25 20 50 14 T 100 4 L 100 25 L 0 25 Z" fill="rgba(16, 185, 129, 0.15)" />
+              <path d="M 0 24 Q 25 20 50 14 T 100 4" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
@@ -466,12 +466,12 @@ export default function Dashboard() {
             <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
               Active Products
             </span>
-            <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm shadow-xs">
+            <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm shadow-xs border border-amber-200/50">
               <Package className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
+            <div className="text-3xl font-black tracking-tight text-gradient-products drop-shadow-xs">
               {products.length}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">
@@ -482,8 +482,8 @@ export default function Dashboard() {
           {/* Sparkline curve */}
           <div className="w-full h-8 mt-2">
             <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d="M 0 18 Q 35 22 65 10 T 100 6 L 100 25 L 0 25 Z" fill="rgba(245, 158, 11, 0.12)" />
-              <path d="M 0 18 Q 35 22 65 10 T 100 6" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 0 18 Q 35 22 65 10 T 100 6 L 100 25 L 0 25 Z" fill="rgba(245, 158, 11, 0.15)" />
+              <path d="M 0 18 Q 35 22 65 10 T 100 6" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
@@ -494,11 +494,11 @@ export default function Dashboard() {
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Today Sales</div>
-            <div className="text-base font-black text-[#1C2736] dark:text-[#F1F5F9] mt-0.5">
+            <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               {formatCurrency(summary?.today_sales_total ?? 0, currency)}
             </div>
           </div>
-          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/50">
             Daily POS
           </span>
         </div>
@@ -506,11 +506,11 @@ export default function Dashboard() {
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Net Profit</div>
-            <div className="text-base font-black text-[#0A4174] dark:text-[#4A8CD2] mt-0.5">
+            <div className="text-lg font-black text-[#0284C7] dark:text-[#38BDF8] mt-0.5">
               {formatCurrency(netProfit, currency)}
             </div>
           </div>
-          <span className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D] px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-[#0284C7] dark:text-[#38BDF8] bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 rounded-full border border-sky-200/50">
             Income - Exp
           </span>
         </div>
@@ -518,11 +518,11 @@ export default function Dashboard() {
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Total Expense</div>
-            <div className="text-base font-black text-rose-500 mt-0.5">
+            <div className="text-lg font-black text-rose-500 mt-0.5">
               {formatCurrency(totalExpenseAmount, currency)}
             </div>
           </div>
-          <span className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-full border border-rose-200/50">
             Expenses
           </span>
         </div>
@@ -530,11 +530,11 @@ export default function Dashboard() {
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
             <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Low Stock Alert</div>
-            <div className="text-base font-black text-amber-500 mt-0.5">
+            <div className="text-lg font-black text-amber-500 mt-0.5">
               {summary?.low_stock_count ?? 0} Items
             </div>
           </div>
-          <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full border border-amber-200/50">
             Reorder
           </span>
         </div>

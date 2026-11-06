@@ -84,6 +84,7 @@ $router->delete('/api/products/{id}/variants/{variantId}', fn ($id, $variantId) 
 
 $customers = new CustomerController($pdo);
 $router->get('/api/customers', fn () => $customers->index());
+$router->get('/api/customer-payments', fn () => $customers->paymentsList());
 $router->get('/api/customers/{id}', fn ($id) => $customers->show($id));
 $router->post('/api/customers', fn () => $customers->store());
 $router->put('/api/customers/{id}', fn ($id) => $customers->update($id));
