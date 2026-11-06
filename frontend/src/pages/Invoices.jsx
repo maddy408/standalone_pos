@@ -16,7 +16,11 @@ import {
   User,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  Search,
+  Eye,
+  Edit2,
+  Filter,
 } from 'lucide-react';
 
 export default function Invoices() {
@@ -24,6 +28,11 @@ export default function Invoices() {
   const { settings } = useSettings();
   const { can } = useAuth();
   const [invoices, setInvoices] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [search, setSearch] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterFrom, setFilterFrom] = useState('');
+  const [filterTo, setFilterTo] = useState('');
   const [returning, setReturning] = useState(null);
   const [returnableItems, setReturnableItems] = useState([]);
   const [returnQtys, setReturnQtys] = useState({});
@@ -33,11 +42,26 @@ export default function Invoices() {
   const canCancel = can('pos.cancel_invoice');
   const canReturn = can('pos.sales_return');
 
-  const load = () =>
-    api.get('/invoices', { params: { limit: 100 } }).then(({ data }) => { const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []); setInvoices(list); });
+  const load = () => {
+    const params = {
+      limit: 100,
+      search: search || undefined,
+      customer_id: filterCustomer || undefined,
+      from: filterFrom || undefined,
+      to: filterTo || undefined,
+    };
+    api.get('/invoices', { params }).then(({ data }) => {
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setInvoices(list);
+    });
+  };
 
   useEffect(() => {
     load();
+  }, [search, filterCustomer, filterFrom, filterTo]);
+
+  useEffect(() => {
+    api.get('/customers').then(({ data }) => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
   }, []);
 
   const cancelInvoice = async (id) => {
@@ -85,12 +109,72 @@ export default function Invoices() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <FileText className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
-          {t('invoices.title')}
-        </h1>
-        <p className="text-xs text-[#5A6B82]">Sales receipt logs, customer billing history & thermal printouts</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <FileText className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
+            {t('invoices.title')}
+          </h1>
+          <p className="text-xs text-[#5A6B82]">Sales receipt logs, customer billing history & thermal printouts</p>
+        </div>
+      </div>
+
+      {/* Filter / Search Bar */}
+      <div className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm flex flex-wrap items-center gap-2.5 text-xs">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by invoice # or customer name..."
+            className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+          />
+        </div>
+
+        <select
+          value={filterCustomer}
+          onChange={(e) => setFilterCustomer(e.target.value)}
+          className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+        >
+          <option value="">All Customers</option>
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex items-center gap-1.5 text-[#5A6B82]">
+          <span>From:</span>
+          <input
+            type="date"
+            value={filterFrom}
+            onChange={(e) => setFilterFrom(e.target.value)}
+            className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+          />
+          <span>To:</span>
+          <input
+            type="date"
+            value={filterTo}
+            onChange={(e) => setFilterTo(e.target.value)}
+            className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+          />
+        </div>
+
+        {(search || filterCustomer || filterFrom || filterTo) && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setFilterCustomer('');
+              setFilterFrom('');
+              setFilterTo('');
+            }}
+            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-[#5A6B82] hover:text-[#1C2736]"
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm">
@@ -150,8 +234,15 @@ export default function Invoices() {
                   <div className="flex items-center justify-center gap-1.5">
                     <button
                       onClick={() => reprint(inv.id)}
-                      title="Print Invoice Receipt"
+                      title="View & Print Invoice Receipt"
                       className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => reprint(inv.id)}
+                      title="Print Invoice Receipt"
+                      className="p-1.5 text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
                     >
                       <Printer className="w-3.5 h-3.5" />
                     </button>
@@ -170,7 +261,7 @@ export default function Invoices() {
                         title="Cancel Invoice"
                         className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                       >
-                        <Ban className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>

@@ -677,6 +677,14 @@ export default function POS() {
 
   const completeSale = async () => {
     if (cart.length === 0) return;
+
+    // Validation: If Credit payment method, customer selection is mandatory!
+    if (paymentMethod === 'credit' && !selectedCustomerId) {
+      alert('Please select a customer for Credit sale! Walk-in Customer cannot be given Credit.');
+      setMessage('Error: Please select a customer to give Credit.');
+      return;
+    }
+
     const createdAt = new Date().toISOString();
     const uuid = newUuid();
 

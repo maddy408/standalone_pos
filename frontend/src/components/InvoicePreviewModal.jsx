@@ -13,6 +13,7 @@ import { useState } from 'react';
 export default function InvoicePreviewModal({ invoice, settings, onClose }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const [paperSize, setPaperSize] = useState('thermal'); // 'thermal' | 'a4' | 'a5'
   const currency = settings?.currency_symbol || '₹';
 
   if (!invoice) return null;
@@ -30,6 +31,13 @@ export default function InvoicePreviewModal({ invoice, settings, onClose }) {
     iframe.style.border = '0';
     document.body.appendChild(iframe);
 
+    let pageCss = '@page { margin: 0; size: 80mm auto; } body { font-family: monospace; width: 300px; margin: 0 auto; padding: 12px; }';
+    if (paperSize === 'a4') {
+      pageCss = '@page { margin: 15mm; size: A4 portrait; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; font-size: 14px; } h2 { font-size: 24px; } table { font-size: 13px; }';
+    } else if (paperSize === 'a5') {
+      pageCss = '@page { margin: 10mm; size: A5 landscape; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; width: 100%; max-width: 580px; margin: 0 auto; padding: 15px; font-size: 12px; } h2 { font-size: 20px; } table { font-size: 11px; }';
+    }
+
     const doc = iframe.contentWindow.document;
     doc.open();
     doc.write(`
@@ -37,19 +45,11 @@ export default function InvoicePreviewModal({ invoice, settings, onClose }) {
         <head>
           <title>${invoice.invoice_no || 'Receipt'}</title>
           <style>
-            @page { margin: 0; size: 80mm auto; }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 300px;
-              margin: 0 auto;
-              padding: 12px;
-              color: #000;
-              background: #fff;
-            }
-            h2 { text-align: center; margin: 0 0 4px; font-size: 16px; font-weight: bold; }
-            .center { text-align: center; font-size: 11px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
-            th, td { padding: 3px 0; }
+            ${pageCss}
+            h2 { text-align: center; margin: 0 0 4px; font-weight: bold; }
+            .center { text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+            th, td { padding: 4px 2px; }
             .totals td { font-weight: bold; }
             hr { border: none; border-top: 1px dashed #000; margin: 8px 0; }
           </style>
@@ -126,15 +126,33 @@ export default function InvoicePreviewModal({ invoice, settings, onClose }) {
               Invoice Preview
             </h3>
             <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
-              Thermal Print Template
+              Format: {paperSize.toUpperCase()}
             </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full text-[#5A6B82] hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-[#DCE5EF] dark:border-[#22354B] p-0.5 bg-[#F4F7FB] dark:bg-[#0B131E] text-[10px]">
+              {['thermal', 'a4', 'a5'].map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setPaperSize(size)}
+                  className={`px-2 py-0.5 rounded capitalize font-bold transition-all ${
+                    paperSize === size
+                      ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-2xs'
+                      : 'text-[#5A6B82] hover:text-[#1C2736]'
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-full text-[#5A6B82] hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Exact Printable Thermal Receipt View */}

@@ -47,16 +47,17 @@ class StockController
     {
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'inventory.view');
-        $where = "WHERE p.is_active = 1 AND p.track_serial = 0
-               AND p.stock_qty <= COALESCE(p.low_stock_threshold, s.low_stock_threshold)";
+        $where = "WHERE p.is_active = 1
+               AND p.stock_qty <= COALESCE(p.low_stock_threshold, s.low_stock_threshold, 5)";
         $params = [];
         if (!empty($_GET['business_type'])) {
             $where .= ' AND p.business_type = :bt';
             $params['bt'] = $_GET['business_type'];
         }
         $stmt = $this->pdo->prepare(
-            "SELECT p.*, COALESCE(p.low_stock_threshold, s.low_stock_threshold) AS effective_threshold
-             FROM products p, business_settings s
+            "SELECT p.*, COALESCE(p.low_stock_threshold, s.low_stock_threshold, 5) AS effective_threshold
+             FROM products p
+             LEFT JOIN business_settings s ON s.id = 1
              {$where}
              ORDER BY p.stock_qty ASC"
         );
@@ -122,6 +123,34 @@ class StockController
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             throw $e;
+        }
+    }
+
+    public function destroyMovement(string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'inventory.adjust');
+
+        $stmt = $this->pdo->prepare('SELECT * FROM stock_movements WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $mov = $stmt->fetch();
+        if (!$mov) {
+            Response::error('Movement record not found', 404);
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            // Revert stock on the product
+            $qty = (float) $mov['qty_change'];
+            $this->pdo->prepare('UPDATE products SET stock_qty = stock_qty - :qty WHERE id = :pid')
+                ->execute(['qty' => $qty, 'pid' => $mov['product_id']]);
+
+            $this->pdo->prepare('DELETE FROM stock_movements WHERE id = :id')->execute(['id' => $id]);
+            $this->pdo->commit();
+            Response::json(['ok' => true]);
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            Response::error('Failed to delete movement: ' . $e->getMessage(), 500);
         }
     }
 }

@@ -105,6 +105,7 @@ $router->get('/api/invoices/{id}', fn ($id) => $invoices->show($id));
 $router->post('/api/invoices', fn () => $invoices->store());
 $router->get('/api/invoices/{id}/print', fn ($id) => $invoices->print($id));
 $router->post('/api/invoices/{id}/cancel', fn ($id) => $invoices->cancel($id));
+$router->delete('/api/invoices/{id}', fn ($id) => $invoices->cancel($id));
 
 $salesReturns = new SalesReturnController($pdo);
 $router->get('/api/invoices/{id}/returnable-items', fn ($id) => $salesReturns->returnableItems($id));
@@ -124,11 +125,13 @@ $purchases = new PurchaseController($pdo);
 $router->get('/api/purchases', fn () => $purchases->index());
 $router->get('/api/purchases/{id}', fn ($id) => $purchases->show($id));
 $router->post('/api/purchases', fn () => $purchases->store());
+$router->delete('/api/purchases/{id}', fn ($id) => $purchases->destroy($id));
 
 $stock = new StockController($pdo);
 $router->get('/api/stock/movements', fn () => $stock->movements());
 $router->get('/api/stock/low', fn () => $stock->lowStock());
 $router->post('/api/stock/adjust', fn () => $stock->adjust());
+$router->delete('/api/stock/movements/{id}', fn ($id) => $stock->destroyMovement($id));
 
 $ledger = new LedgerEntryController($pdo);
 $router->get('/api/expenses', fn () => $ledger->index('expenses'));

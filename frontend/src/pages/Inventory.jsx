@@ -14,7 +14,9 @@ import {
   SlidersHorizontal,
   ArrowUpRight,
   ArrowDownRight,
-  Package
+  Package,
+  Search,
+  Trash2,
 } from 'lucide-react';
 
 export default function Inventory() {
@@ -26,6 +28,8 @@ export default function Inventory() {
   const [movements, setMovements] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [products, setProducts] = useState([]);
+  const [searchProduct, setSearchProduct] = useState('');
+  const [searchMovement, setSearchMovement] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -123,6 +127,28 @@ export default function Inventory() {
     }
   };
 
+  const deleteMovement = async (m) => {
+    if (!confirm(`Are you sure you want to delete this movement record? Stock change of ${m.qty_change} will be reversed.`)) return;
+    try {
+      await api.delete(`/stock/movements/${m.id}`);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete movement');
+    }
+  };
+
+  const filteredProductsToAdjust = products.filter((p) => {
+    if (!searchProduct) return true;
+    const q = searchProduct.toLowerCase();
+    return (p.name || '').toLowerCase().includes(q) || (p.barcode || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q);
+  });
+
+  const filteredMovements = movements.filter((m) => {
+    if (!searchMovement) return true;
+    const q = searchMovement.toLowerCase();
+    return (m.product_name || '').toLowerCase().includes(q) || (m.notes || '').toLowerCase().includes(q) || (m.movement_type || '').toLowerCase().includes(q);
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -188,13 +214,23 @@ export default function Inventory() {
           {/* Quick Product Picker for Adjustment */}
           {canAdjust && (
             <div className="rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] p-4 shadow-sm space-y-3">
-              <h2 className="text-sm font-bold flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
-                Select Product to Adjust
-              </h2>
-              <p className="text-xs text-[#5A6B82]">Click any product to open the adjustment modal with plus/minus</p>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                  Stock Adjustment & Opening Stock
+                </h2>
+              </div>
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-[#5A6B82] absolute left-2.5 top-2" />
+                <input
+                  value={searchProduct}
+                  onChange={(e) => setSearchProduct(e.target.value)}
+                  placeholder="Search item to adjust..."
+                  className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent focus:outline-none"
+                />
+              </div>
               <div className="max-h-72 overflow-y-auto space-y-1 pr-1 text-xs">
-                {products.map((p) => (
+                {filteredProductsToAdjust.map((p) => (
                   <div
                     key={p.id}
                     onClick={() => openAdjustModal(p)}
@@ -216,7 +252,18 @@ export default function Inventory() {
 
         {/* Right Column: Complete Stock Movements Ledger */}
         <div className="lg:col-span-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] p-4 shadow-sm space-y-3">
-          <h2 className="text-sm font-bold">{t('inventory.stock_movements')}</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h2 className="text-sm font-bold">{t('inventory.stock_movements')}</h2>
+            <div className="relative w-full sm:w-56">
+              <Search className="w-3.5 h-3.5 text-[#5A6B82] absolute left-2.5 top-2" />
+              <input
+                value={searchMovement}
+                onChange={(e) => setSearchMovement(e.target.value)}
+                placeholder="Search movements..."
+                className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent focus:outline-none"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
             <table className="min-w-full text-xs">
               <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left sticky top-0 font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
@@ -225,10 +272,11 @@ export default function Inventory() {
                   <th className="px-3.5 py-2.5">Type / Reason</th>
                   <th className="px-3.5 py-2.5 text-right">Adjustment</th>
                   <th className="px-3.5 py-2.5 text-right">{t('common.date')}</th>
+                  <th className="px-3.5 py-2.5 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-                {movements.map((m) => {
+                {filteredMovements.map((m) => {
                   const qtyChange = Number(m.qty_change);
                   return (
                     <tr key={m.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
@@ -251,13 +299,22 @@ export default function Inventory() {
                       <td className="px-3.5 py-2.5 text-right text-[#5A6B82] dark:text-[#94A3B8]">
                         {new Date(m.created_at).toLocaleString()}
                       </td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        <button
+                          onClick={() => deleteMovement(m)}
+                          title="Delete / Reverse Adjustment"
+                          className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
-                {movements.length === 0 && (
+                {filteredMovements.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
-                      No stock movement history
+                    <td colSpan={5} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
+                      No stock movement history found
                     </td>
                   </tr>
                 )}

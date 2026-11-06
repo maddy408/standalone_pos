@@ -14,7 +14,11 @@ import {
   Phone,
   Mail,
   AlertCircle,
-  ShoppingBag
+  ShoppingBag,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Eye,
 } from 'lucide-react';
 
 const BLANK = { id: null, name: '', phone: '', email: '', address: '', gstin: '' };
@@ -33,8 +37,31 @@ export default function Suppliers() {
 
   const load = () => {
     api.get('/suppliers', { params: { search: search || undefined } })
-      .then(({ data }) => setSuppliers(data))
-      .catch((err) => console.error(err));
+      .then(({ data }) => setSuppliers(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : [])))
+      .catch((err) => {
+        console.error(err);
+        setSuppliers([]);
+      });
+  };
+
+  const deleteSupplier = async (s) => {
+    if (!confirm(`Are you sure you want to delete supplier "${s.name}"?`)) return;
+    try {
+      await api.delete(`/suppliers/${s.id}`);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete supplier');
+    }
+  };
+
+  const toggleStatus = async (s) => {
+    const nextStatus = s.is_active === 0 ? 1 : 0;
+    try {
+      await api.put(`/suppliers/${s.id}`, { is_active: nextStatus });
+      load();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update status');
+    }
   };
 
   useEffect(() => {
@@ -159,7 +186,14 @@ export default function Suppliers() {
                 return (
                   <tr key={s.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
                     <td className="px-3.5 py-2.5 font-medium">
-                      <div>{s.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className={s.is_active === 0 ? 'line-through text-[#5A6B82]' : ''}>{s.name}</span>
+                        {s.is_active === 0 && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
                       {s.address && <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate max-w-xs">{s.address}</div>}
                     </td>
                     <td className="px-3.5 py-2.5 space-y-0.5">
@@ -182,7 +216,14 @@ export default function Suppliers() {
                       </span>
                     </td>
                     <td className="px-3.5 py-2.5 text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => viewDetails(s)}
+                          title="View Details & Ledger"
+                          className="p-1.5 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         <button
                           onClick={() => startEdit(s)}
                           title="Edit Supplier"
@@ -191,11 +232,22 @@ export default function Suppliers() {
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => viewDetails(s)}
-                          title="Purchase History"
-                          className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                          onClick={() => toggleStatus(s)}
+                          title={s.is_active === 0 ? 'Click to Activate' : 'Click to Deactivate'}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            s.is_active === 0
+                              ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40'
+                              : 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+                          }`}
                         >
-                          <FileText className="w-3.5 h-3.5" />
+                          {s.is_active === 0 ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => deleteSupplier(s)}
+                          title="Delete Supplier"
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

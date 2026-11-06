@@ -12,7 +12,11 @@ import {
   RotateCcw,
   CheckCircle2,
   DollarSign,
-  Truck
+  Truck,
+  Search,
+  Eye,
+  Printer,
+  History,
 } from 'lucide-react';
 
 export default function Purchases() {
@@ -21,16 +25,23 @@ export default function Purchases() {
   const [purchases, setPurchases] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [search, setSearch] = useState('');
   const [supplierId, setSupplierId] = useState('');
-  const [items, setItems] = useState([{ product_id: '', qty: 1, unit_price: '', serials_text: '' }]);
+  const [items, setItems] = useState([{ product_id: '', qty: 1, unit_price: '', mrp: '', discount: 0, serials_text: '' }]);
   const [paidAmount, setPaidAmount] = useState('');
   const [error, setError] = useState('');
   const [returning, setReturning] = useState(null);
   const [returnQtys, setReturnQtys] = useState({});
+  const [viewingPurchase, setViewingPurchase] = useState(null);
+  const [historyPurchase, setHistoryPurchase] = useState(null);
 
   const currency = settings?.currency_symbol || '₹';
 
-  const load = () => api.get('/purchases').then(({ data }) => setPurchases(data));
+  const load = () => {
+    api.get('/purchases', { params: { search: search || undefined } })
+      .then(({ data }) => setPurchases(Array.isArray(data) ? data : []))
+      .catch(() => setPurchases([]));
+  };
 
   const loadProducts = () => {
     const params = settings?.business_type ? { business_type: settings.business_type } : {};
@@ -48,6 +59,9 @@ export default function Purchases() {
 
   useEffect(() => {
     load();
+  }, [search]);
+
+  useEffect(() => {
     api.get('/suppliers').then(({ data }) => setSuppliers(data));
   }, []);
 
@@ -60,11 +74,13 @@ export default function Purchases() {
       rows.map((r, idx) => {
         if (idx !== index) return r;
         const updated = { ...r, ...patch };
-        // If product_id changed, map the purchase price automatically!
+        // If product_id changed, map the purchase price, mrp automatically!
         if (patch.product_id !== undefined && patch.product_id !== '') {
           const prod = products.find((p) => p.id === Number(patch.product_id));
-          if (prod && (r.unit_price === '' || r.unit_price === 0)) {
+          if (prod) {
             updated.unit_price = prod.purchase_price ? String(Number(prod.purchase_price)) : '0';
+            updated.mrp = prod.mrp ? String(Number(prod.mrp)) : (prod.selling_price ? String(Number(prod.selling_price)) : '0');
+            updated.discount = 0;
           }
         }
         return updated;
@@ -72,13 +88,19 @@ export default function Purchases() {
     );
   };
 
-  const addRow = () => setItems((rows) => [...rows, { product_id: '', qty: 1, unit_price: '', serials_text: '' }]);
+  const addRow = () => setItems((rows) => [...rows, { product_id: '', qty: 1, unit_price: '', mrp: '', discount: 0, serials_text: '' }]);
   const removeRow = (i) => setItems((rows) => rows.filter((_, idx) => idx !== i));
 
   const selectedProduct = (id) => products.find((p) => p.id === Number(id));
 
   const grandTotal = items.reduce(
-    (s, it) => s + Number(it.qty || 0) * Number(it.unit_price || 0),
+    (s, it) => {
+      const q = Number(it.qty || 0);
+      const rate = Number(it.unit_price || 0);
+      const disc = Number(it.discount || 0);
+      const lineSubtotal = Math.max(0, (q * rate) - disc);
+      return s + lineSubtotal;
+    },
     0
   );
 
@@ -137,10 +159,81 @@ export default function Purchases() {
     }
   };
 
+  const deletePurchase = async (p) => {
+    if (!confirm(`Are you sure you want to cancel and delete purchase voucher "${p.purchase_no}"? Stock will be reversed.`)) return;
+    try {
+      await api.delete(`/purchases/${p.id}`);
+      load();
+      loadProducts();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to delete purchase');
+    }
+  };
+
+  const printPurchase = (p) => {
+    const win = window.open('', '_blank', 'width=700,height=600');
+    if (!win) return;
+    const html = `
+      <html>
+        <head>
+          <title>Purchase Voucher ${p.purchase_no}</title>
+          <style>
+            body { font-family: monospace; padding: 20px; max-width: 650px; margin: 0 auto; }
+            h2 { text-align: center; margin-bottom: 4px; }
+            hr { border: none; border-top: 1px dashed #333; margin: 10px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+            th, td { padding: 4px 0; }
+            .right { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <h2>${settings?.company_name || 'My Business'}</h2>
+          <div style="text-align: center; font-size: 12px;">PURCHASE INVOICE VOUCHER</div>
+          <hr />
+          <div>Voucher No: <b>${p.purchase_no}</b></div>
+          <div>Supplier: ${p.supplier_name || 'N/A'}</div>
+          <div>Date: ${new Date(p.created_at).toLocaleString()}</div>
+          <hr />
+          <table>
+            <thead><tr><th align="left">Item</th><th class="right">Qty</th><th class="right">Rate</th><th class="right">Total</th></tr></thead>
+            <tbody>
+              ${(p.items || []).map(it => `
+                <tr>
+                  <td>${it.product_name}</td>
+                  <td class="right">${it.qty}</td>
+                  <td class="right">${formatCurrency(it.unit_price, currency)}</td>
+                  <td class="right">${formatCurrency(it.line_total || (it.qty * it.unit_price), currency)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <hr />
+          <div class="right">Grand Total: <b>${formatCurrency(p.grand_total, currency)}</b></div>
+          <div class="right">Paid Amount: <b>${formatCurrency(p.paid_amount, currency)}</b></div>
+          <div class="right">Balance Due: <b>${formatCurrency(p.balance_amount || 0, currency)}</b></div>
+          <hr />
+          <script>window.onload = () => { window.print(); };</script>
+        </body>
+      </html>
+    `;
+    win.document.write(html);
+    win.document.close();
+  };
+
   const openReturn = async (purchase) => {
     const { data } = await api.get(`/purchases/${purchase.id}`);
     setReturnQtys(Object.fromEntries(data.items.map((it) => [it.id, 0])));
     setReturning(data);
+  };
+
+  const openView = async (purchase) => {
+    const { data } = await api.get(`/purchases/${purchase.id}`);
+    setViewingPurchase(data);
+  };
+
+  const openHistory = async (purchase) => {
+    const { data } = await api.get(`/purchases/${purchase.id}`);
+    setHistoryPurchase(data);
   };
 
   const submitReturn = async () => {
@@ -174,12 +267,23 @@ export default function Purchases() {
       </div>
       {/* Purchases List */}
       <div className="lg:col-span-2 space-y-4">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
-            {t('purchases.title')}
-          </h1>
-          <p className="text-xs text-[#5A6B82]">Record stock procurement, invoice vouchers & returns</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
+              {t('purchases.title')}
+            </h1>
+            <p className="text-xs text-[#5A6B82]">Record stock procurement, invoice vouchers & returns</p>
+          </div>
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by voucher # or supplier..."
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+            />
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm">
@@ -205,13 +309,43 @@ export default function Purchases() {
                     {formatCurrency(p.paid_amount, currency)}
                   </td>
                   <td className="px-3.5 py-2.5 text-center">
-                    <button
-                      onClick={() => openReturn(p)}
-                      title="Return items"
-                      className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors inline-flex items-center gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => openView(p)}
+                        title="View Purchase Details"
+                        className="p-1.5 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => printPurchase(p)}
+                        title="Print Purchase Voucher"
+                        className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openHistory(p)}
+                        title="View Timeline / History"
+                        className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                      >
+                        <History className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openReturn(p)}
+                        title="Return items"
+                        className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => deletePurchase(p)}
+                        title="Delete Purchase"
+                        className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -304,46 +438,27 @@ export default function Purchases() {
             </label>
             {items.map((it, i) => {
               const product = selectedProduct(it.product_id);
-              return (
-                <div key={i} className="space-y-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#1A2A3D]/30 p-2.5">
-                  <select
-                    required
-                    value={it.product_id}
-                    onChange={(e) => updateItem(i, { product_id: e.target.value })}
-                    className="w-full rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2 py-1.5 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                  >
-                    <option value="">{t('purchases.select_product')}</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} {p.purchase_price ? `(${formatCurrency(p.purchase_price, currency)})` : ''}
-                      </option>
-                    ))}
-                  </select>
+              const qty = Number(it.qty || 0);
+              const unitPrice = Number(it.unit_price || 0);
+              const discount = Number(it.discount || 0);
+              const subtotal = Math.max(0, (qty * unitPrice) - discount);
 
-                  <div className="flex gap-2">
-                    {!product?.track_serial && (
-                      <div className="w-24">
-                        <input
-                          type="number"
-                          min="1"
-                          step="any"
-                          value={it.qty}
-                          onChange={(e) => updateItem(i, { qty: e.target.value })}
-                          placeholder="Qty"
-                          className="w-full rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2 py-1.5 text-center focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <input
-                        type="number"
-                        step="any"
-                        value={it.unit_price}
-                        onChange={(e) => updateItem(i, { unit_price: e.target.value })}
-                        placeholder="Price / Unit"
-                        className="w-full rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2 py-1.5 focus:ring-1 focus:ring-[#0A4174] focus:outline-none font-semibold"
-                      />
-                    </div>
+              return (
+                <div key={i} className="space-y-2 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#1A2A3D]/30 p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <select
+                      required
+                      value={it.product_id}
+                      onChange={(e) => updateItem(i, { product_id: e.target.value })}
+                      className="flex-1 rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2 py-1.5 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                    >
+                      <option value="">{t('purchases.select_product')}</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} {p.purchase_price ? `(${formatCurrency(p.purchase_price, currency)})` : ''}
+                        </option>
+                      ))}
+                    </select>
                     {items.length > 1 && (
                       <button
                         type="button"
@@ -353,6 +468,73 @@ export default function Purchases() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
+                  </div>
+
+                  {/* Grid for Qty, Unit Cost, MRP, Discount, and Subtotal */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-[11px]">
+                    <div>
+                      <span className="text-[#5A6B82] font-semibold block text-[10px]">Qty</span>
+                      <input
+                        type="number"
+                        min="1"
+                        step="any"
+                        value={it.qty}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateItem(i, { qty: val === '' ? '' : val.replace(/^0+(?=\d)/, '') });
+                        }}
+                        placeholder="Qty"
+                        className="w-full rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-1.5 py-1 text-center font-bold"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[#5A6B82] font-semibold block text-[10px]">Unit Cost</span>
+                      <input
+                        type="number"
+                        step="any"
+                        value={it.unit_price}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateItem(i, { unit_price: val === '' ? '' : val.replace(/^0+(?=\d)/, '') });
+                        }}
+                        placeholder="Cost"
+                        className="w-full rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-1.5 py-1 text-right font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[#5A6B82] font-semibold block text-[10px]">MRP</span>
+                      <input
+                        type="number"
+                        step="any"
+                        value={it.mrp}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateItem(i, { mrp: val === '' ? '' : val.replace(/^0+(?=\d)/, '') });
+                        }}
+                        placeholder="MRP"
+                        className="w-full rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-1.5 py-1 text-right"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[#5A6B82] font-semibold block text-[10px]">Discount ({currency})</span>
+                      <input
+                        type="number"
+                        step="any"
+                        value={it.discount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateItem(i, { discount: val === '' ? '' : val.replace(/^0+(?=\d)/, '') });
+                        }}
+                        placeholder="0"
+                        className="w-full rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-1.5 py-1 text-right text-emerald-600"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[#5A6B82] font-semibold block text-[10px]">Subtotal</span>
+                      <div className="w-full rounded border border-transparent bg-[#E2EDF8] dark:bg-[#1A2A3D] px-1.5 py-1 text-right font-bold text-[#0A4174] dark:text-[#4A8CD2] truncate">
+                        {formatCurrency(subtotal, currency)}
+                      </div>
+                    </div>
                   </div>
 
                   {product?.track_serial && (
@@ -402,7 +584,10 @@ export default function Purchases() {
                 type="number"
                 step="any"
                 value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPaidAmount(val === '' ? '' : val.replace(/^0+(?=\d)/, ''));
+                }}
                 placeholder={grandTotal.toFixed(2)}
                 className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 font-bold text-emerald-600 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
               />
@@ -417,6 +602,116 @@ export default function Purchases() {
           </button>
         </form>
       </div>
+
+      {/* View Purchase Modal */}
+      {viewingPurchase && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <Eye className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                Purchase Details: {viewingPurchase.purchase_no}
+              </h3>
+              <button onClick={() => setViewingPurchase(null)} className="text-[#5A6B82] hover:text-[#1C2736]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-[#5A6B82] block text-[10px]">Supplier</span>
+                <span className="font-bold">{viewingPurchase.supplier_name}</span>
+              </div>
+              <div>
+                <span className="text-[#5A6B82] block text-[10px]">Date</span>
+                <span>{new Date(viewingPurchase.created_at).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="max-h-60 overflow-y-auto rounded-xl border border-[#DCE5EF] dark:border-[#22354B]">
+              <table className="w-full text-xs">
+                <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left">
+                  <tr>
+                    <th className="p-2">Item</th>
+                    <th className="p-2 text-right">Qty</th>
+                    <th className="p-2 text-right">Cost</th>
+                    <th className="p-2 text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
+                  {(viewingPurchase.items || []).map((it) => (
+                    <tr key={it.id}>
+                      <td className="p-2 font-medium">{it.product_name}</td>
+                      <td className="p-2 text-right">{it.qty}</td>
+                      <td className="p-2 text-right">{formatCurrency(it.unit_price, currency)}</td>
+                      <td className="p-2 text-right font-bold">{formatCurrency(it.line_total || (it.qty * it.unit_price), currency)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-[#DCE5EF] dark:border-[#22354B] text-xs font-bold">
+              <span>Grand Total:</span>
+              <span className="text-base text-[#0A4174] dark:text-[#4A8CD2]">{formatCurrency(viewingPurchase.grand_total, currency)}</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => printPurchase(viewingPurchase)}
+                className="flex-1 py-2 rounded-xl bg-[#0A4174] text-white font-bold text-xs flex items-center justify-center gap-1.5"
+              >
+                <Printer className="w-4 h-4" /> Print Voucher
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewingPurchase(null)}
+                className="px-4 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Purchase Modal */}
+      {historyPurchase && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <History className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                Audit Timeline — {historyPurchase.purchase_no}
+              </h3>
+              <button onClick={() => setHistoryPurchase(null)} className="text-[#5A6B82] hover:text-[#1C2736]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3 text-xs">
+              <div className="flex items-start gap-2.5 p-2 rounded-lg bg-[#F4F7FB] dark:bg-[#1A2A3D]">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5" />
+                <div>
+                  <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">Purchase Created & Stock Inwarded</div>
+                  <div className="text-[10px] text-[#5A6B82]">{new Date(historyPurchase.created_at).toLocaleString()}</div>
+                  <div className="text-[11px] text-[#5A6B82] mt-0.5">Supplier: {historyPurchase.supplier_name} • Paid: {formatCurrency(historyPurchase.paid_amount, currency)}</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5 p-2 rounded-lg bg-[#F4F7FB] dark:bg-[#1A2A3D]">
+                <ShoppingBag className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2] mt-0.5" />
+                <div>
+                  <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{historyPurchase.items?.length || 0} Products Cataloged</div>
+                  <div className="text-[11px] text-[#5A6B82]">Products added into store available stock for billing.</div>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHistoryPurchase(null)}
+              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold"
+            >
+              Close History
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

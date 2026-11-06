@@ -107,6 +107,19 @@ export default function Products() {
   const currency = settings?.currency_symbol || '₹';
   const businessType = settings?.business_type || 'mobile';
 
+  const filteredProducts = useMemo(() => {
+    if (!search || !search.trim()) return products;
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      const name = (p.name || '').toLowerCase();
+      const barcode = (p.barcode || '').toLowerCase();
+      const sku = (p.sku || '').toLowerCase();
+      const cat = (p.category_name || '').toLowerCase();
+      const brand = (p.brand_name || '').toLowerCase();
+      return name.includes(q) || barcode.includes(q) || sku.includes(q) || cat.includes(q) || brand.includes(q);
+    });
+  }, [products, search]);
+
   const loadProducts = () => {
     const params = { search: search || undefined };
     if (settings?.business_type) {
@@ -541,7 +554,7 @@ export default function Products() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-                {products.map((p) => {
+                {filteredProducts.map((p) => {
                   const isLow = p.low_stock_threshold && Number(p.stock_qty || 0) <= Number(p.low_stock_threshold);
                   const isSelected = form.id === p.id;
                   return (
@@ -593,10 +606,10 @@ export default function Products() {
                     </tr>
                   );
                 })}
-                {products.length === 0 && (
+                {filteredProducts.length === 0 && (
                   <tr>
                     <td colSpan={4} className="py-12 text-center text-[#5A6B82] dark:text-[#94A3B8] italic">
-                      No products found. Use the form to create your first item.
+                      No products found matching your search.
                     </td>
                   </tr>
                 )}

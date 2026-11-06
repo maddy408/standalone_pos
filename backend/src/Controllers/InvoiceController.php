@@ -24,6 +24,10 @@ class InvoiceController
         AuthMiddleware::authenticate();
         $where = 'WHERE 1=1';
         $params = [];
+        if (!empty($_GET['search'])) {
+            $where .= ' AND (i.invoice_no LIKE :s OR c.name LIKE :s OR i.customer_name LIKE :s)';
+            $params['s'] = '%' . $_GET['search'] . '%';
+        }
         if (!empty($_GET['status'])) {
             $where .= ' AND i.status = :status';
             $params['status'] = $_GET['status'];
@@ -34,18 +38,18 @@ class InvoiceController
         }
         if (!empty($_GET['from'])) {
             $where .= ' AND i.created_at >= :from';
-            $params['from'] = $_GET['from'];
+            $params['from'] = $_GET['from'] . ' 00:00:00';
         }
         if (!empty($_GET['to'])) {
             $where .= ' AND i.created_at <= :to';
-            $params['to'] = $_GET['to'];
+            $params['to'] = $_GET['to'] . ' 23:59:59';
         }
 
         $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
         $limit = max(1, min(1000, (int) ($_GET['limit'] ?? 25)));
         $offset = ($page - 1) * $limit;
 
-        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM invoices i {$where}");
+        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM invoices i LEFT JOIN customers c ON c.id = i.customer_id {$where}");
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 

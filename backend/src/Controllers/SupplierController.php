@@ -88,16 +88,41 @@ class SupplierController
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
         $stmt = $this->pdo->prepare(
-            'UPDATE suppliers SET name = :name, phone = :phone, email = :email, address = :address, gstin = :gstin WHERE id = :id'
+            'UPDATE suppliers SET 
+                name = COALESCE(:name, name),
+                phone = :phone,
+                email = :email,
+                address = :address,
+                gstin = :gstin,
+                is_active = COALESCE(:is_active, is_active)
+             WHERE id = :id'
         );
         $stmt->execute([
-            'name' => $body['name'] ?? '',
+            'name' => isset($body['name']) ? $body['name'] : null,
             'phone' => $body['phone'] ?? null,
             'email' => $body['email'] ?? null,
             'address' => $body['address'] ?? null,
             'gstin' => $body['gstin'] ?? null,
+            'is_active' => isset($body['is_active']) ? (int) $body['is_active'] : null,
             'id' => $id,
         ]);
+        Response::json(['ok' => true]);
+    }
+
+    public function destroy(string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'suppliers.manage');
+
+        // Check if supplier has linked purchases
+        $chk = $this->pdo->prepare('SELECT COUNT(*) FROM purchases WHERE supplier_id = :id');
+        $chk->execute(['id' => $id]);
+        if ((int) $chk->fetchColumn() > 0) {
+            Response::error('Cannot delete supplier because purchase records exist for this supplier.', 422);
+        }
+
+        $stmt = $this->pdo->prepare('DELETE FROM suppliers WHERE id = :id');
+        $stmt->execute(['id' => $id]);
         Response::json(['ok' => true]);
     }
 }

@@ -22,11 +22,64 @@ class PurchaseController
     {
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'purchases.manage');
-        $stmt = $this->pdo->query(
-            'SELECT p.*, s.name AS supplier_name FROM purchases p
-             JOIN suppliers s ON s.id = p.supplier_id ORDER BY p.created_at DESC LIMIT 500'
+        $where = 'WHERE 1=1';
+        $params = [];
+        if (!empty($_GET['search'])) {
+            $where .= ' AND (p.purchase_no LIKE :s OR s.name LIKE :s)';
+            $params['s'] = '%' . $_GET['search'] . '%';
+        }
+        $stmt = $this->pdo->prepare(
+            "SELECT p.*, s.name AS supplier_name FROM purchases p
+             JOIN suppliers s ON s.id = p.supplier_id {$where} ORDER BY p.created_at DESC LIMIT 500"
         );
+        $stmt->execute($params);
         Response::json($stmt->fetchAll());
+    }
+
+    public function destroy(string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'purchases.manage');
+
+        $this->pdo->beginTransaction();
+        try {
+            $purchase = $this->fetchPurchase((int) $id);
+            if (!$purchase) {
+                Response::error('Purchase not found', 404);
+            }
+
+            // Reverse stock
+            foreach ($purchase['items'] as $item) {
+                $this->pdo->prepare('UPDATE products SET stock_qty = stock_qty - :qty WHERE id = :pid')
+                    ->execute(['qty' => $item['qty'], 'pid' => $item['product_id']]);
+
+                // Delete serials if any created by this purchase
+                $this->pdo->prepare('DELETE FROM product_serials WHERE purchase_item_id = :piid')
+                    ->execute(['piid' => $item['id']]);
+            }
+
+            // Adjust supplier balance if balance_amount > 0
+            if ((float) ($purchase['balance_amount'] ?? 0) > 0) {
+                $this->pdo->prepare('UPDATE suppliers SET balance = balance - :amt WHERE id = :sid')
+                    ->execute(['amt' => $purchase['balance_amount'], 'sid' => $purchase['supplier_id']]);
+            }
+
+            // Delete purchase movements
+            $this->pdo->prepare("DELETE FROM stock_movements WHERE ref_type = 'purchases' AND ref_id = :id")
+                ->execute(['id' => $id]);
+
+            // Delete purchase items
+            $this->pdo->prepare('DELETE FROM purchase_items WHERE purchase_id = :id')->execute(['id' => $id]);
+
+            // Delete purchase
+            $this->pdo->prepare('DELETE FROM purchases WHERE id = :id')->execute(['id' => $id]);
+
+            $this->pdo->commit();
+            Response::json(['ok' => true]);
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            Response::error('Failed to delete purchase: ' . $e->getMessage(), 500);
+        }
     }
 
     public function show(string $id): void
