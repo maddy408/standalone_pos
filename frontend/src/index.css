@@ -41,16 +41,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 3D Liquid Water Glass Background Engine */
+/* Pure White Crystal Water Glass Background */
 body,
 .glass-theme,
 .glass-theme body {
   background: 
-    radial-gradient(1200px circle at 15% 10%, rgba(10, 65, 116, 0.22) 0%, transparent 60%),
-    radial-gradient(1000px circle at 85% 20%, rgba(74, 140, 210, 0.28) 0%, transparent 55%),
-    radial-gradient(900px circle at 50% 90%, rgba(37, 99, 235, 0.20) 0%, transparent 60%),
-    radial-gradient(600px circle at 70% 60%, rgba(245, 158, 11, 0.12) 0%, transparent 50%),
-    linear-gradient(135deg, #DFEAF5 0%, #D1E1F2 50%, #E2EDFA 100%) !important;
+    radial-gradient(1200px circle at 20% 15%, rgba(255, 255, 255, 0.95) 0%, transparent 60%),
+    radial-gradient(1000px circle at 80% 25%, rgba(224, 242, 254, 0.55) 0%, transparent 55%),
+    radial-gradient(900px circle at 50% 85%, rgba(240, 249, 255, 0.70) 0%, transparent 60%),
+    linear-gradient(145deg, #F8FAFD 0%, #EEF4F9 50%, #F5F9FD 100%) !important;
   background-attachment: fixed !important;
 }
 
@@ -59,109 +58,113 @@ body,
 .dark.glass-theme,
 .dark.glass-theme body {
   background: 
-    radial-gradient(1200px circle at 15% 10%, rgba(74, 140, 210, 0.30) 0%, transparent 60%),
-    radial-gradient(1000px circle at 85% 20%, rgba(10, 65, 116, 0.45) 0%, transparent 55%),
-    radial-gradient(900px circle at 50% 90%, rgba(59, 130, 246, 0.25) 0%, transparent 60%),
-    radial-gradient(600px circle at 70% 60%, rgba(245, 158, 11, 0.10) 0%, transparent 50%),
-    linear-gradient(135deg, #050B12 0%, #09121D 50%, #0D1A29 100%) !important;
+    radial-gradient(1200px circle at 20% 15%, rgba(30, 58, 95, 0.45) 0%, transparent 60%),
+    radial-gradient(1000px circle at 80% 25%, rgba(15, 32, 54, 0.55) 0%, transparent 55%),
+    linear-gradient(145deg, #070D15 0%, #0B131E 50%, #0F1A28 100%) !important;
   background-attachment: fixed !important;
 }
 
-/* Water Glass / Liquid Glass 3D Refraction Cards */
+/* White Crystal Liquid Water Glass Cards */
 .water-glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.22) 100%) !important;
-  backdrop-filter: blur(28px) saturate(210%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
-  border-top: 1.5px solid rgba(255, 255, 255, 0.95) !important;
-  border-left: 1.5px solid rgba(255, 255, 255, 0.85) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.45) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.35) !important;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.62) 100%) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  border-radius: 1.5rem !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 1) !important;
+  border-left: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-right: 1.5px solid rgba(255, 255, 255, 0.70) !important;
+  border-bottom: 1.5px solid rgba(220, 235, 248, 0.60) !important;
   box-shadow: 
-    0 20px 48px -10px rgba(10, 65, 116, 0.15),
-    0 1px 1px 0 rgba(255, 255, 255, 1) inset,
-    0 -1px 2px 0 rgba(10, 65, 116, 0.05) inset,
-    0 0 24px 2px rgba(255, 255, 255, 0.5) inset !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    0 20px 40px -15px rgba(10, 65, 116, 0.08),
+    0 8px 16px -6px rgba(10, 65, 116, 0.04),
+    0 1px 2px 0 rgba(255, 255, 255, 1) inset,
+    0 -1px 2px 0 rgba(10, 65, 116, 0.03) inset,
+    0 0 24px 4px rgba(255, 255, 255, 0.75) inset !important;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .water-glass-card:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.75) 100%) !important;
+  transform: translateY(-2px);
   box-shadow: 
-    0 26px 60px -10px rgba(10, 65, 116, 0.22),
-    0 1px 1px 0 rgba(255, 255, 255, 1) inset,
-    0 0 32px 4px rgba(255, 255, 255, 0.7) inset !important;
+    0 26px 50px -12px rgba(10, 65, 116, 0.14),
+    0 12px 24px -8px rgba(10, 65, 116, 0.06),
+    0 1px 2px 0 rgba(255, 255, 255, 1) inset,
+    0 0 32px 6px rgba(255, 255, 255, 0.95) inset !important;
 }
 
 .dark .water-glass-card {
-  background: linear-gradient(135deg, rgba(26, 42, 61, 0.55) 0%, rgba(14, 23, 35, 0.28) 100%) !important;
-  backdrop-filter: blur(28px) saturate(210%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
+  background: linear-gradient(140deg, rgba(26, 42, 61, 0.72) 0%, rgba(15, 26, 39, 0.50) 100%) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  border-radius: 1.5rem !important;
   border-top: 1.5px solid rgba(255, 255, 255, 0.25) !important;
-  border-left: 1.5px solid rgba(74, 140, 210, 0.45) !important;
-  border-right: 1px solid rgba(74, 140, 210, 0.18) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.40) !important;
+  border-left: 1.5px solid rgba(74, 140, 210, 0.40) !important;
+  border-right: 1.5px solid rgba(74, 140, 210, 0.18) !important;
+  border-bottom: 1.5px solid rgba(0, 0, 0, 0.40) !important;
   box-shadow: 
-    0 24px 60px -12px rgba(0, 0, 0, 0.80),
-    0 1px 1px 0 rgba(255, 255, 255, 0.20) inset,
-    0 0 28px 2px rgba(74, 140, 210, 0.15) inset !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    0 24px 50px -12px rgba(0, 0, 0, 0.75),
+    0 1px 2px 0 rgba(255, 255, 255, 0.15) inset,
+    0 0 24px 2px rgba(74, 140, 210, 0.12) inset !important;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .water-glass-card:hover {
-  background: linear-gradient(135deg, rgba(34, 53, 75, 0.65) 0%, rgba(18, 30, 44, 0.35) 100%) !important;
+  background: linear-gradient(140deg, rgba(34, 53, 75, 0.80) 0%, rgba(20, 34, 50, 0.60) 100%) !important;
+  transform: translateY(-2px);
   box-shadow: 
-    0 30px 72px -10px rgba(0, 0, 0, 0.90),
-    0 1px 1px 0 rgba(255, 255, 255, 0.28) inset,
-    0 0 36px 4px rgba(74, 140, 210, 0.25) inset !important;
+    0 28px 60px -10px rgba(0, 0, 0, 0.85),
+    0 1px 2px 0 rgba(255, 255, 255, 0.25) inset,
+    0 0 32px 4px rgba(74, 140, 210, 0.20) inset !important;
 }
 
-/* Water Glass Pill for buttons, chips & search bars */
+/* White Crystal Pill for buttons, chips & search bars */
 .water-glass-pill {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.30) 100%) !important;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.90) 0%, rgba(255, 255, 255, 0.65) 100%) !important;
   backdrop-filter: blur(18px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(18px) saturate(190%) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.95) !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.85) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.45) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.35) !important;
+  border-top: 1.5px solid rgba(255, 255, 255, 1) !important;
+  border-left: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.70) !important;
+  border-bottom: 1px solid rgba(220, 235, 248, 0.60) !important;
   box-shadow: 
-    0 6px 16px -4px rgba(10, 65, 116, 0.10),
-    0 1px 0 0 rgba(255, 255, 255, 0.95) inset,
-    0 0 12px 1px rgba(255, 255, 255, 0.4) inset !important;
+    0 8px 20px -4px rgba(10, 65, 116, 0.06),
+    0 1px 0 0 rgba(255, 255, 255, 1) inset,
+    0 0 14px 2px rgba(255, 255, 255, 0.8) inset !important;
 }
 
 .dark .water-glass-pill {
-  background: linear-gradient(135deg, rgba(30, 48, 70, 0.55) 0%, rgba(18, 30, 44, 0.30) 100%) !important;
+  background: linear-gradient(140deg, rgba(30, 48, 70, 0.70) 0%, rgba(18, 30, 44, 0.45) 100%) !important;
   backdrop-filter: blur(18px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(18px) saturate(190%) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.20) !important;
-  border-left: 1px solid rgba(74, 140, 210, 0.40) !important;
+  border-left: 1px solid rgba(74, 140, 210, 0.35) !important;
   border-right: 1px solid rgba(74, 140, 210, 0.15) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.35) !important;
   box-shadow: 
-    0 6px 18px -4px rgba(0, 0, 0, 0.55),
-    0 1px 0 0 rgba(255, 255, 255, 0.12) inset,
-    0 0 14px 1px rgba(74, 140, 210, 0.12) inset !important;
+    0 8px 20px -4px rgba(0, 0, 0, 0.5),
+    0 1px 0 0 rgba(255, 255, 255, 0.10) inset,
+    0 0 14px 2px rgba(74, 140, 210, 0.12) inset !important;
 }
 
 /* Glass Header / Nav with high refraction */
 .water-glass-header {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.48) 100%) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.75) 100%) !important;
   backdrop-filter: blur(32px) saturate(220%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 1) !important;
   box-shadow: 
-    0 8px 30px -6px rgba(10, 65, 116, 0.10),
+    0 8px 30px -6px rgba(10, 65, 116, 0.06),
     0 1px 0 0 rgba(255, 255, 255, 1) inset !important;
 }
 
 .dark .water-glass-header {
-  background: linear-gradient(180deg, rgba(18, 30, 44, 0.78) 0%, rgba(10, 18, 28, 0.50) 100%) !important;
+  background: linear-gradient(180deg, rgba(18, 30, 44, 0.88) 0%, rgba(10, 18, 28, 0.70) 100%) !important;
   backdrop-filter: blur(32px) saturate(220%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
   border-bottom: 1px solid rgba(74, 140, 210, 0.25) !important;
   box-shadow: 
-    0 8px 32px -6px rgba(0, 0, 0, 0.65),
+    0 8px 32px -6px rgba(0, 0, 0, 0.6),
     0 1px 0 0 rgba(255, 255, 255, 0.15) inset !important;
 }
 
