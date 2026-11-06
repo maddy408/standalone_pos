@@ -72,17 +72,23 @@ export default function MasterSettings() {
 
   return (
     <div className="w-full space-y-6 font-sans">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight flex items-center gap-2">
-            <Settings className="w-5 h-5 text-[#0A4174] dark:text-[#4A8CD2]" />
-            {t('settings.title')}
-          </h1>
-          <p className="text-xs text-[#5A6B82] dark:text-[#94A3B8] mt-0.5">
-            Configure enterprise parameters, printer connectors & appearance
-          </p>
+      {/* Settings Navigation & Top Actions in One Line */}
+      <div className="flex items-center justify-between gap-4 border-b border-[#DCE5EF] dark:border-[#22354B] pb-3">
+        {/* Left: Navigation Tabs */}
+        <div className="flex items-center gap-2">
+          <span className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-xs">
+            General Settings
+          </span>
+          <Link
+            to="/users"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
+          >
+            <UsersIcon className="w-3.5 h-3.5" />
+            <span>Users & Roles</span>
+          </Link>
         </div>
 
+        {/* Right: Manage Users & Roles Button */}
         <div className="flex items-center gap-3">
           <Link
             to="/users"
@@ -99,20 +105,6 @@ export default function MasterSettings() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Settings Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#DCE5EF] dark:border-[#22354B] pb-2">
-        <span className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-xs">
-          General Settings
-        </span>
-        <Link
-          to="/users"
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
-        >
-          <UsersIcon className="w-3.5 h-3.5" />
-          <span>Users & Roles</span>
-        </Link>
       </div>
 
       {/* Business Type Mode */}

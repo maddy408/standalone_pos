@@ -499,53 +499,35 @@ export default function Products() {
         </Link>
       </div>
 
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white dark:bg-[#121E2C] p-5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2]">
-            {businessIcon}
-          </div>
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              Product Creation & Catalog
-              <span className="text-xs uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] border border-[#DCE5EF] dark:border-[#22354B]">
-                {businessType} mode
-              </span>
-            </h1>
-            <p className="text-xs text-[#5A6B82]">
-              Configured dynamically for {businessType} specs, variants, barcodes & inventory
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, barcode, SKU..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#1A2A3D] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-            />
-          </div>
-          {isEditing && (
-            <button
-              onClick={resetForm}
-              className="px-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" /> New Product
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Main Grid: Left Catalog Table, Right Comprehensive Create/Edit Form */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Products List (Left side - 5 cols) */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between text-xs font-bold text-[#5A6B82] uppercase tracking-wider px-1">
-            <span>Product Inventory ({products.length})</span>
-            <span className="text-[#0A4174] dark:text-[#4A8CD2] capitalize">{businessType}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs font-bold text-[#5A6B82] px-1">
+            <div className="flex items-center gap-2 uppercase tracking-wider flex-shrink-0">
+              <span>Product Inventory ({products.length})</span>
+              <span className="text-[#0A4174] dark:text-[#4A8CD2] capitalize text-[11px]">({businessType})</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 sm:w-56">
+                <Search className="w-4 h-4 text-[#5A6B82] dark:text-[#94A3B8] absolute left-3 top-2.5" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, barcode, SKU..."
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none font-normal shadow-2xs"
+                />
+              </div>
+              {isEditing && (
+                <button
+                  onClick={resetForm}
+                  className="px-3 py-1.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] flex items-center gap-1 bg-white dark:bg-[#121E2C] shadow-2xs flex-shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> New Product
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] shadow-sm max-h-[850px] overflow-y-auto scrollbar-thin">
