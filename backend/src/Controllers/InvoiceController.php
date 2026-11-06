@@ -42,7 +42,7 @@ class InvoiceController
         }
 
         $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-        $limit = max(1, min(100, (int) ($_GET['limit'] ?? 25)));
+        $limit = max(1, min(1000, (int) ($_GET['limit'] ?? 25)));
         $offset = ($page - 1) * $limit;
 
         $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM invoices i {$where}");

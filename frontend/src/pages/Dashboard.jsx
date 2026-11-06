@@ -203,7 +203,20 @@ export default function Dashboard() {
 
     invoices.forEach((inv) => {
       if (inv.status === 'completed' && inv.created_at) {
-        const key = inv.created_at.split('T')[0] || inv.created_at.split(' ')[0];
+        // Handle ISO string or MySQL 'YYYY-MM-DD HH:MM:SS'
+        let key = '';
+        try {
+          const invDate = new Date(inv.created_at);
+          if (!isNaN(invDate.getTime())) {
+            const year = invDate.getFullYear();
+            const month = String(invDate.getMonth() + 1).padStart(2, '0');
+            const day = String(invDate.getDate()).padStart(2, '0');
+            key = `${year}-${month}-${day}`;
+          }
+        } catch {}
+        if (!key) {
+          key = inv.created_at.split('T')[0] || inv.created_at.split(' ')[0];
+        }
         const match = days.find((d) => d.dateKey === key);
         if (match) {
           match.total += Number(inv.grand_total || 0);
@@ -576,15 +589,21 @@ export default function Dashboard() {
                 {/* Area Gradient & Line */}
                 <defs>
                   <linearGradient id="waterBlueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0A4174" stopOpacity="0.30" />
-                    <stop offset="100%" stopColor="#2563EB" stopOpacity="0.0" />
+                    <stop offset="0%" stopColor="#0284C7" stopOpacity="0.35" />
+                    <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.10" />
+                    <stop offset="100%" stopColor="#0D9488" stopOpacity="0.0" />
+                  </linearGradient>
+                  <linearGradient id="waterCurveStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#0284C7" />
+                    <stop offset="50%" stopColor="#06B6D4" />
+                    <stop offset="100%" stopColor="#0D9488" />
                   </linearGradient>
                 </defs>
 
                 {/* Shaded Area under curve */}
                 {salesChartData.days.length > 0 && (
                   <path
-                    d={`M 35 130 ${salesChartData.days
+                    d={`M 50 130 ${salesChartData.days
                       .map((d, i) => {
                         const x = 50 + i * 55;
                         const y = 130 - (d.total / salesChartData.maxVal) * 100;
@@ -605,8 +624,8 @@ export default function Dashboard() {
                     })
                     .join(' ')}`}
                   fill="none"
-                  stroke="#0A4174"
-                  strokeWidth="3"
+                  stroke="url(#waterCurveStroke)"
+                  strokeWidth="3.5"
                   strokeLinecap="round"
                 />
 
@@ -615,16 +634,29 @@ export default function Dashboard() {
                   const x = 50 + i * 55;
                   const y = 130 - (d.total / salesChartData.maxVal) * 100;
                   return (
-                    <circle
-                      key={d.dateKey}
-                      cx={x}
-                      cy={Math.max(15, y)}
-                      r="4"
-                      fill="#0A4174"
-                      stroke="#FFFFFF"
-                      strokeWidth="2"
-                      className="cursor-pointer hover:scale-125 transition-transform"
-                    />
+                    <g key={d.dateKey} className="group/dot cursor-pointer">
+                      <circle
+                        cx={x}
+                        cy={Math.max(15, y)}
+                        r="5"
+                        fill="#0284C7"
+                        stroke="#FFFFFF"
+                        strokeWidth="2.5"
+                        className="transition-transform group-hover/dot:scale-150"
+                      />
+                      {d.total > 0 && (
+                        <text
+                          x={x}
+                          y={Math.max(15, y) - 8}
+                          textAnchor="middle"
+                          fill="#0284C7"
+                          fontSize="9"
+                          fontWeight="700"
+                        >
+                          ₹{d.total}
+                        </text>
+                      )}
+                    </g>
                   );
                 })}
               </svg>
@@ -650,14 +682,14 @@ export default function Dashboard() {
             <svg viewBox="0 0 120 120" className="w-32 h-32 transform -rotate-90">
               <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(220, 229, 239, 0.4)" strokeWidth="14" />
               
-              {/* Completed slice (Royal Blue) */}
+              {/* Completed slice (Vibrant Teal-Blue) */}
               {orderStats.completed > 0 && (
                 <circle
                   cx="60"
                   cy="60"
                   r="45"
                   fill="none"
-                  stroke="#0A4174"
+                  stroke="#0284C7"
                   strokeWidth="14"
                   strokeDasharray={orderStats.compDash}
                   strokeDashoffset="0"
@@ -721,7 +753,7 @@ export default function Dashboard() {
           <div className="space-y-1.5 text-[11px] pt-1 border-t border-[#DCE5EF] dark:border-[#22354B]">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0A4174]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Completed</span>
               </span>
               <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.completed}</span>
@@ -760,37 +792,49 @@ export default function Dashboard() {
             {/* + Add New Product */}
             <Link
               to="/products"
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-md shadow-[#0A4174]/20 transition-all hover:scale-[1.01]"
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] hover:from-[#0369A1] hover:to-[#075985] text-white text-xs font-bold shadow-md shadow-sky-500/20 transition-all hover:scale-[1.01] active:scale-95"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ Add New Product</span>
+              <span className="flex items-center gap-2">
+                <PlusCircle className="w-4 h-4" />
+                <span>Add New Product</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
             </Link>
 
             {/* Manage Orders */}
             <Link
               to="/invoices"
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all hover:scale-[1.01]"
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.01] active:scale-95"
             >
-              <FileText className="w-4 h-4" />
-              <span>Manage Invoices</span>
+              <span className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                <span>Manage Invoices</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
             </Link>
 
             {/* View Reports */}
             <Link
               to="/reports"
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#0D9488] hover:bg-[#0F766E] text-white text-xs font-bold shadow-md shadow-teal-500/20 transition-all hover:scale-[1.01]"
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#0D9488] to-[#0F766E] hover:from-[#0F766E] hover:to-[#115E59] text-white text-xs font-bold shadow-md shadow-teal-500/20 transition-all hover:scale-[1.01] active:scale-95"
             >
-              <BarChart3 className="w-4 h-4" />
-              <span>Store Reports</span>
+              <span className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Store Reports</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
             </Link>
 
             {/* Manage Customers */}
             <Link
               to="/customers"
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#EA580C] hover:bg-[#C2410C] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all hover:scale-[1.01]"
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:from-[#C2410C] hover:to-[#9A3412] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all hover:scale-[1.01] active:scale-95"
             >
-              <Users className="w-4 h-4" />
-              <span>Customer Ledgers</span>
+              <span className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span>Customer Ledgers</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
             </Link>
           </div>
         </div>
@@ -818,7 +862,7 @@ export default function Dashboard() {
                   className="p-3 rounded-2xl water-glass-pill flex items-center justify-between hover:bg-[#E2EDF8]/50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center font-bold text-xs flex-shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-teal-400 text-white flex items-center justify-center font-black text-xs flex-shrink-0 shadow-sm shadow-sky-500/20">
                       {idx + 1}
                     </div>
                     <div className="min-w-0">
@@ -831,7 +875,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-extrabold text-xs text-[#0A4174] dark:text-[#4A8CD2]">
+                    <div className="font-black text-xs text-gradient-revenue">
                       {formatCurrency(p.price || 0, currency)}
                     </div>
                     <div className={`text-[10px] font-bold ${p.stock_qty > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
@@ -865,10 +909,10 @@ export default function Dashboard() {
                     <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{c.name}</span>
                     <span className="font-bold text-[#5A6B82]">{c.percent}%</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] overflow-hidden">
+                  <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-inner p-0.5">
                     <div
                       style={{ width: `${c.percent}%` }}
-                      className="h-full rounded-full bg-[#0A4174] dark:bg-[#4A8CD2]"
+                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-sm"
                     />
                   </div>
                   <div className="text-[10px] text-[#5A6B82]">{c.count} products</div>
