@@ -19,6 +19,7 @@ import {
 } from '../db/db';
 import { refreshPendingCount } from '../db/syncService';
 import { openReceiptWindow } from '../print/receipt';
+import InvoicePreviewModal from '../components/InvoicePreviewModal';
 import {
   Search,
   ShoppingCart,
@@ -114,6 +115,9 @@ export default function POS() {
   const [scaleStatus, setScaleStatus] = useState({ connected: true, weight: '0.000 kg' });
   const [scannerStatus, setScannerStatus] = useState('Connected');
   const [offlinePendingCount, setOfflinePendingCount] = useState(0);
+
+  // Completed Invoice Preview Modal State
+  const [completedInvoicePreview, setCompletedInvoicePreview] = useState(null);
 
   const searchRef = useRef(null);
   const categoryScrollRef = useRef(null);
@@ -675,7 +679,7 @@ export default function POS() {
 
     try {
       const { data } = await api.post('/invoices', salePayload);
-      openReceiptWindow(data, settings);
+      setCompletedInvoicePreview(data);
       resetSale();
       loadProducts();
       return;
@@ -684,25 +688,22 @@ export default function POS() {
       refreshPendingCount();
     }
 
-    openReceiptWindow(
-      {
-        invoice_no: `OFFLINE-${uuid.slice(0, 8)}`,
-        created_at: createdAt,
-        customer_name: activeCustomer?.name || 'Walk-in Customer',
-        items: cart.map((l) => ({
-          product_name_snapshot: l.product_name,
-          qty: l.qty,
-          unit_price: l.unit_price,
-          line_total: l.qty * lineUnitWithAddons(l),
-        })),
-        subtotal: totals.subtotal,
-        discount_amount: totals.couponDiscount + totals.itemDiscount,
-        tax_amount: totals.tax,
-        grand_total: totals.grandTotal,
-        source: 'offline',
-      },
-      settings
-    );
+    setCompletedInvoicePreview({
+      invoice_no: `OFFLINE-${uuid.slice(0, 8)}`,
+      created_at: createdAt,
+      customer_name: activeCustomer?.name || 'Walk-in Customer',
+      items: cart.map((l) => ({
+        product_name_snapshot: l.product_name,
+        qty: l.qty,
+        unit_price: l.unit_price,
+        line_total: l.qty * lineUnitWithAddons(l),
+      })),
+      subtotal: totals.subtotal,
+      discount_amount: totals.couponDiscount + totals.itemDiscount,
+      tax_amount: totals.tax,
+      grand_total: totals.grandTotal,
+      source: 'offline',
+    });
     resetSale();
   };
 
@@ -1769,6 +1770,15 @@ export default function POS() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Invoice Preview Modal (Thermal Template with Print, Share, Close) */}
+      {completedInvoicePreview && (
+        <InvoicePreviewModal
+          invoice={completedInvoicePreview}
+          settings={settings}
+          onClose={() => setCompletedInvoicePreview(null)}
+        />
       )}
     </div>
   );

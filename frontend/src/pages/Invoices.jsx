@@ -5,6 +5,7 @@ import { useSettings } from '../hooks/useSettings';
 import { formatCurrency } from '../utils/currency';
 import { useAuth } from '../hooks/useAuth';
 import { openReceiptWindow } from '../print/receipt';
+import InvoicePreviewModal from '../components/InvoicePreviewModal';
 import {
   FileText,
   Printer,
@@ -26,6 +27,7 @@ export default function Invoices() {
   const [returning, setReturning] = useState(null);
   const [returnableItems, setReturnableItems] = useState([]);
   const [returnQtys, setReturnQtys] = useState({});
+  const [previewInvoice, setPreviewInvoice] = useState(null);
 
   const currency = settings?.currency_symbol || '₹';
   const canCancel = can('pos.cancel_invoice');
@@ -51,7 +53,7 @@ export default function Invoices() {
   const reprint = async (id) => {
     try {
       const { data } = await api.get(`/invoices/${id}/print`);
-      openReceiptWindow(data.invoice, data.settings);
+      setPreviewInvoice(data.invoice);
     } catch (err) {
       alert('Failed to load print preview');
     }
@@ -228,6 +230,15 @@ export default function Invoices() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Invoice Preview Modal */}
+      {previewInvoice && (
+        <InvoicePreviewModal
+          invoice={previewInvoice}
+          settings={settings}
+          onClose={() => setPreviewInvoice(null)}
+        />
       )}
     </div>
   );
