@@ -4,6 +4,7 @@ import { SettingsProvider } from './hooks/useSettings';
 import { ThemeProvider } from './theme/ThemeProvider';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -38,7 +39,9 @@ export default function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Layout />
+                    <ErrorBoundary>
+                      <Layout />
+                    </ErrorBoundary>
                   </ProtectedRoute>
                 }
               >

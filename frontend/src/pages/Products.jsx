@@ -196,6 +196,7 @@ export default function Products() {
   }, [settings?.business_type, search]);
 
   useEffect(() => {
+    const bt = settings?.business_type;
     loadCategories();
 
     api.get('/lookup/brands', { params: bt ? { business_type: bt } : {} }).then(async ({ data }) => {
