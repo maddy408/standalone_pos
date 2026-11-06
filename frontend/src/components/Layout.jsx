@@ -21,13 +21,15 @@ import {
   LogOut,
   Moon,
   Sun,
+  Sparkles,
+  Palette,
 } from 'lucide-react';
 
 export default function Layout() {
   const { t, i18n } = useTranslation();
   const { user, logout, can } = useAuth();
   const { settings } = useSettings();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, colorScheme, toggleColorScheme, isGlassy, toggleGlassy } = useTheme();
   const location = useLocation();
 
   // Determine active route for Products
@@ -52,30 +54,38 @@ export default function Layout() {
     location.pathname.startsWith('/income');
 
   const navItemClass = ({ isActive }) =>
-    `h-8 px-2.5 xl:px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 tracking-normal transition-all flex-shrink-0 whitespace-nowrap ${
+    `h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 tracking-normal transition-all flex-shrink-0 whitespace-nowrap ${
       isActive
-        ? 'bg-[#0A4174] text-white shadow-xs font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
-        : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/70 dark:hover:bg-[#1A2A3D]'
+        ? colorScheme === 'amber'
+          ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md font-bold'
+          : 'bg-[#0A4174] text-white shadow-xs font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+        : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-orange-500/10 dark:hover:bg-orange-500/15'
     }`;
 
   const customNavItemClass = (isActive) =>
-    `h-8 px-2.5 xl:px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 tracking-normal transition-all flex-shrink-0 whitespace-nowrap ${
+    `h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 tracking-normal transition-all flex-shrink-0 whitespace-nowrap ${
       isActive
-        ? 'bg-[#0A4174] text-white shadow-xs font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
-        : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/70 dark:hover:bg-[#1A2A3D]'
+        ? colorScheme === 'amber'
+          ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md font-bold'
+          : 'bg-[#0A4174] text-white shadow-xs font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+        : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-orange-500/10 dark:hover:bg-orange-500/15'
     }`;
 
   return (
-    <div className="flex flex-col h-screen bg-[#F4F7FB] dark:bg-[#0B131E] text-[#1C2736] dark:text-[#F1F5F9] overflow-hidden font-sans">
+    <div className="flex flex-col h-screen text-[#1C2736] dark:text-[#F1F5F9] overflow-hidden font-sans">
       {/* First Row – Top Application Header */}
-      <header className="h-14 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-4 sm:px-6 md:px-8 flex items-center justify-between gap-4 w-full flex-shrink-0 z-30 shadow-2xs">
+      <header className="h-14 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/80 dark:bg-[#121E2C]/80 backdrop-blur-md px-4 sm:px-6 md:px-8 flex items-center justify-between gap-4 w-full flex-shrink-0 z-30 shadow-2xs">
         {/* Left: Brand / Logo + Sync Status */}
         <div className="flex items-center gap-3 sm:gap-3.5 flex-shrink-0">
           <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 hover:opacity-95 transition-opacity">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0A4174] to-[#062E52] dark:from-[#4A8CD2] dark:to-[#0A4174] text-white dark:text-[#0B131E] flex items-center justify-center font-black text-xs shadow-xs">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shadow-md ${
+              colorScheme === 'amber'
+                ? 'bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 text-white shadow-orange-500/30'
+                : 'bg-gradient-to-br from-[#0A4174] to-[#062E52] dark:from-[#4A8CD2] dark:to-[#0A4174] text-white dark:text-[#0B131E]'
+            }`}>
               UP
             </div>
-            <span className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9] tracking-tight leading-none block">
+            <span className="text-sm font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight leading-none block">
               {t('app_name')}
             </span>
           </Link>
@@ -90,7 +100,7 @@ export default function Layout() {
         </div>
 
         {/* Right: Office name & Administrator details, Language selector, Theme toggle, Logout */}
-        <div className="flex items-center gap-3 sm:gap-3.5 flex-shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 flex-shrink-0">
           {/* Office name & Administrator details */}
           <div className="hidden sm:flex flex-col text-right justify-center">
             <span className="text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] leading-tight truncate max-w-[170px]">
@@ -103,9 +113,9 @@ export default function Layout() {
                 </span>
               )}
               {settings?.company_name && (
-                <span className="text-[8px] text-[#4A8CD2]">•</span>
+                <span className="text-[8px] text-orange-500">•</span>
               )}
-              <span className="text-[10px] text-[#0A4174] dark:text-[#4A8CD2] capitalize font-semibold tracking-wide">
+              <span className={`text-[10px] capitalize font-bold tracking-wide ${colorScheme === 'amber' ? 'text-orange-600 dark:text-orange-400' : 'text-[#0A4174] dark:text-[#4A8CD2]'}`}>
                 {user?.role || 'admin'}
               </span>
             </div>
@@ -114,26 +124,41 @@ export default function Layout() {
           {/* Divider */}
           <div className="hidden sm:block h-6 w-px bg-[#DCE5EF] dark:bg-[#22354B]" />
 
-          {/* Controls: Language, Theme, Logout */}
-          <div className="flex items-center gap-2">
+          {/* Controls: Color Theme (Amber vs Blue), Glass Toggle, Language, Dark/Light, Logout */}
+          <div className="flex items-center gap-1.5">
+            {/* Color Scheme Switcher (Amber Glass vs Royal Blue) */}
+            <button
+              type="button"
+              onClick={toggleColorScheme}
+              className={`h-8 px-2.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all shadow-2xs ${
+                colorScheme === 'amber'
+                  ? 'border-orange-300 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 shadow-orange-500/10'
+                  : 'border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#0A4174] dark:text-[#4A8CD2]'
+              }`}
+              title="Switch Color Accent (Amber Glass / Royal Blue)"
+            >
+              <Palette className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden md:inline">{colorScheme === 'amber' ? 'Glass Amber' : 'Royal Blue'}</span>
+            </button>
+
             {/* Language Selector */}
             <select
               value={i18n.language}
               onChange={(e) => changeLanguage(e.target.value)}
-              className="h-8 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-[#1C2736] dark:text-[#F1F5F9] px-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#0A4174]/40 focus:border-[#0A4174] transition-all cursor-pointer shadow-2xs"
+              className="h-8 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/70 dark:bg-[#121E2C]/70 text-[#1C2736] dark:text-[#F1F5F9] px-2 text-xs font-medium focus:outline-none transition-all cursor-pointer shadow-2xs"
             >
               <option value="en">English (EN)</option>
               <option value="ta">தமிழ் (TA)</option>
             </select>
 
-            {/* Theme Toggle Button */}
+            {/* Theme Toggle Button (Light / Dark) */}
             <button
               onClick={toggleTheme}
-              className="w-8 h-8 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] flex items-center justify-center transition-all shadow-2xs"
-              title="Toggle Theme"
+              className="w-8 h-8 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/70 dark:bg-[#121E2C]/70 text-[#1C2736] dark:text-[#F1F5F9] hover:bg-orange-500/10 flex items-center justify-center transition-all shadow-2xs"
+              title="Toggle Light/Dark Mode"
             >
               {theme === 'dark' ? (
-                <Sun className="w-3.5 h-3.5 text-[#4A8CD2]" />
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
               ) : (
                 <Moon className="w-3.5 h-3.5 text-[#0A4174]" />
               )}
@@ -143,7 +168,7 @@ export default function Layout() {
             <button
               onClick={logout}
               title={t('nav.logout')}
-              className="w-8 h-8 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] text-[#5A6B82] dark:text-[#94A3B8] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-200 dark:hover:border-red-900/50 flex items-center justify-center transition-all shadow-2xs"
+              className="w-8 h-8 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/70 dark:bg-[#121E2C]/70 text-[#5A6B82] dark:text-[#94A3B8] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center justify-center transition-all shadow-2xs"
             >
               <LogOut className="w-3.5 h-3.5" />
             </button>
@@ -152,7 +177,7 @@ export default function Layout() {
       </header>
 
       {/* Second Row – Main Navigation Navbar (Full Width Distributed) */}
-      <nav className="h-11 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-4 sm:px-6 md:px-8 flex items-center justify-between gap-1 w-full flex-shrink-0 z-20 shadow-xs">
+      <nav className="h-11 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/80 dark:bg-[#121E2C]/80 backdrop-blur-md px-4 sm:px-6 md:px-8 flex items-center justify-between gap-1 w-full flex-shrink-0 z-20 shadow-xs">
         {/* 1. Dashboard */}
         <NavLink to="/" end className={navItemClass}>
           <LayoutDashboard className="w-3.5 h-3.5 flex-shrink-0" />
@@ -245,7 +270,7 @@ export default function Layout() {
       </nav>
 
       {/* Main Page View Body */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#F4F7FB] dark:bg-[#0B131E]">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 transition-colors duration-300">
         <Outlet />
       </main>
 
