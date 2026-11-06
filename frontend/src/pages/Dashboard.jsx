@@ -6,6 +6,7 @@ import { useSettings } from '../hooks/useSettings';
 import { formatCurrency } from '../utils/currency';
 import {
   TrendingUp,
+  TrendingDown,
   Calendar,
   FileText,
   AlertTriangle,
@@ -44,7 +45,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     api.get('/dashboard/summary').then(({ data }) => setSummary(data)).catch(() => {});
-    api.get('/invoices', { params: { limit: 100 } }).then(({ data }) => {
+    api.get('/invoices', { params: { limit: 500 } }).then(({ data }) => {
       const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
       setInvoices(list);
     }).catch(() => {});
@@ -55,45 +56,140 @@ export default function Dashboard() {
     api.get('/income').then(({ data }) => setIncome(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
   }, []);
 
-  // Compute metrics from existing data
+  // Filter items by selected dateFilter
+  const isDateInFilter = (dateStr, filter) => {
+    if (!dateStr || filter === 'all_time') return true;
+    const date = new Date(dateStr);
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (filter === 'today') {
+      return date >= todayStart;
+    }
+    if (filter === 'yesterday') {
+      const yestStart = new Date(todayStart);
+      yestStart.setDate(yestStart.getDate() - 1);
+      return date >= yestStart && date < todayStart;
+    }
+    if (filter === '7_days') {
+      const d7 = new Date(todayStart);
+      d7.setDate(d7.getDate() - 7);
+      return date >= d7;
+    }
+    if (filter === 'this_month') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      return date >= monthStart;
+    }
+    return true;
+  };
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((i) => isDateInFilter(i.created_at, dateFilter));
+  }, [invoices, dateFilter]);
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((e) => isDateInFilter(e.expense_date || e.date, dateFilter));
+  }, [expenses, dateFilter]);
+
+  const filteredIncome = useMemo(() => {
+    return income.filter((inc) => isDateInFilter(inc.income_date || inc.date, dateFilter));
+  }, [income, dateFilter]);
+
+  // Compute metrics from dynamically filtered data
   const totalSalesRevenue = useMemo(() => {
-    return invoices
+    return filteredInvoices
       .filter((i) => i.status === 'completed')
       .reduce((sum, i) => sum + Number(i.grand_total || 0), 0);
-  }, [invoices]);
+  }, [filteredInvoices]);
 
-  const totalIncome = useMemo(() => {
-    return income.reduce((sum, it) => sum + Number(it.amount || 0), 0);
-  }, [income]);
+  const totalIncomeAmount = useMemo(() => {
+    return filteredIncome.reduce((sum, it) => sum + Number(it.amount || 0), 0);
+  }, [filteredIncome]);
 
-  const totalExpense = useMemo(() => {
-    return expenses.reduce((sum, it) => sum + Number(it.amount || 0), 0);
-  }, [expenses]);
+  const totalExpenseAmount = useMemo(() => {
+    return filteredExpenses.reduce((sum, it) => sum + Number(it.amount || 0), 0);
+  }, [filteredExpenses]);
 
   const netProfit = useMemo(() => {
-    return totalSalesRevenue + totalIncome - totalExpense;
-  }, [totalSalesRevenue, totalIncome, totalExpense]);
+    return totalSalesRevenue + totalIncomeAmount - totalExpenseAmount;
+  }, [totalSalesRevenue, totalIncomeAmount, totalExpenseAmount]);
 
   const outOfStockCount = useMemo(() => {
     return products.filter((p) => Number(p.stock_qty || 0) <= 0).length;
   }, [products]);
 
-  // Order status distribution
+  // Dynamic Growth / Trend vs Prior Period
+  const revenueGrowth = useMemo(() => {
+    if (invoices.length === 0) return { percent: 0, isPositive: true };
+    const now = new Date();
+    const periodDays = dateFilter === 'today' ? 1 : dateFilter === '7_days' ? 7 : 30;
+    const currentPeriodStart = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
+    const priorPeriodStart = new Date(now.getTime() - 2 * periodDays * 24 * 60 * 60 * 1000);
+
+    let currSum = 0;
+    let priorSum = 0;
+
+    invoices.forEach((inv) => {
+      if (inv.status !== 'completed' || !inv.created_at) return;
+      const invDate = new Date(inv.created_at);
+      if (invDate >= currentPeriodStart) {
+        currSum += Number(inv.grand_total || 0);
+      } else if (invDate >= priorPeriodStart && invDate < currentPeriodStart) {
+        priorSum += Number(inv.grand_total || 0);
+      }
+    });
+
+    if (priorSum === 0) {
+      return { percent: currSum > 0 ? 100 : 0, isPositive: true };
+    }
+    const diff = ((currSum - priorSum) / priorSum) * 100;
+    return {
+      percent: Math.min(Math.abs(Math.round(diff)), 999),
+      isPositive: diff >= 0,
+    };
+  }, [invoices, dateFilter]);
+
+  // Order status distribution dynamically calculated
   const orderStats = useMemo(() => {
-    const total = invoices.length || 0;
-    const completed = invoices.filter((i) => i.status === 'completed').length;
-    const cancelled = invoices.filter((i) => i.status === 'cancelled').length;
-    const processing = Math.max(0, total - completed - cancelled);
+    const total = filteredInvoices.length;
+    const completed = filteredInvoices.filter((i) => i.status === 'completed').length;
+    const cancelled = filteredInvoices.filter((i) => i.status === 'cancelled').length;
+    const processing = filteredInvoices.filter((i) => i.status === 'processing' || i.status === 'held').length;
+    const pending = Math.max(0, total - completed - cancelled - processing);
+
+    // Compute Donut SVG parameters (r = 45 -> circumference ~ 282.74)
+    const C = 2 * Math.PI * 45; // ~ 282.74
+    const compPct = total > 0 ? completed / total : 0;
+    const procPct = total > 0 ? processing / total : 0;
+    const pendPct = total > 0 ? pending / total : 0;
+    const cancPct = total > 0 ? cancelled / total : 0;
+
+    const compDash = `${compPct * C} ${C}`;
+    const procDash = `${procPct * C} ${C}`;
+    const pendDash = `${pendPct * C} ${C}`;
+    const cancDash = `${cancPct * C} ${C}`;
+
+    const procOffset = -compPct * C;
+    const pendOffset = -(compPct + procPct) * C;
+    const cancOffset = -(compPct + procPct + pendPct) * C;
+
     return {
       total,
       completed,
       cancelled,
       processing,
-      pending: 0,
+      pending,
+      compDash,
+      procDash,
+      pendDash,
+      cancDash,
+      procOffset,
+      pendOffset,
+      cancOffset,
     };
-  }, [invoices]);
+  }, [filteredInvoices]);
 
-  // Last 7 days sales data for Line Chart
+  // Dynamic 7-day velocity points for chart
   const salesChartData = useMemo(() => {
     const days = [];
     const now = new Date();
@@ -102,22 +198,101 @@ export default function Dashboard() {
       d.setDate(d.getDate() - i);
       const dateKey = d.toISOString().split('T')[0];
       const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      days.push({ dateKey, label, total: 0 });
+      days.push({ dateKey, label, total: 0, orderCount: 0 });
     }
 
     invoices.forEach((inv) => {
       if (inv.status === 'completed' && inv.created_at) {
         const key = inv.created_at.split('T')[0] || inv.created_at.split(' ')[0];
         const match = days.find((d) => d.dateKey === key);
-        if (match) match.total += Number(inv.grand_total || 0);
+        if (match) {
+          match.total += Number(inv.grand_total || 0);
+          match.orderCount += 1;
+        }
       }
     });
 
-    const maxVal = Math.max(...days.map((d) => d.total), 1000);
+    const maxVal = Math.max(...days.map((d) => d.total), 100);
     return { days, maxVal };
   }, [invoices]);
 
-  // Top categories distribution
+  // Dynamic Sparkline SVG path generator
+  const generateSparklinePath = (points, maxVal) => {
+    if (!points || points.length === 0) return { line: 'M 0 20 L 100 20', fill: 'M 0 20 L 100 20 L 100 25 L 0 25 Z' };
+    const step = 100 / Math.max(points.length - 1, 1);
+    const coords = points.map((val, idx) => {
+      const x = idx * step;
+      const y = 22 - (maxVal > 0 ? (val / maxVal) * 18 : 0);
+      return `${x.toFixed(1)} ${y.toFixed(1)}`;
+    });
+    const line = `M ${coords.join(' L ')}`;
+    const fill = `${line} L 100 25 L 0 25 Z`;
+    return { line, fill };
+  };
+
+  const revenueSparkline = useMemo(() => {
+    const totals = salesChartData.days.map((d) => d.total);
+    return generateSparklinePath(totals, salesChartData.maxVal);
+  }, [salesChartData]);
+
+  const ordersSparkline = useMemo(() => {
+    const counts = salesChartData.days.map((d) => d.orderCount);
+    const maxOrders = Math.max(...counts, 1);
+    return generateSparklinePath(counts, maxOrders);
+  }, [salesChartData]);
+
+  // Dynamic Top Selling Products from actual Invoices / Catalog
+  const topProducts = useMemo(() => {
+    const salesMap = {};
+    invoices.forEach((inv) => {
+      if (inv.status === 'completed' && Array.isArray(inv.items)) {
+        inv.items.forEach((it) => {
+          const pId = it.product_id;
+          if (!pId) return;
+          if (!salesMap[pId]) {
+            salesMap[pId] = {
+              qty: 0,
+              total: 0,
+              name: it.product_name,
+            };
+          }
+          salesMap[pId].qty += Number(it.qty || 1);
+          salesMap[pId].total += Number(it.line_total || it.price || 0);
+        });
+      }
+    });
+
+    const ranked = Object.entries(salesMap)
+      .map(([id, info]) => {
+        const prod = products.find((p) => String(p.id) === String(id));
+        return {
+          id,
+          name: info.name || prod?.name || `Product #${id}`,
+          stock_qty: prod?.stock_qty ?? 0,
+          unit_code: prod?.unit_code || 'pcs',
+          price: info.total > 0 && info.qty > 0 ? info.total / info.qty : (prod?.selling_price || 0),
+          qty_sold: info.qty,
+          total_revenue: info.total,
+        };
+      })
+      .sort((a, b) => b.qty_sold - a.qty_sold)
+      .slice(0, 5);
+
+    if (ranked.length > 0) return ranked;
+
+    // Fallback: rank products by inventory stock
+    return products.slice(0, 5).map((p) => ({
+      id: p.id,
+      name: p.name,
+      stock_qty: p.stock_qty ?? 0,
+      unit_code: p.unit_code || 'pcs',
+      price: p.selling_price || p.retail_price || 0,
+      qty_sold: 0,
+      total_revenue: 0,
+    }));
+  }, [invoices, products]);
+
+  // Dynamic Categories distribution
   const topCategories = useMemo(() => {
     const counts = {};
     products.forEach((p) => {
@@ -158,7 +333,7 @@ export default function Dashboard() {
               Store Dashboard
             </h1>
             <p className="text-xs text-[#5A6B82] dark:text-[#94A3B8] mt-0.5">
-              Real-time sales velocity, live inventory status, and financial analytics.
+              Live database metrics, real-time sales velocity, and inventory intelligence.
             </p>
           </div>
         </div>
@@ -215,21 +390,21 @@ export default function Dashboard() {
             <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
               {formatCurrency(totalSalesRevenue, currency)}
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-              <span>↑ 12%</span>
-              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">vs last month</span>
+            <div className={`flex items-center gap-1.5 text-xs font-bold mt-1 ${revenueGrowth.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              <span>{revenueGrowth.isPositive ? '↑' : '↓'} {revenueGrowth.percent}%</span>
+              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">vs previous period</span>
             </div>
           </div>
-          {/* Sparkline curve */}
+          {/* Dynamic Sparkline curve */}
           <div className="w-full h-8 mt-2">
             <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d="M 0 20 Q 25 18 50 10 T 100 3 L 100 25 L 0 25 Z" fill="rgba(10, 65, 116, 0.12)" />
-              <path d="M 0 20 Q 25 18 50 10 T 100 3" fill="none" stroke="#0A4174" strokeWidth="2.5" strokeLinecap="round" />
+              <path d={revenueSparkline.fill} fill="rgba(10, 65, 116, 0.12)" />
+              <path d={revenueSparkline.line} fill="none" stroke="#0A4174" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
 
-        {/* KPI 2: Total Orders */}
+        {/* KPI 2: Total Orders / Invoices */}
         <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
@@ -241,18 +416,18 @@ export default function Dashboard() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
-              {invoices.length || 24}
+              {filteredInvoices.length}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-              <span>↑ 8%</span>
-              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">order velocity</span>
+              <span>{orderStats.completed} Completed</span>
+              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">live invoices</span>
             </div>
           </div>
-          {/* Sparkline curve */}
+          {/* Dynamic Sparkline curve */}
           <div className="w-full h-8 mt-2">
             <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d="M 0 22 Q 30 15 60 12 T 100 5 L 100 25 L 0 25 Z" fill="rgba(37, 99, 235, 0.12)" />
-              <path d="M 0 22 Q 30 15 60 12 T 100 5" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
+              <path d={ordersSparkline.fill} fill="rgba(37, 99, 235, 0.12)" />
+              <path d={ordersSparkline.line} fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
           </div>
         </div>
@@ -269,7 +444,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
-              {customers.length || 1}
+              {customers.length}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
               <span>Active</span>
@@ -297,7 +472,7 @@ export default function Dashboard() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
-              {products.length || 48}
+              {products.length}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">
               <span>{outOfStockCount} Out of stock</span>
@@ -344,7 +519,7 @@ export default function Dashboard() {
           <div>
             <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Total Expense</div>
             <div className="text-base font-black text-rose-500 mt-0.5">
-              {formatCurrency(totalExpense, currency)}
+              {formatCurrency(totalExpenseAmount, currency)}
             </div>
           </div>
           <span className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full">
@@ -385,13 +560,14 @@ export default function Dashboard() {
             <div className="w-full h-44 relative">
               <svg viewBox="0 0 450 150" className="w-full h-full overflow-visible">
                 {/* Horizontal Guide Lines */}
-                {[0, 250, 500, 750, 1000].map((val, idx) => {
+                {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+                  const val = Math.round(ratio * salesChartData.maxVal);
                   const y = 130 - idx * 25;
                   return (
-                    <g key={val}>
+                    <g key={idx}>
                       <line x1="35" y1={y} x2="425" y2={y} stroke="rgba(220, 229, 239, 0.6)" strokeDasharray="3 3" />
                       <text x="5" y={y + 3} fill="#5A6B82" fontSize="9" fontWeight="600">
-                        {val >= 1000 ? `₹${val / 1000}k` : `₹${val}`}
+                        {val >= 1000 ? `₹${(val / 1000).toFixed(1)}k` : `₹${val}`}
                       </text>
                     </g>
                   );
@@ -463,7 +639,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Order Status Donut Chart (25% -> 3 cols) */}
+        {/* Order Status Donut Chart (25% -> 3 cols) - 100% Dynamic */}
         <div className="lg:col-span-3 water-glass-card p-5 rounded-3xl flex flex-col justify-between">
           <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Order Status</h2>
@@ -473,34 +649,67 @@ export default function Dashboard() {
           <div className="flex items-center justify-center py-4 relative">
             <svg viewBox="0 0 120 120" className="w-32 h-32 transform -rotate-90">
               <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(220, 229, 239, 0.4)" strokeWidth="14" />
-              {/* Blue / Delivered slice */}
-              <circle
-                cx="60"
-                cy="60"
-                r="45"
-                fill="none"
-                stroke="#0A4174"
-                strokeWidth="14"
-                strokeDasharray="141 141"
-                strokeDashoffset="0"
-                strokeLinecap="round"
-              />
-              {/* Pink / Cancelled slice */}
-              <circle
-                cx="60"
-                cy="60"
-                r="45"
-                fill="none"
-                stroke="#F43F5E"
-                strokeWidth="14"
-                strokeDasharray="141 141"
-                strokeDashoffset="141"
-                strokeLinecap="round"
-              />
+              
+              {/* Completed slice (Royal Blue) */}
+              {orderStats.completed > 0 && (
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke="#0A4174"
+                  strokeWidth="14"
+                  strokeDasharray={orderStats.compDash}
+                  strokeDashoffset="0"
+                  strokeLinecap="round"
+                />
+              )}
+              {/* Processing slice (Cyan) */}
+              {orderStats.processing > 0 && (
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke="#06B6D4"
+                  strokeWidth="14"
+                  strokeDasharray={orderStats.procDash}
+                  strokeDashoffset={orderStats.procOffset}
+                  strokeLinecap="round"
+                />
+              )}
+              {/* Pending slice (Amber) */}
+              {orderStats.pending > 0 && (
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke="#F59E0B"
+                  strokeWidth="14"
+                  strokeDasharray={orderStats.pendDash}
+                  strokeDashoffset={orderStats.pendOffset}
+                  strokeLinecap="round"
+                />
+              )}
+              {/* Cancelled slice (Rose) */}
+              {orderStats.cancelled > 0 && (
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="45"
+                  fill="none"
+                  stroke="#F43F5E"
+                  strokeWidth="14"
+                  strokeDasharray={orderStats.cancDash}
+                  strokeDashoffset={orderStats.cancOffset}
+                  strokeLinecap="round"
+                />
+              )}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
               <span className="text-2xl font-black text-[#1C2736] dark:text-[#F1F5F9] leading-none">
-                {orderStats.total || 24}
+                {orderStats.total}
               </span>
               <span className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] uppercase font-bold mt-0.5">
                 Total Orders
@@ -515,28 +724,28 @@ export default function Dashboard() {
                 <span className="w-2.5 h-2.5 rounded-full bg-[#0A4174]" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Completed</span>
               </span>
-              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.completed || 20}</span>
+              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.completed}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Processing</span>
               </span>
-              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.processing || 16}</span>
+              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.processing}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Pending</span>
               </span>
-              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.pending || 8}</span>
+              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.pending}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Cancelled</span>
               </span>
-              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.cancelled || 4}</span>
+              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.cancelled}</span>
             </div>
           </div>
         </div>
@@ -551,7 +760,7 @@ export default function Dashboard() {
             {/* + Add New Product */}
             <Link
               to="/products"
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#0A4174] hover:bg-[#062E52] text-white text-xs font-bold shadow-md shadow-[#0A4174]/20 transition-all hover:scale-[1.01]"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-md shadow-[#0A4174]/20 transition-all hover:scale-[1.01]"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Add New Product</span>
@@ -594,7 +803,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <div>
               <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Top Products</h2>
-              <p className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Ranked catalog products</p>
+              <p className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Ranked catalog & sales velocity</p>
             </div>
             <Link to="/products" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline">
               View All
@@ -602,8 +811,8 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-2 pt-1">
-            {products.slice(0, 5).length > 0 ? (
-              products.slice(0, 5).map((p, idx) => (
+            {topProducts.length > 0 ? (
+              topProducts.map((p, idx) => (
                 <div
                   key={p.id}
                   className="p-3 rounded-2xl water-glass-pill flex items-center justify-between hover:bg-[#E2EDF8]/50 transition-colors"
@@ -617,16 +826,16 @@ export default function Dashboard() {
                         {p.name}
                       </div>
                       <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
-                        Stock: {p.stock_qty ?? 0} {p.unit_code || 'pcs'}
+                        Stock: {p.stock_qty} {p.unit_code || 'pcs'} {p.qty_sold > 0 ? `• ${p.qty_sold} sold` : ''}
                       </div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="font-extrabold text-xs text-[#0A4174] dark:text-[#4A8CD2]">
-                      {formatCurrency(p.selling_price || p.retail_price || 0, currency)}
+                      {formatCurrency(p.price || 0, currency)}
                     </div>
-                    <div className="text-[10px] text-emerald-600 font-bold">
-                      In Stock
+                    <div className={`text-[10px] font-bold ${p.stock_qty > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
+                      {p.stock_qty > 0 ? 'In Stock' : 'Out of Stock'}
                     </div>
                   </div>
                 </div>
@@ -683,8 +892,8 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-2.5 pt-1 text-xs">
-            {invoices.length > 0 ? (
-              invoices.slice(0, 4).map((inv) => (
+            {filteredInvoices.length > 0 ? (
+              filteredInvoices.slice(0, 4).map((inv) => (
                 <div key={inv.id || inv.uuid} className="flex items-start gap-2.5">
                   <div className="w-6 h-6 rounded-xl bg-[#E2EDF8] text-[#0A4174] dark:bg-[#1A2A3D] dark:text-[#4A8CD2] flex items-center justify-center flex-shrink-0 mt-0.5">
                     {inv.status === 'cancelled' ? (
