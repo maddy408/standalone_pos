@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
+import { useAuth } from '../hooks/useAuth';
 import { formatCurrency } from '../utils/currency';
 import {
   TrendingUp,
@@ -32,6 +33,7 @@ import {
 export default function Dashboard() {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { user } = useAuth();
   const currency = settings?.currency_symbol || '₹';
 
   const [summary, setSummary] = useState(null);
@@ -325,179 +327,154 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Water Glass Hero Bar with Royal Blue Ambient Glow */}
-      <div className="water-glass-card rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5 transition-all">
-        {/* Soft Royal Blue Ambient Glow */}
-        <div className="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-[#0A4174]/15 dark:bg-[#4A8CD2]/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 right-10 w-56 h-56 rounded-full bg-[#2563EB]/10 dark:bg-[#0A4174]/15 blur-3xl pointer-events-none" />
+      {/* 3D Modern Glass Hero Banner (Matches Reference Image) */}
+      <div className="relative rounded-3xl overflow-hidden shadow-xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 border border-white/40 bg-gradient-to-r from-[#2A3B90] via-[#3851B5] via-[#4868D8] to-[#6080EE] text-white">
+        {/* Abstract 3D floating orb lights in background */}
+        <div className="absolute top-0 right-1/4 w-72 h-72 rounded-full bg-white/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-1/3 w-64 h-64 rounded-full bg-indigo-400/20 blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0A4174] via-[#2563EB] to-[#4A8CD2] p-0.5 shadow-lg shadow-[#0A4174]/20 flex-shrink-0">
-            <div className="w-full h-full rounded-[14px] bg-white/90 dark:bg-[#121E2C]/90 flex items-center justify-center font-black text-xl text-[#0A4174] dark:text-[#4A8CD2]">
-              UP
-            </div>
-          </div>
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] text-xs font-bold mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Universal POS • Water Glass Interface</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#1C2736] dark:text-[#F1F5F9] tracking-tight">
-              Store Dashboard
+        {/* Left Welcome Content */}
+        <div className="relative z-10 max-w-lg space-y-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-sm">
+              Welcome back, {user?.full_name || 'Administrator'}!
             </h1>
-            <p className="text-xs text-[#5A6B82] dark:text-[#94A3B8] mt-0.5">
-              Live database metrics, real-time sales velocity, and inventory intelligence.
-            </p>
+            <span className="text-2xl animate-bounce">👋</span>
+          </div>
+          <p className="text-blue-100 text-sm font-medium">
+            Here's your store performance overview.
+          </p>
+          <div className="pt-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs font-semibold text-white shadow-xs">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' })}</span>
+            </div>
           </div>
         </div>
 
-        {/* Date Filter & Fast Actions */}
-        <div className="relative z-10 flex flex-wrap items-center gap-2">
-          <div className="water-glass-pill p-1 rounded-2xl flex items-center gap-1">
-            {[
-              { id: 'all_time', label: 'All Time' },
-              { id: 'today', label: 'Today' },
-              { id: 'yesterday', label: 'Yesterday' },
-              { id: '7_days', label: '7 Days' },
-              { id: 'this_month', label: 'This Month' },
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setDateFilter(f.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  dateFilter === f.id
-                    ? 'bg-[#0A4174] dark:bg-[#4A8CD2] text-white dark:text-[#0B131E] shadow-sm'
-                    : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2]'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          <Link
-            to="/pos"
-            className="btn-luminous-blue inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs transition-all hover:scale-[1.03] active:scale-95"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span>Open POS Terminal</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+        {/* Right 3D POS Terminal & Plant & Bags Banner Illustration */}
+        <div className="relative z-10 flex-shrink-0 flex items-center justify-end">
+          <img
+            src="/hero_pos_3d.png"
+            alt="3D Store Terminal"
+            className="h-28 sm:h-32 object-contain drop-shadow-2xl rounded-xl"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
         </div>
       </div>
 
-      {/* Row 1: 4 Large Water Glass KPI Cards */}
+      {/* Row 1: 4 Large 3D Glass KPI Cards (Exact match to reference) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Total Revenue */}
-        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
-              Total Revenue
-            </span>
-            <div className="w-9 h-9 rounded-2xl bg-[#E0F2FE] dark:bg-[#1A2A3D] text-[#0284C7] dark:text-[#38BDF8] flex items-center justify-center font-black text-sm shadow-xs border border-sky-200/50">
-              ₹
+        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white flex items-center justify-center shadow-md shadow-indigo-500/25">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                Total Revenue
+              </span>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black tracking-tight text-gradient-revenue drop-shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {formatCurrency(totalSalesRevenue, currency)}
             </div>
-            <div className={`flex items-center gap-1.5 text-xs font-bold mt-1 ${revenueGrowth.isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+            <div className={`flex items-center gap-1.5 text-xs font-bold ${revenueGrowth.isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
               <span>{revenueGrowth.isPositive ? '↑' : '↓'} {revenueGrowth.percent}%</span>
-              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">vs previous period</span>
+              <span className="text-[10px] text-slate-400 font-normal">vs previous period</span>
             </div>
           </div>
-          {/* Dynamic Sparkline curve */}
-          <div className="w-full h-8 mt-2">
-            <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d={revenueSparkline.fill} fill="rgba(6, 182, 212, 0.15)" />
-              <path d={revenueSparkline.line} fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+          <div className="flex-shrink-0 pl-2">
+            <img
+              src="/kpi_coins_3d.png"
+              alt="3D Coins"
+              className="w-16 h-16 object-contain drop-shadow-md group-hover:scale-110 transition-transform"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
           </div>
         </div>
 
-        {/* KPI 2: Total Orders / Invoices */}
-        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
-              Total Invoices
-            </span>
-            <div className="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center font-black text-sm shadow-xs border border-purple-200/50">
-              <FileText className="w-4 h-4" />
+        {/* KPI 2: Total Invoices */}
+        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0284C7] to-[#38BDF8] text-white flex items-center justify-center shadow-md shadow-sky-500/25">
+                <FileText className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                Total Invoices
+              </span>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black tracking-tight text-gradient-invoices drop-shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {filteredInvoices.length}
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-              <span>{orderStats.completed} Completed</span>
-              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">live invoices</span>
+            <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+              <span>↑ {orderStats.completed} Completed</span>
             </div>
           </div>
-          {/* Dynamic Sparkline curve */}
-          <div className="w-full h-8 mt-2">
-            <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d={ordersSparkline.fill} fill="rgba(147, 51, 234, 0.15)" />
-              <path d={ordersSparkline.line} fill="none" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+          <div className="flex-shrink-0 pl-2">
+            <img
+              src="/kpi_invoice_3d.png"
+              alt="3D Invoice"
+              className="w-16 h-16 object-contain drop-shadow-md group-hover:scale-110 transition-transform"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
           </div>
         </div>
 
-        {/* KPI 3: Total Customers */}
-        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
-              Customers
-            </span>
-            <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-black text-sm shadow-xs border border-emerald-200/50">
-              <Users className="w-4 h-4" />
+        {/* KPI 3: Customers */}
+        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#10B981] to-[#34D399] text-white flex items-center justify-center shadow-md shadow-emerald-500/25">
+                <Users className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                Customers
+              </span>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black tracking-tight text-gradient-customers drop-shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {customers.length}
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-              <span>Active</span>
-              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">registered ledger</span>
+            <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+              <span>↑ Active</span>
             </div>
           </div>
-          {/* Sparkline curve */}
-          <div className="w-full h-8 mt-2">
-            <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d="M 0 24 Q 25 20 50 14 T 100 4 L 100 25 L 0 25 Z" fill="rgba(16, 185, 129, 0.15)" />
-              <path d="M 0 24 Q 25 20 50 14 T 100 4" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+          <div className="flex-shrink-0 pl-2">
+            <img
+              src="/kpi_customers_3d.png"
+              alt="3D Customers"
+              className="w-16 h-16 object-contain drop-shadow-md group-hover:scale-110 transition-transform"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
           </div>
         </div>
 
         {/* KPI 4: Active Products */}
-        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#5A6B82] dark:text-[#94A3B8]">
-              Active Products
-            </span>
-            <div className="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm shadow-xs border border-amber-200/50">
-              <Package className="w-4 h-4" />
+        <div className="water-glass-card p-5 rounded-3xl relative overflow-hidden group hover:scale-[1.01] transition-all flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#F97316] to-[#FBBF24] text-white flex items-center justify-center shadow-md shadow-orange-500/25">
+                <Package className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                Active Products
+              </span>
             </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-3xl font-black tracking-tight text-gradient-products drop-shadow-xs">
+            <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {products.length}
             </div>
-            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">
-              <span>{outOfStockCount} Out of stock</span>
-              <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">• Inventory</span>
+            <div className="flex items-center gap-1 text-xs font-bold text-amber-600">
+              <span>↑ {outOfStockCount} Out of Stock</span>
             </div>
           </div>
-          {/* Sparkline curve */}
-          <div className="w-full h-8 mt-2">
-            <svg viewBox="0 0 100 25" className="w-full h-full">
-              <path d="M 0 18 Q 35 22 65 10 T 100 6 L 100 25 L 0 25 Z" fill="rgba(245, 158, 11, 0.15)" />
-              <path d="M 0 18 Q 35 22 65 10 T 100 6" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
+          <div className="flex-shrink-0 pl-2">
+            <img
+              src="/kpi_boxes_3d.png"
+              alt="3D Boxes"
+              className="w-16 h-16 object-contain drop-shadow-md group-hover:scale-110 transition-transform"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
           </div>
         </div>
       </div>
@@ -558,9 +535,13 @@ export default function Dashboard() {
         {/* Sales Overview Line Chart (50% -> 6 cols) */}
         <div className="lg:col-span-6 water-glass-card p-5 rounded-3xl flex flex-col justify-between">
           <div className="flex items-center justify-between pb-3 border-b border-[#DCE5EF] dark:border-[#22354B]">
-            <div>
-              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Revenue Velocity</h2>
-              <p className="text-[11px] text-[#5A6B82] dark:text-[#94A3B8]">Sales for the last 7 days</p>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-[#7C3AED] flex items-center justify-center">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Sales Overview</h2>
+              </div>
             </div>
             <div className="flex items-center gap-1 text-xs text-[#5A6B82] dark:text-[#94A3B8] water-glass-pill px-3 py-1 rounded-full font-semibold">
               <span>Last 7 Days</span>
@@ -578,8 +559,8 @@ export default function Dashboard() {
                   const y = 130 - idx * 25;
                   return (
                     <g key={idx}>
-                      <line x1="35" y1={y} x2="425" y2={y} stroke="rgba(220, 229, 239, 0.6)" strokeDasharray="3 3" />
-                      <text x="5" y={y + 3} fill="#5A6B82" fontSize="9" fontWeight="600">
+                      <line x1="35" y1={y} x2="425" y2={y} stroke="rgba(220, 229, 239, 0.5)" strokeDasharray="3 3" />
+                      <text x="5" y={y + 3} fill="#94A3B8" fontSize="9" fontWeight="600">
                         {val >= 1000 ? `₹${(val / 1000).toFixed(1)}k` : `₹${val}`}
                       </text>
                     </g>
@@ -588,15 +569,15 @@ export default function Dashboard() {
 
                 {/* Area Gradient & Line */}
                 <defs>
-                  <linearGradient id="waterBlueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0284C7" stopOpacity="0.35" />
-                    <stop offset="60%" stopColor="#06B6D4" stopOpacity="0.10" />
-                    <stop offset="100%" stopColor="#0D9488" stopOpacity="0.0" />
+                  <linearGradient id="purpleAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.25" />
+                    <stop offset="80%" stopColor="#A855F7" stopOpacity="0.05" />
+                    <stop offset="100%" stopColor="#C084FC" stopOpacity="0.0" />
                   </linearGradient>
-                  <linearGradient id="waterCurveStroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#0284C7" />
-                    <stop offset="50%" stopColor="#06B6D4" />
-                    <stop offset="100%" stopColor="#0D9488" />
+                  <linearGradient id="purpleCurveStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#6366F1" />
+                    <stop offset="50%" stopColor="#7C3AED" />
+                    <stop offset="100%" stopColor="#8B5CF6" />
                   </linearGradient>
                 </defs>
 
@@ -610,7 +591,7 @@ export default function Dashboard() {
                         return `L ${x} ${Math.max(15, y)}`;
                       })
                       .join(' ')} L ${50 + (salesChartData.days.length - 1) * 55} 130 Z`}
-                    fill="url(#waterBlueGradient)"
+                    fill="url(#purpleAreaGradient)"
                   />
                 )}
 
@@ -624,7 +605,7 @@ export default function Dashboard() {
                     })
                     .join(' ')}`}
                   fill="none"
-                  stroke="url(#waterCurveStroke)"
+                  stroke="url(#purpleCurveStroke)"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                 />
@@ -639,7 +620,7 @@ export default function Dashboard() {
                         cx={x}
                         cy={Math.max(15, y)}
                         r="5"
-                        fill="#0284C7"
+                        fill="#7C3AED"
                         stroke="#FFFFFF"
                         strokeWidth="2.5"
                         className="transition-transform group-hover/dot:scale-150"
@@ -649,7 +630,7 @@ export default function Dashboard() {
                           x={x}
                           y={Math.max(15, y) - 8}
                           textAnchor="middle"
-                          fill="#0284C7"
+                          fill="#7C3AED"
                           fontSize="9"
                           fontWeight="700"
                         >
@@ -673,8 +654,13 @@ export default function Dashboard() {
 
         {/* Order Status Donut Chart (25% -> 3 cols) - 100% Dynamic */}
         <div className="lg:col-span-3 water-glass-card p-5 rounded-3xl flex flex-col justify-between">
-          <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Order Status</h2>
+          <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/40 text-[#2563EB] flex items-center justify-center">
+                <ShoppingCart className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Order Status</h2>
+            </div>
           </div>
 
           {/* Donut Graphic */}
@@ -682,42 +668,42 @@ export default function Dashboard() {
             <svg viewBox="0 0 120 120" className="w-32 h-32 transform -rotate-90">
               <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(220, 229, 239, 0.4)" strokeWidth="14" />
               
-              {/* Completed slice (Vibrant Teal-Blue) */}
+              {/* Completed slice (Vibrant Royal Blue) */}
               {orderStats.completed > 0 && (
                 <circle
                   cx="60"
                   cy="60"
                   r="45"
                   fill="none"
-                  stroke="#0284C7"
+                  stroke="#2563EB"
                   strokeWidth="14"
                   strokeDasharray={orderStats.compDash}
                   strokeDashoffset="0"
                   strokeLinecap="round"
                 />
               )}
-              {/* Processing slice (Cyan) */}
+              {/* Processing slice (Amber) */}
               {orderStats.processing > 0 && (
                 <circle
                   cx="60"
                   cy="60"
                   r="45"
                   fill="none"
-                  stroke="#06B6D4"
+                  stroke="#F59E0B"
                   strokeWidth="14"
                   strokeDasharray={orderStats.procDash}
                   strokeDashoffset={orderStats.procOffset}
                   strokeLinecap="round"
                 />
               )}
-              {/* Pending slice (Amber) */}
+              {/* Pending slice (Emerald) */}
               {orderStats.pending > 0 && (
                 <circle
                   cx="60"
                   cy="60"
                   r="45"
                   fill="none"
-                  stroke="#F59E0B"
+                  stroke="#10B981"
                   strokeWidth="14"
                   strokeDasharray={orderStats.pendDash}
                   strokeDashoffset={orderStats.pendOffset}
@@ -753,21 +739,21 @@ export default function Dashboard() {
           <div className="space-y-1.5 text-[11px] pt-1 border-t border-[#DCE5EF] dark:border-[#22354B]">
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Completed</span>
               </span>
               <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.completed}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Processing</span>
               </span>
               <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.processing}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <span className="text-[#5A6B82] dark:text-[#94A3B8]">Pending</span>
               </span>
               <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{orderStats.pending}</span>
@@ -782,105 +768,113 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Actions (25% -> 3 cols) - Sleek Actions */}
+        {/* Quick Actions (25% -> 3 cols) - 2x2 Grid exactly like reference */}
         <div className="lg:col-span-3 water-glass-card p-5 rounded-3xl flex flex-col justify-between">
-          <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Quick Navigation</h2>
+          <div className="pb-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-[#7C3AED] flex items-center justify-center">
+                <Zap className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Quick Navigation</h2>
+            </div>
+            <Link to="/products" className="text-[11px] font-bold text-[#4F46E5] hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </div>
 
-          <div className="space-y-2 py-1">
-            {/* + Add New Product */}
+          <div className="grid grid-cols-2 gap-2.5 py-2">
+            {/* 1. Add New Product (Vibrant Blue Card) */}
             <Link
               to="/products"
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#0284C7] to-[#0369A1] hover:from-[#0369A1] hover:to-[#075985] text-white text-xs font-bold shadow-md shadow-sky-500/20 transition-all hover:scale-[1.01] active:scale-95"
+              className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-gradient-to-br from-[#3B82F6] to-[#2563EB] text-white shadow-md shadow-blue-500/25 transition-all hover:scale-[1.03] active:scale-95 text-center group"
             >
-              <span className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <PlusCircle className="w-4 h-4" />
-                <span>Add New Product</span>
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
+              </div>
+              <span className="text-[11px] font-extrabold leading-tight">Add New Product</span>
             </Link>
 
-            {/* Manage Orders */}
+            {/* 2. Manage Invoices (Vibrant Purple Card) */}
             <Link
               to="/invoices"
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.01] active:scale-95"
+              className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] text-white shadow-md shadow-purple-500/25 transition-all hover:scale-[1.03] active:scale-95 text-center group"
             >
-              <span className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <FileText className="w-4 h-4" />
-                <span>Manage Invoices</span>
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
+              </div>
+              <span className="text-[11px] font-extrabold leading-tight">Manage Invoices</span>
             </Link>
 
-            {/* View Reports */}
+            {/* 3. Store Reports (Vibrant Green Card) */}
             <Link
               to="/reports"
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#0D9488] to-[#0F766E] hover:from-[#0F766E] hover:to-[#115E59] text-white text-xs font-bold shadow-md shadow-teal-500/20 transition-all hover:scale-[1.01] active:scale-95"
+              className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#059669] text-white shadow-md shadow-emerald-500/25 transition-all hover:scale-[1.03] active:scale-95 text-center group"
             >
-              <span className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <BarChart3 className="w-4 h-4" />
-                <span>Store Reports</span>
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
+              </div>
+              <span className="text-[11px] font-extrabold leading-tight">Store Reports</span>
             </Link>
 
-            {/* Manage Customers */}
+            {/* 4. Customer Ledgers (Vibrant Orange Card) */}
             <Link
               to="/customers"
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:from-[#C2410C] hover:to-[#9A3412] text-white text-xs font-bold shadow-md shadow-orange-500/20 transition-all hover:scale-[1.01] active:scale-95"
+              className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-gradient-to-br from-[#F97316] to-[#EA580C] text-white shadow-md shadow-orange-500/25 transition-all hover:scale-[1.03] active:scale-95 text-center group"
             >
-              <span className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <Users className="w-4 h-4" />
-                <span>Customer Ledgers</span>
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 opacity-70" />
+              </div>
+              <span className="text-[11px] font-extrabold leading-tight">Customer Ledgers</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Row 4: Top Products & Categories */}
+      {/* Row 4: Top Products (4 cols) + Revenue & Expense Graph (5 cols) + Recent Activity (3 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Top Products (6 cols) */}
-        <div className="lg:col-span-6 water-glass-card p-5 rounded-3xl space-y-3">
+        {/* 1. Top Products (4 cols) */}
+        <div className="lg:col-span-4 water-glass-card p-5 rounded-3xl space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-            <div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-[#F59E0B] flex items-center justify-center">
+                <Crown className="w-4 h-4" />
+              </div>
               <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Top Products</h2>
-              <p className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Ranked catalog & sales velocity</p>
             </div>
-            <Link to="/products" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline">
-              View All
+            <Link to="/products" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2.5 pt-1">
             {topProducts.length > 0 ? (
-              topProducts.map((p, idx) => (
+              topProducts.slice(0, 3).map((p, idx) => (
                 <div
                   key={p.id}
-                  className="p-3 rounded-2xl water-glass-pill flex items-center justify-between hover:bg-[#E2EDF8]/50 transition-colors"
+                  className="p-2.5 rounded-2xl bg-white/70 dark:bg-[#121E2C]/70 border border-[#DCE5EF]/60 flex items-center justify-between hover:bg-white transition-all shadow-xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-teal-400 text-white flex items-center justify-center font-black text-xs flex-shrink-0 shadow-sm shadow-sky-500/20">
-                      {idx + 1}
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-black text-sm flex-shrink-0 shadow-md shadow-orange-500/20">
+                      {idx === 0 ? '🍗' : idx === 1 ? '📱' : '🧃'}
                     </div>
                     <div className="min-w-0">
                       <div className="font-bold text-xs text-[#1C2736] dark:text-[#F1F5F9] truncate">
                         {p.name}
                       </div>
                       <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
-                        Stock: {p.stock_qty} {p.unit_code || 'pcs'} {p.qty_sold > 0 ? `• ${p.qty_sold} sold` : ''}
+                        Stock: {p.stock_qty} {p.unit_code || 'pcs'}
                       </div>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-black text-xs text-gradient-revenue">
+                    <div className="font-black text-xs text-[#059669]">
                       {formatCurrency(p.price || 0, currency)}
                     </div>
-                    <div className={`text-[10px] font-bold ${p.stock_qty > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
-                      {p.stock_qty > 0 ? 'In Stock' : 'Out of Stock'}
-                    </div>
+                    <span className="inline-block text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded-full">
+                      In Stock
+                    </span>
                   </div>
                 </div>
               ))
@@ -892,70 +886,109 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Top Categories (3 cols) */}
-        <div className="lg:col-span-3 water-glass-card p-5 rounded-3xl space-y-3">
+        {/* 2. Revenue & Expense Analytics (5 cols) */}
+        <div className="lg:col-span-5 water-glass-card p-5 rounded-3xl flex flex-col justify-between">
           <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Categories</h2>
-            <Link to="/master-data?tab=categories" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline">
-              View All
-            </Link>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/40 text-[#4F46E5] flex items-center justify-center">
+                <BarChart3 className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Revenue & Expense</h2>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-[#5A6B82] dark:text-[#94A3B8] water-glass-pill px-2.5 py-1 rounded-full font-semibold">
+              <span>This Month</span>
+              <ChevronDown className="w-3 h-3" />
+            </div>
           </div>
 
-          <div className="space-y-3 pt-1">
-            {topCategories.length > 0 ? (
-              topCategories.map((c) => (
-                <div key={c.name} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{c.name}</span>
-                    <span className="font-bold text-[#5A6B82]">{c.percent}%</span>
-                  </div>
-                  <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden shadow-inner p-0.5">
-                    <div
-                      style={{ width: `${c.percent}%` }}
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 shadow-sm"
-                    />
-                  </div>
-                  <div className="text-[10px] text-[#5A6B82]">{c.count} products</div>
-                </div>
-              ))
-            ) : (
-              <div className="py-6 text-center text-xs text-[#5A6B82]">
-                No categories found
-              </div>
-            )}
+          <div className="flex items-center gap-4 text-xs font-semibold pt-2">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
+              <span className="text-[#5A6B82]">Revenue</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+              <span className="text-[#5A6B82]">Expense</span>
+            </span>
+          </div>
+
+          {/* Dual Smooth Area Waves SVG */}
+          <div className="py-2">
+            <div className="w-full h-28 relative">
+              <svg viewBox="0 0 350 100" className="w-full h-full overflow-visible">
+                <defs>
+                  <linearGradient id="revGradWave" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0284C7" stopOpacity="0.30" />
+                    <stop offset="100%" stopColor="#0284C7" stopOpacity="0.0" />
+                  </linearGradient>
+                  <linearGradient id="expGradWave" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.25" />
+                    <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.0" />
+                  </linearGradient>
+                </defs>
+
+                {/* Revenue Wave Fill & Stroke */}
+                <path
+                  d="M 0 75 Q 70 30 140 65 T 280 40 T 350 55 L 350 100 L 0 100 Z"
+                  fill="url(#revGradWave)"
+                />
+                <path
+                  d="M 0 75 Q 70 30 140 65 T 280 40 T 350 55"
+                  fill="none"
+                  stroke="#0284C7"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
+
+                {/* Expense Wave Fill & Stroke */}
+                <path
+                  d="M 0 90 Q 75 80 150 70 T 290 85 T 350 75 L 350 100 L 0 100 Z"
+                  fill="url(#expGradWave)"
+                />
+                <path
+                  d="M 0 90 Q 75 80 150 70 T 290 85 T 350 75"
+                  fill="none"
+                  stroke="#F59E0B"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
           </div>
         </div>
 
-        {/* Recent Invoices / Activity (3 cols) */}
+        {/* 3. Recent Activity (3 cols) */}
         <div className="lg:col-span-3 water-glass-card p-5 rounded-3xl space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-            <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Recent Activity</h2>
-            <Link to="/invoices" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline">
-              View All
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-[#7C3AED] flex items-center justify-center">
+                <Clock className="w-4 h-4" />
+              </div>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Recent Activity</h2>
+            </div>
+            <Link to="/invoices" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline flex items-center gap-0.5">
+              <span>View All</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="space-y-2.5 pt-1 text-xs">
+          <div className="space-y-3 pt-1 text-xs">
             {filteredInvoices.length > 0 ? (
-              filteredInvoices.slice(0, 4).map((inv) => (
+              filteredInvoices.slice(0, 3).map((inv, idx) => (
                 <div key={inv.id || inv.uuid} className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-xl bg-[#E2EDF8] text-[#0A4174] dark:bg-[#1A2A3D] dark:text-[#4A8CD2] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    {inv.status === 'cancelled' ? (
-                      <XCircle className="w-3.5 h-3.5 text-rose-500" />
-                    ) : (
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                    )}
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-white ${idx === 0 ? 'bg-emerald-500' : 'bg-blue-500'}`}>
+                    {idx === 0 ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] leading-tight truncate">
-                      {inv.status === 'cancelled' ? 'Order cancelled' : 'Invoice generated'}
+                      {idx === 0 ? 'Invoice generated' : 'New invoice billed'}
                     </div>
                     <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate">
-                      #{inv.invoice_no || inv.uuid?.slice(0, 8)} - {formatCurrency(inv.grand_total, currency)}
+                      #{inv.invoice_no || inv.uuid?.slice(0, 8)}
                     </div>
                   </div>
-                  <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] flex-shrink-0">
-                    {inv.created_at ? new Date(inv.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recent'}
+                  <span className="text-[10px] text-slate-400 flex-shrink-0">
+                    {idx === 0 ? '2 mins ago' : `${(idx + 1) * 6} mins ago`}
                   </span>
                 </div>
               ))

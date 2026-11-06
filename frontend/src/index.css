@@ -68,42 +68,25 @@ body,
 /* White Crystal Liquid Water Glass Cards */
 .water-glass-card {
   position: relative !important;
-  background: rgba(255, 255, 255, 0.72) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
   backdrop-filter: blur(28px) saturate(220%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(220%) !important;
-  border-radius: 22px !important;
+  border-radius: 24px !important;
   border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
   box-shadow: 
-    0 20px 48px -12px rgba(14, 116, 144, 0.08),
-    0 4px 16px -2px rgba(14, 116, 144, 0.03),
+    0 16px 36px -10px rgba(79, 70, 229, 0.07),
+    0 4px 14px -2px rgba(14, 116, 144, 0.04),
     0 1px 2px 0 #FFFFFF inset,
     0 0 28px 4px #FFFFFF inset !important;
   overflow: hidden !important;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.water-glass-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -80%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-  transform: skewX(-22deg);
-  pointer-events: none;
-  transition: all 0.75s ease;
-}
-
-.water-glass-card:hover::before {
-  left: 140%;
-}
-
 .water-glass-card:hover {
-  background: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
   transform: translateY(-2px);
   box-shadow: 
-    0 26px 55px -10px rgba(14, 116, 144, 0.14),
+    0 22px 48px -10px rgba(79, 70, 229, 0.12),
     0 8px 22px -4px rgba(14, 116, 144, 0.06),
     0 1px 2px 0 #FFFFFF inset,
     0 0 36px 6px #FFFFFF inset !important;
