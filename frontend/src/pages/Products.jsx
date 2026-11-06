@@ -463,7 +463,7 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      {/* Three Existing Products Navigation Options */}
+      {/* Products & Master Navigation Options */}
       <div className="flex items-center gap-2 p-1.5 bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm overflow-x-auto scrollbar-thin">
         <Link
           to="/products"
@@ -472,35 +472,26 @@ export default function Products() {
           <Package className="w-4 h-4" />
           <span>All Products</span>
         </Link>
-        <button
-          type="button"
-          onClick={() => setQuickCatModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] flex-shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>+ Create Category</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setQuickSubCatModal(true)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] flex-shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>+ Create Subcategory</span>
-        </button>
         <Link
           to="/master-data?tab=categories"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
         >
           <Layers className="w-4 h-4" />
-          <span>Manage Categories & Sub</span>
+          <span>Categories</span>
+        </Link>
+        <Link
+          to="/master-data?tab=subcategories"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
+        >
+          <Layers className="w-4 h-4" />
+          <span>Subcategories</span>
         </Link>
         <Link
           to="/master-data?tab=brands"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
         >
           <Tags className="w-4 h-4" />
-          <span>Brands Mapping</span>
+          <span>Brands</span>
         </Link>
       </div>
 
