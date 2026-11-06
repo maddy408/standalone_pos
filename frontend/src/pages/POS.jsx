@@ -176,7 +176,27 @@ export default function POS() {
     let serverBills = [];
     try {
       const { data } = await api.get('/held-bills');
-      serverBills = data;
+      if (Array.isArray(data)) {
+        serverBills = data.map((s) => {
+          const payload = s.payload || {};
+          const cart = Array.isArray(payload.cart) ? payload.cart : (Array.isArray(s.cart) ? s.cart : []);
+          const totals = payload.totals || s.totals || {
+            grandTotal: cart.reduce((sum, item) => sum + (Number(item.qty || 1) * Number(item.unit_price || 0)), 0),
+          };
+          return {
+            uuid: s.uuid || `server-${s.id}`,
+            id: s.id,
+            customer_name: s.customer_name || payload.customer_name || 'Walk-in Customer',
+            customer_id: s.customer_id || payload.customer_id || null,
+            cart,
+            totals,
+            discount_type: payload.discount_type || s.discount_type || 'fixed',
+            discount_value: payload.discount_value || s.discount_value || '',
+            payment_method: payload.payment_method || s.payment_method || 'cash',
+            held_at: s.created_at || payload.held_at || new Date().toISOString(),
+          };
+        });
+      }
     } catch {
       // offline
     }
@@ -487,8 +507,9 @@ export default function POS() {
 
   const holdBill = async () => {
     if (cart.length === 0) return;
+    const billUuid = newUuid();
     const entry = {
-      uuid: newUuid(),
+      uuid: billUuid,
       customer_id: selectedCustomerId || null,
       customer_name: activeCustomer?.name || 'Walk-in Customer',
       cart,
@@ -498,8 +519,27 @@ export default function POS() {
       payment_method: paymentMethod,
       held_at: new Date().toISOString(),
     };
+
+    // Save locally
     await saveLocalHeldBill(entry);
-    enqueueOutboxItem('post', '/held-bills', entry).catch(() => {});
+
+    // Save to server
+    try {
+      await api.post('/held-bills', {
+        uuid: billUuid,
+        label: `Hold ${new Date().toLocaleTimeString()} (${cart.length} items)`,
+        customer_id: selectedCustomerId || null,
+        payload: entry,
+      });
+    } catch {
+      // offline fallback
+      enqueueOutboxItem({
+        client_id: billUuid,
+        type: 'held_bill',
+        payload: entry,
+      }).catch(() => {});
+    }
+
     refreshPendingCount();
     clearCart();
     setMessage('Bill placed on hold');
@@ -513,8 +553,21 @@ export default function POS() {
     setDiscountType(held.discount_type || 'fixed');
     setDiscountValue(held.discount_value || '');
     setPaymentMethod(held.payment_method || 'cash');
+
+    // Remove locally
     await removeLocalHeldBill(held.uuid);
-    enqueueOutboxItem('delete', `/held-bills/${held.uuid}`, {}).catch(() => {});
+
+    // Delete on server
+    try {
+      await api.delete(`/held-bills/${held.uuid}`);
+    } catch {
+      enqueueOutboxItem({
+        client_id: newUuid(),
+        type: 'delete_held_bill',
+        payload: { uuid: held.uuid },
+      }).catch(() => {});
+    }
+
     refreshPendingCount();
     setShowHeldModal(false);
     refreshHeldBills();
@@ -669,9 +722,9 @@ export default function POS() {
       {/* ======================================================== */}
       {/* LEFT COLUMN: Catalog / Product Grid / Scanner / Hardware */}
       {/* ======================================================== */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 water-glass-card rounded-2xl overflow-hidden shadow-sm">
         {/* Sub-Header: Search bar with shortcut tags */}
-        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/60 dark:bg-[#0B131E]/40 flex items-center gap-3">
+        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/40 dark:bg-[#121E2C]/40 flex items-center gap-3">
           {/* Barcode Search Input with prefix icon & search icon */}
           <div className="relative flex-1">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[#5A6B82] dark:text-[#94A3B8]">
@@ -698,7 +751,7 @@ export default function POS() {
                 }
               }}
               placeholder="Scan barcode or search product name / SKU..."
-              className="w-full pl-10 pr-9 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#0A4174] dark:focus:ring-[#4A8CD2] shadow-xs placeholder-[#94A3B8]"
+              className="w-full pl-10 pr-9 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/80 dark:bg-[#121E2C]/80 backdrop-blur-md text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#0A4174] dark:focus:ring-[#4A8CD2] shadow-xs placeholder-[#94A3B8]"
             />
             <button
               type="button"
@@ -719,7 +772,7 @@ export default function POS() {
             <button
               type="button"
               onClick={() => searchRef.current?.focus()}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
             >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F2</span>
               <span>Search</span>
@@ -730,7 +783,7 @@ export default function POS() {
                 const firstQty = document.querySelector('.pos-qty-input');
                 if (firstQty) firstQty.focus();
               }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
             >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F4</span>
               <span>Quantity</span>
@@ -744,7 +797,7 @@ export default function POS() {
                   discInput.select();
                 }
               }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
             >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F6</span>
               <span>Discount</span>
@@ -752,7 +805,7 @@ export default function POS() {
             <button
               type="button"
               onClick={completeSale}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
             >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F8</span>
               <span>Payment</span>
@@ -764,7 +817,7 @@ export default function POS() {
                 setQuickSaleForm({ name: `Item ${customCount}`, qty: '1', price: '' });
                 setShowQuickSale(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold transition-all shadow-xs cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold transition-all shadow-md shadow-amber-500/20 cursor-pointer"
               title="Add Quick Sale Item"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
@@ -774,11 +827,11 @@ export default function POS() {
         </div>
 
         {/* Categories Carousel / Navigation Row */}
-        <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] flex items-center gap-1.5">
+        <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/60 dark:bg-[#121E2C]/60 flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => scrollCategories(-1)}
-            className="w-7 h-7 flex-shrink-0 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] text-[#5A6B82] dark:text-[#94A3B8] flex items-center justify-center transition-colors"
+            className="w-7 h-7 flex-shrink-0 rounded-lg water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] flex items-center justify-center transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -795,10 +848,10 @@ export default function POS() {
                   key={cat.id}
                   type="button"
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold ${
+                  className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all text-xs font-semibold ${
                     active
-                      ? 'border-[#0A4174] bg-[#E2EDF8] text-[#0A4174] dark:border-[#4A8CD2] dark:bg-[#1A2A3D] dark:text-[#4A8CD2] shadow-xs'
-                      : 'border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#F4F7FB] dark:hover:bg-[#1A2A3D]/50'
+                      ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-sm font-bold'
+                      : 'water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8]'
                   }`}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
@@ -811,14 +864,14 @@ export default function POS() {
           <button
             type="button"
             onClick={() => scrollCategories(1)}
-            className="w-7 h-7 flex-shrink-0 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] text-[#5A6B82] dark:text-[#94A3B8] flex items-center justify-center transition-colors"
+            className="w-7 h-7 flex-shrink-0 rounded-lg water-glass-pill text-[#5A6B82] dark:text-[#94A3B8] flex items-center justify-center transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Product Catalog Grid (Compact 4-column cards matching Nova Retail) */}
-        <div className="flex-1 overflow-y-auto p-3 scrollbar-thin bg-[#F4F7FB]/40 dark:bg-[#0B131E]/30">
+        {/* Product Catalog Grid (Compact 4-column cards matching Nova Retail with Water Glass Cards) */}
+        <div className="flex-1 overflow-y-auto p-3 scrollbar-thin bg-transparent">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {filteredProducts.map((p) => {
               const price = getProductPrice(p);
@@ -831,7 +884,7 @@ export default function POS() {
                 <div
                   key={p.id}
                   onClick={() => handleProductClick(p)}
-                  className="rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] p-2.5 flex flex-col justify-between hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:shadow-md transition-all cursor-pointer group relative"
+                  className="rounded-2xl water-glass-card p-2.5 flex flex-col justify-between hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:shadow-lg transition-all cursor-pointer group relative"
                 >
                   {/* Top: Fresh / Discount badge if applicable */}
                   <div className="absolute top-2 right-2 z-10">
@@ -842,8 +895,8 @@ export default function POS() {
                     ) : null}
                   </div>
 
-                  {/* Image area */}
-                  <div className="w-full h-24 mb-2 rounded-lg bg-[#F4F7FB] dark:bg-[#0B131E] flex items-center justify-center overflow-hidden border border-[#DCE5EF]/60 dark:border-[#22354B]/60">
+                  {/* Image area with smooth glassy finish */}
+                  <div className="w-full h-24 mb-2 rounded-xl bg-white/60 dark:bg-[#0B131E]/60 flex items-center justify-center overflow-hidden border border-[#DCE5EF]/60 dark:border-[#22354B]/60">
                     {imgUrl ? (
                       <img
                         src={imgUrl}
@@ -974,14 +1027,14 @@ export default function POS() {
       {/* ======================================================== */}
       {/* RIGHT COLUMN: Cart / Customer / Totals / Payments         */}
       {/* ======================================================== */}
-      <div className="w-full lg:w-[410px] flex-shrink-0 flex flex-col bg-white dark:bg-[#121E2C] rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] shadow-sm overflow-hidden">
+      <div className="w-full lg:w-[410px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm">
         {/* Cart Top Header: Current Bill #POS-XXXX + + New Customer */}
-        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white dark:bg-[#121E2C]">
+        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40">
           <div className="flex items-center gap-2">
             <span className="font-black text-sm text-[#1C2736] dark:text-[#F1F5F9]">
               Current Bill
             </span>
-            <span className="px-2 py-0.5 rounded font-mono text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D]">
+            <span className="px-2 py-0.5 rounded-lg font-mono text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D]">
               {currentInvoiceNo}
             </span>
           </div>
@@ -991,11 +1044,11 @@ export default function POS() {
               type="button"
               onClick={() => setShowHeldModal(true)}
               title="Held Bills"
-              className="p-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] relative"
+              className="p-1.5 rounded-xl water-glass-pill text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] relative"
             >
               <Clock className="w-4 h-4" />
               {heldBills.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs">
                   {heldBills.length}
                 </span>
               )}
@@ -1003,7 +1056,7 @@ export default function POS() {
             <button
               type="button"
               onClick={() => setShowNewCustomer(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-xs transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-xs transition-colors"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>+ New Customer</span>
@@ -1012,9 +1065,9 @@ export default function POS() {
         </div>
 
         {/* Customer Info Card matching Nova Retail */}
-        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/60 dark:bg-[#0B131E]/40">
+        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/20 dark:bg-[#0B131E]/20">
           <div className="relative">
-            <div className="flex items-center justify-between p-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C]">
+            <div className="flex items-center justify-between p-2 rounded-xl water-glass-pill">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center flex-shrink-0 font-bold">
                   <User className="w-4 h-4" />
@@ -1335,44 +1388,83 @@ export default function POS() {
       {/* ======================================================== */}
       {/* Held Bills Modal */}
       {showHeldModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
-                Held Bills ({heldBills.length})
-              </h3>
-              <button onClick={() => setShowHeldModal(false)} className="text-[#5A6B82] hover:text-[#1C2736]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg rounded-3xl water-glass-card p-6 shadow-2xl border border-white/80 dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-base text-[#1C2736] dark:text-[#F1F5F9]">
+                    Held Bills
+                  </h3>
+                  <p className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
+                    {heldBills.length} {heldBills.length === 1 ? 'bill' : 'bills'} currently parked
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHeldModal(false)}
+                className="w-7 h-7 rounded-lg water-glass-pill text-[#5A6B82] hover:text-[#1C2736] flex items-center justify-center"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="max-h-64 overflow-y-auto space-y-2 text-xs">
+
+            <div className="max-h-72 overflow-y-auto space-y-2.5 text-xs pr-1 scrollbar-thin">
               {heldBills.map((b) => (
                 <div
                   key={b.uuid}
-                  className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between hover:bg-[#E2EDF8]/40"
+                  className="p-3.5 rounded-2xl water-glass-pill flex items-center justify-between hover:border-[#0A4174] dark:hover:border-[#4A8CD2] transition-all group"
                 >
-                  <div>
-                    <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">{b.customer_name}</div>
-                    <div className="text-[10px] text-[#5A6B82]">
-                      {b.cart?.length || 0} items • {new Date(b.held_at).toLocaleTimeString()}
+                  <div className="min-w-0 pr-2">
+                    <div className="font-extrabold text-[#1C2736] dark:text-[#F1F5F9] truncate text-xs">
+                      {b.customer_name || 'Walk-in Customer'}
+                    </div>
+                    <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] flex items-center gap-2 pt-0.5">
+                      <span className="font-bold text-[#0A4174] dark:text-[#4A8CD2]">
+                        {b.cart?.length || 0} {b.cart?.length === 1 ? 'item' : 'items'}
+                      </span>
+                      <span>•</span>
+                      <span>{new Date(b.held_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-shrink-0">
                     <span className="font-black text-sm text-[#0A4174] dark:text-[#4A8CD2]">
                       {formatCurrency(b.totals?.grandTotal || 0, currency)}
                     </span>
                     <button
+                      type="button"
                       onClick={() => recallBill(b)}
-                      className="px-2.5 py-1 rounded-lg bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] text-xs font-bold"
+                      className="px-3.5 py-1.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] text-white dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] dark:text-[#0B131E] text-xs font-bold shadow-xs active:scale-95 transition-all"
                     >
-                      Recall
+                      Recall Bill
+                    </button>
+                    <button
+                      type="button"
+                      title="Discard Held Bill"
+                      onClick={async () => {
+                        await removeLocalHeldBill(b.uuid);
+                        try {
+                          await api.delete(`/held-bills/${b.uuid}`);
+                        } catch {}
+                        refreshHeldBills();
+                      }}
+                      className="p-1.5 rounded-lg text-[#5A6B82] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
               ))}
               {heldBills.length === 0 && (
-                <div className="py-8 text-center text-[#5A6B82]">No bills currently on hold.</div>
+                <div className="py-10 text-center text-[#5A6B82] dark:text-[#94A3B8] space-y-1">
+                  <Clock className="w-8 h-8 mx-auto text-[#DCE5EF] dark:text-[#22354B]" />
+                  <p className="font-bold">No bills currently on hold</p>
+                  <p className="text-[10px]">Use the pause icon in the cart to hold an active bill.</p>
+                </div>
               )}
             </div>
           </div>

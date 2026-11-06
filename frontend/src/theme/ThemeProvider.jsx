@@ -1,12 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { appColors, colorSchemes } from './appColors';
+import { appColors } from './appColors';
 
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('pos_theme') || 'light');
-  const [colorScheme, setColorSchemeState] = useState(() => localStorage.getItem('pos_color_scheme') || 'amber'); // default amber for Glassy V2 experience
-  const [isGlassy, setIsGlassyState] = useState(() => localStorage.getItem('pos_glassy') !== 'false');
 
   useEffect(() => {
     const root = document.documentElement;
@@ -17,20 +15,11 @@ export function ThemeProvider({ children }) {
     }
     localStorage.setItem('pos_theme', theme);
 
-    if (isGlassy) {
-      root.classList.add('glass-theme');
-    } else {
-      root.classList.remove('glass-theme');
-    }
-    localStorage.setItem('pos_glassy', String(isGlassy));
+    // Always apply water glass theme styling
+    root.classList.add('glass-theme');
 
-    root.setAttribute('data-color-scheme', colorScheme);
-    localStorage.setItem('pos_color_scheme', colorScheme);
-
-    // Synchronize CSS custom properties from current active colorScheme and mode
-    const schemeObj = colorSchemes[colorScheme] || colorSchemes.blue;
-    const p = theme === 'dark' ? schemeObj.dark : schemeObj.light;
-
+    // Synchronize CSS custom properties from centralized appColors
+    const p = theme === 'dark' ? appColors.dark : appColors.light;
     root.style.setProperty('--bg-main', p.bg);
     root.style.setProperty('--card-bg', p.card);
     root.style.setProperty('--secondary-surface', p.secondary);
@@ -39,22 +28,11 @@ export function ThemeProvider({ children }) {
     root.style.setProperty('--text-secondary', p.muted);
     root.style.setProperty('--primary-color', p.primary);
     root.style.setProperty('--primary-hover', p.primaryHover);
-    root.style.setProperty('--primary-light', p.primaryLight);
-    root.style.setProperty('--accent-glow', p.accentGlow);
     root.style.setProperty('--text-on-primary', p.textOnPrimary);
-  }, [theme, colorScheme, isGlassy]);
+  }, [theme]);
 
   const setTheme = (t) => setThemeState(t);
   const toggleTheme = () => setThemeState((t) => (t === 'dark' ? 'light' : 'dark'));
-
-  const setColorScheme = (s) => setColorSchemeState(s);
-  const toggleColorScheme = () =>
-    setColorSchemeState((prev) => (prev === 'amber' ? 'blue' : 'amber'));
-
-  const setIsGlassy = (val) => setIsGlassyState(val);
-  const toggleGlassy = () => setIsGlassyState((prev) => !prev);
-
-  const activeColors = (colorSchemes[colorScheme] || colorSchemes.blue)[theme];
 
   return (
     <ThemeContext.Provider
@@ -62,15 +40,7 @@ export function ThemeProvider({ children }) {
         theme,
         setTheme,
         toggleTheme,
-        colorScheme,
-        setColorScheme,
-        toggleColorScheme,
-        isGlassy,
-        setIsGlassy,
-        toggleGlassy,
         colors: appColors,
-        activeColors,
-        colorSchemes,
       }}
     >
       {children}
@@ -84,4 +54,4 @@ export function useTheme() {
   return ctx;
 }
 
-export { appColors, colorSchemes };
+export { appColors };

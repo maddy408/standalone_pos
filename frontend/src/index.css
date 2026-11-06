@@ -3,42 +3,37 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #FFF8F2;
-  --card-bg: rgba(255, 255, 255, 0.82);
-  --secondary-surface: #FFEDD5;
-  --border-color: rgba(254, 215, 170, 0.75);
-  --text-main: #29180E;
-  --text-secondary: #7C675B;
-  --primary-color: #EA580C;
-  --primary-hover: #C2410C;
-  --primary-light: #FFF1E7;
-  --accent-glow: rgba(249, 115, 22, 0.35);
+  --bg-main: #F0F5FA;
+  --card-bg: rgba(255, 255, 255, 0.75);
+  --secondary-surface: #E2EDF8;
+  --border-color: rgba(220, 229, 239, 0.85);
+  --text-main: #1C2736;
+  --text-secondary: #5A6B82;
+  --primary-color: #0A4174;
+  --primary-hover: #062E52;
   --text-on-primary: #FFFFFF;
   --surface: #FFFFFF;
-  --surface-alt: #FFEDD5;
+  --surface-alt: #E2EDF8;
 }
 
 .dark {
-  --bg-main: #140D09;
-  --card-bg: rgba(35, 20, 14, 0.75);
-  --secondary-surface: #361D12;
-  --border-color: rgba(87, 43, 24, 0.85);
-  --text-main: #FFF7ED;
-  --text-secondary: #B09A8B;
-  --primary-color: #FB923C;
-  --primary-hover: #FDBA74;
-  --primary-light: #361D12;
-  --accent-glow: rgba(251, 146, 60, 0.35);
-  --text-on-primary: #140D09;
-  --surface: #23140E;
-  --surface-alt: #361D12;
+  --bg-main: #0A121D;
+  --card-bg: rgba(18, 30, 44, 0.70);
+  --secondary-surface: #1A2A3D;
+  --border-color: rgba(34, 53, 75, 0.80);
+  --text-main: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --primary-color: #4A8CD2;
+  --primary-hover: #6BA3E0;
+  --text-on-primary: #0B131E;
+  --surface: #121E2C;
+  --surface-alt: #1A2A3D;
 }
 
 html, body, #root {
   height: 100%;
   background-color: var(--bg-main);
   color: var(--text-main);
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
@@ -47,58 +42,75 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassy Dashboard V2 Ambient Background Blobs */
+/* Water Glass / Liquid Glass Background Ambient Flow */
 .glass-theme body {
   background-image: 
-    radial-gradient(circle at 12% 15%, rgba(249, 115, 22, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 88% 22%, rgba(251, 146, 60, 0.09) 0%, transparent 45%),
-    radial-gradient(circle at 50% 85%, rgba(234, 88, 12, 0.06) 0%, transparent 50%);
+    radial-gradient(circle at 10% 15%, rgba(10, 65, 116, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(74, 140, 210, 0.10) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(37, 99, 235, 0.06) 0%, transparent 55%);
   background-attachment: fixed;
 }
 
 .dark.glass-theme body {
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(251, 146, 60, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 85% 25%, rgba(234, 88, 12, 0.14) 0%, transparent 50%),
-    radial-gradient(circle at 50% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 55%);
+    radial-gradient(circle at 12% 15%, rgba(74, 140, 210, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 88% 25%, rgba(10, 65, 116, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 50% 85%, rgba(96, 165, 250, 0.08) 0%, transparent 55%);
   background-attachment: fixed;
 }
 
-/* Glass Card & Surface Utilities */
-.glass-card {
+/* Water Glass Card & Surface Utilities */
+.water-glass-card {
   background: var(--card-bg) !important;
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid var(--border-color) !important;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05), 0 0 1px 1px rgba(255, 255, 255, 0.6) inset;
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 
+    0 12px 32px -8px rgba(10, 65, 116, 0.08),
+    0 2px 6px -1px rgba(10, 65, 116, 0.04),
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset;
 }
 
-.dark .glass-card {
-  box-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.45), 0 0 1px 1px rgba(255, 255, 255, 0.06) inset;
+.dark .water-glass-card {
+  background: rgba(18, 30, 44, 0.75) !important;
+  border: 1px solid rgba(74, 140, 210, 0.25) !important;
+  box-shadow: 
+    0 16px 40px -10px rgba(0, 0, 0, 0.55),
+    0 2px 8px 0 rgba(0, 0, 0, 0.3),
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset;
 }
 
-.glass-pill {
+/* Water Glass Pill for buttons & filter chips */
+.water-glass-pill {
   background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid rgba(220, 229, 239, 0.85);
+  box-shadow: 0 2px 6px -2px rgba(10, 65, 116, 0.06), 0 1px 0 0 rgba(255, 255, 255, 0.8) inset;
 }
 
-.dark .glass-pill {
-  background: rgba(35, 20, 14, 0.65);
-  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.35);
+.dark .water-glass-pill {
+  background: rgba(26, 42, 61, 0.65);
+  border: 1px solid rgba(34, 53, 75, 0.85);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.4), 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
 }
 
-.glass-glow-orange {
-  box-shadow: 0 8px 24px -4px rgba(249, 115, 22, 0.35);
+/* Glass Header / Nav */
+.water-glass-header {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(220, 229, 239, 0.85);
+  box-shadow: 0 4px 20px -4px rgba(10, 65, 116, 0.05);
 }
 
-.glass-glow-blue {
-  box-shadow: 0 8px 24px -4px rgba(10, 65, 116, 0.25);
+.dark .water-glass-header {
+  background: rgba(18, 30, 44, 0.78);
+  border-bottom: 1px solid rgba(34, 53, 75, 0.85);
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.45);
 }
 
-/* Custom scrollbars */
+/* Custom scrollbars matching theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -107,12 +119,15 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(200, 180, 170, 0.45);
+  background: rgba(197, 216, 237, 0.6);
   border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(100, 70, 55, 0.55);
+  background: rgba(34, 53, 75, 0.8);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-color);
+  background: #0A4174;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #4A8CD2;
 }
