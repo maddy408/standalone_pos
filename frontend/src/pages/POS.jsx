@@ -268,13 +268,28 @@ export default function POS() {
     return Number(product.selling_price || product.retail_price || product.mrp || 0);
   };
 
-  // Category items with matching icons
+  // Category items with matching icons (Only Top-Level Parent Categories, No Subcategories)
   const categoriesWithIcons = useMemo(() => {
+    // Collect subcategory IDs/names that have a parent_id to exclude them
+    const subcategoryNames = new Set(
+      dbCategories
+        .filter((c) => Boolean(c.parent_id))
+        .map((c) => c.name.toLowerCase().trim())
+    );
+
+    // Filter dbCategories to only parent categories (parent_id is null / 0 / empty)
+    const parentDbCategories = dbCategories
+      .filter((c) => !c.parent_id)
+      .map((c) => c.name)
+      .filter(Boolean);
+
+    // From products, also only include category_name if it is not a known subcategory
+    const productParentCategories = products
+      .map((p) => p.category_name)
+      .filter((name) => Boolean(name) && !subcategoryNames.has(name.toLowerCase().trim()));
+
     const rawList = Array.from(
-      new Set([
-        ...dbCategories.map((c) => c.name).filter(Boolean),
-        ...products.map((p) => p.category_name).filter(Boolean),
-      ])
+      new Set([...parentDbCategories, ...productParentCategories])
     );
 
     const iconMap = {
@@ -310,16 +325,33 @@ export default function POS() {
   const filteredProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
     const bt = settings?.business_type;
+
+    // Build a map of category names (and subcategories under them)
+    const activeCatObj = dbCategories.find(
+      (c) => c.name.toLowerCase() === selectedCategory.toLowerCase() && !c.parent_id
+    );
+    const childCategoryNames = activeCatObj
+      ? dbCategories
+          .filter((c) => c.parent_id === activeCatObj.id)
+          .map((c) => c.name.toLowerCase())
+      : [];
+
     return products.filter((p) => {
       if (bt && p.business_type && p.business_type !== bt) return false;
       const pName = (p.name || '').toLowerCase();
       const pBarcode = (p.barcode || '').toLowerCase();
       const pSku = (p.sku || '').toLowerCase();
       const matchesSearch = !term || pName.includes(term) || pBarcode.includes(term) || pSku.includes(term);
-      const matchesCategory = selectedCategory === 'all' || p.category_name === selectedCategory;
+
+      const pCat = (p.category_name || '').toLowerCase();
+      const matchesCategory =
+        selectedCategory === 'all' ||
+        pCat === selectedCategory.toLowerCase() ||
+        childCategoryNames.includes(pCat);
+
       return matchesSearch && matchesCategory;
     });
-  }, [products, search, selectedCategory, settings?.business_type]);
+  }, [products, search, selectedCategory, dbCategories, settings?.business_type]);
 
   // Filter customers for dropdown search
   const filteredCustomers = useMemo(() => {
