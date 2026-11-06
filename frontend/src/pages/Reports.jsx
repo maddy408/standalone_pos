@@ -281,7 +281,17 @@ function Stat({ label, value, highlight }) {
 }
 
 function Table({ rows, cols, emptyText }) {
-  if (!rows || rows.length === 0) {
+  const safeRows = Array.isArray(rows)
+    ? rows
+    : rows && typeof rows === 'object' && Array.isArray(rows.rows)
+    ? rows.rows
+    : rows && typeof rows === 'object' && Array.isArray(rows.list)
+    ? rows.list
+    : rows && typeof rows === 'object' && Array.isArray(rows.items)
+    ? rows.items
+    : [];
+
+  if (!safeRows || safeRows.length === 0) {
     return <div className="py-6 text-center text-sm text-[#5A6B82] dark:text-[#94A3B8]">{emptyText}</div>;
   }
   return (
@@ -294,7 +304,7 @@ function Table({ rows, cols, emptyText }) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row, i) => (
+        {safeRows.map((row, i) => (
           <tr key={i} className="border-t border-[#DCE5EF] dark:border-[#22354B]">
             {cols.map(([key, _, formatter]) => (
               <td key={key} className="px-3 py-2">{formatter ? formatter(row[key]) : row[key]}</td>

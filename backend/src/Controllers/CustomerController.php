@@ -145,22 +145,96 @@ class CustomerController
                 Response::error('Customer not found', 404);
             }
 
-            $this->pdo->prepare('UPDATE customers SET balance = balance - :amount WHERE id = :id')
-                ->execute(['amount' => $amount, 'id' => $id]);
+            $currentBalance = (float) $c['balance'];
+            $invoiceId = !empty($body['invoice_id']) ? (int) $body['invoice_id'] : null;
 
+            // If an invoice is specified, update that invoice's balance as well
+            if ($invoiceId) {
+                $invStmt = $this->pdo->prepare('SELECT balance_amount, paid_amount FROM invoices WHERE id = :inv_id AND customer_id = :cid FOR UPDATE');
+                $invStmt->execute(['inv_id' => $invoiceId, 'cid' => $id]);
+                $inv = $invStmt->fetch();
+                if ($inv) {
+                    $invBalance = (float) $inv['balance_amount'];
+                    $invPaid = (float) $inv['paid_amount'];
+                    $reduceInv = min($amount, $invBalance);
+                    $newInvBalance = max(0.0, $invBalance - $reduceInv);
+                    $newInvPaid = $invPaid + $reduceInv;
+                    $this->pdo->prepare('UPDATE invoices SET balance_amount = :bal, paid_amount = :paid WHERE id = :inv_id')
+                        ->execute(['bal' => $newInvBalance, 'paid' => $newInvPaid, 'inv_id' => $invoiceId]);
+                }
+            } else {
+                // FIFO settlement across open credit invoices of this customer
+                $openInvoicesStmt = $this->pdo->prepare('SELECT id, balance_amount, paid_amount FROM invoices WHERE customer_id = :cid AND balance_amount > 0 AND status = "completed" ORDER BY id ASC FOR UPDATE');
+                $openInvoicesStmt->execute(['cid' => $id]);
+                $openInvoices = $openInvoicesStmt->fetchAll();
+                $remainingSettlement = $amount;
+                foreach ($openInvoices as $oInv) {
+                    if ($remainingSettlement <= 0) break;
+                    $oBal = (float) $oInv['balance_amount'];
+                    $oPaid = (float) $oInv['paid_amount'];
+                    $alloc = min($remainingSettlement, $oBal);
+                    $newOBal = max(0.0, $oBal - $alloc);
+                    $newOPaid = $oPaid + $alloc;
+                    $this->pdo->prepare('UPDATE invoices SET balance_amount = :bal, paid_amount = :paid WHERE id = :inv_id')
+                        ->execute(['bal' => $newOBal, 'paid' => $newOPaid, 'inv_id' => $oInv['id']]);
+                    $remainingSettlement -= $alloc;
+                }
+            }
+
+            // Customer balance adjustment:
+            // e.g. Customer owed 2500, paid 200 => balance becomes 2300.
+            // If customer owed 2500, paid 2700 => balance becomes 0, and extra 200 is credited to Other Income!
+            $extraIncome = 0.0;
+            if ($amount > $currentBalance && $currentBalance > 0) {
+                $extraIncome = $amount - $currentBalance;
+                $this->pdo->prepare('UPDATE customers SET balance = 0 WHERE id = :id')
+                    ->execute(['id' => $id]);
+            } else if ($currentBalance <= 0) {
+                // If customer had zero debt and paid extra, the entire amount goes to Income
+                $extraIncome = $amount;
+            } else {
+                $this->pdo->prepare('UPDATE customers SET balance = balance - :amount WHERE id = :id')
+                    ->execute(['amount' => $amount, 'id' => $id]);
+            }
+
+            $cpayUuid = UuidHelper::v4();
             $this->pdo->prepare(
-                'INSERT INTO customer_payments (customer_id, payment_method_id, amount, notes, user_id)
-                 VALUES (:cid, :pm, :amount, :notes, :uid)'
+                'INSERT INTO customer_payments (uuid, customer_id, invoice_id, payment_method_id, amount, notes)
+                 VALUES (:uuid, :cid, :inv_id, :pm, :amount, :notes)'
             )->execute([
+                'uuid' => $cpayUuid,
                 'cid' => $id,
+                'inv_id' => $invoiceId,
                 'pm' => $body['payment_method_id'] ?? 1,
                 'amount' => $amount,
-                'notes' => $body['notes'] ?? 'Manual customer payment',
-                'uid' => $claims['uid'],
+                'notes' => $body['notes'] ?? 'Manual customer credit collection',
             ]);
 
+            // If extra amount was paid above outstanding debt, record directly in income table for profit & reporting!
+            if ($extraIncome > 0) {
+                $incCatStmt = $this->pdo->query("SELECT id FROM income_categories WHERE name LIKE '%Other%' OR name LIKE '%Credit%' LIMIT 1");
+                $incCatId = $incCatStmt ? $incCatStmt->fetchColumn() : null;
+                if (!$incCatId) {
+                    $this->pdo->exec("INSERT INTO income_categories (name) VALUES ('Customer Extra / Tip Income')");
+                    $incCatId = (int) $this->pdo->lastInsertId();
+                }
+
+                $this->pdo->prepare(
+                    'INSERT INTO income (uuid, category_id, amount, payment_method_id, notes, income_date, user_id)
+                     VALUES (:uuid, :cat_id, :amount, :pm, :notes, :income_date, :uid)'
+                )->execute([
+                    'uuid' => UuidHelper::v4(),
+                    'cat_id' => $incCatId,
+                    'amount' => $extraIncome,
+                    'pm' => $body['payment_method_id'] ?? 1,
+                    'notes' => 'Customer Extra Credit Payment (Customer ID #' . $id . ')',
+                    'income_date' => date('Y-m-d'),
+                    'uid' => $claims['uid'],
+                ]);
+            }
+
             $this->pdo->commit();
-            Response::json(['ok' => true]);
+            Response::json(['ok' => true, 'extra_income_credited' => $extraIncome]);
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             Response::error($e->getMessage(), 500);
