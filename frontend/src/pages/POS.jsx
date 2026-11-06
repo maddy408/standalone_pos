@@ -429,6 +429,20 @@ export default function POS() {
     );
   };
 
+  const setLineQtyDirect = (key, val) => {
+    const parsed = parseFloat(val);
+    if (isNaN(parsed) || parsed < 0) return;
+    setCart((c) =>
+      c
+        .map((l) => {
+          if (l.key !== key) return l;
+          if (parsed === 0) return null;
+          return recalcLine({ ...l, qty: parsed });
+        })
+        .filter(Boolean)
+    );
+  };
+
   const removeLine = (key) => {
     setCart((c) => c.filter((l) => l.key !== key));
   };
@@ -663,22 +677,47 @@ export default function POS() {
 
           {/* Shortcut Badges matching reference screenshot */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px]">
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8]">
+            <button
+              type="button"
+              onClick={() => searchRef.current?.focus()}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+            >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F2</span>
               <span>Search</span>
-            </div>
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8]">
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const firstQty = document.querySelector('.pos-qty-input');
+                if (firstQty) firstQty.focus();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+            >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F4</span>
               <span>Quantity</span>
-            </div>
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8]">
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const discInput = document.getElementById('pos-discount-input');
+                if (discInput) {
+                  discInput.focus();
+                  discInput.select();
+                }
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+            >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F6</span>
               <span>Discount</span>
-            </div>
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8]">
+            </button>
+            <button
+              type="button"
+              onClick={completeSale}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] dark:text-[#94A3B8] hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] transition-colors cursor-pointer"
+            >
               <span className="font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">F8</span>
               <span>Payment</span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -1037,7 +1076,7 @@ export default function POS() {
                 </div>
               </div>
 
-              {/* Quantity Stepper [-] qty [+] */}
+              {/* Quantity Stepper [-] [editable input] [+] */}
               <div className="col-span-3 flex items-center justify-center gap-1">
                 <button
                   type="button"
@@ -1046,7 +1085,14 @@ export default function POS() {
                 >
                   <Minus className="w-2.5 h-2.5" />
                 </button>
-                <span className="w-6 text-center font-bold text-xs">{line.qty}</span>
+                <input
+                  type="number"
+                  min="1"
+                  step="any"
+                  value={line.qty}
+                  onChange={(e) => setLineQtyDirect(line.key, e.target.value)}
+                  className="pos-qty-input w-10 py-0.5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-center font-bold text-xs text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+                />
                 <button
                   type="button"
                   onClick={() => updateLineQty(line.key, 1)}

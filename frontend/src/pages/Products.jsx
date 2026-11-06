@@ -97,6 +97,12 @@ export default function Products() {
   // Add-on group creation inside products (Hotel)
   const [newAddonGroup, setNewAddonGroup] = useState({ name: '', price: '', group_name: 'Add-ons', is_mandatory: 0 });
 
+  // Quick Category & Subcategory Creation Modals
+  const [quickCatModal, setQuickCatModal] = useState(false);
+  const [quickCatForm, setQuickCatForm] = useState({ name: '', parent_id: '', business_type: '' });
+  const [quickSubCatModal, setQuickSubCatModal] = useState(false);
+  const [quickSubCatForm, setQuickSubCatForm] = useState({ name: '', parent_id: '', business_type: '' });
+
   const currency = settings?.currency_symbol || '₹';
   const businessType = settings?.business_type || 'mobile';
 
@@ -123,11 +129,7 @@ export default function Products() {
       .catch((err) => console.error(err));
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, [settings?.business_type, search]);
-
-  useEffect(() => {
+  const loadCategories = () => {
     const bt = settings?.business_type;
     const catParams = bt ? { business_type: bt } : {};
 
@@ -141,6 +143,60 @@ export default function Products() {
       }
       setCategories(cats);
     }).catch(() => {});
+  };
+
+  const handleSaveQuickCategory = async (e) => {
+    e.preventDefault();
+    if (!quickCatForm.name.trim()) return;
+    try {
+      const payload = {
+        name: quickCatForm.name.trim(),
+        parent_id: null,
+        business_type: settings?.business_type || 'mobile',
+        is_active: 1,
+      };
+      const { data } = await api.post('/categories', payload);
+      loadCategories();
+      setForm((prev) => ({ ...prev, category_id: data.id }));
+      setQuickCatModal(false);
+      setQuickCatForm({ name: '', parent_id: '', business_type: '' });
+      setSuccess('Category created successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create category');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  const handleSaveQuickSubCategory = async (e) => {
+    e.preventDefault();
+    if (!quickSubCatForm.name.trim() || !quickSubCatForm.parent_id) return;
+    try {
+      const payload = {
+        name: quickSubCatForm.name.trim(),
+        parent_id: quickSubCatForm.parent_id,
+        business_type: settings?.business_type || 'mobile',
+        is_active: 1,
+      };
+      const { data } = await api.post('/categories', payload);
+      loadCategories();
+      setForm((prev) => ({ ...prev, category_id: data.id }));
+      setQuickSubCatModal(false);
+      setQuickSubCatForm({ name: '', parent_id: '', business_type: '' });
+      setSuccess('Subcategory created successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create subcategory');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+  }, [settings?.business_type, search]);
+
+  useEffect(() => {
+    loadCategories();
 
     api.get('/lookup/brands', { params: bt ? { business_type: bt } : {} }).then(async ({ data }) => {
       let bList = Array.isArray(data) ? data : [];
@@ -415,12 +471,28 @@ export default function Products() {
           <Package className="w-4 h-4" />
           <span>All Products</span>
         </Link>
+        <button
+          type="button"
+          onClick={() => setQuickCatModal(true)}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] flex-shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>+ Create Category</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setQuickSubCatModal(true)}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] flex-shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>+ Create Subcategory</span>
+        </button>
         <Link
           to="/master-data?tab=categories"
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] hover:text-[#1C2736] dark:hover:bg-[#1A2A3D] dark:hover:text-[#F1F5F9] flex-shrink-0"
         >
           <Layers className="w-4 h-4" />
-          <span>Categories & Sub</span>
+          <span>Manage Categories & Sub</span>
         </Link>
         <Link
           to="/master-data?tab=brands"
@@ -643,13 +715,32 @@ export default function Products() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Category</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8]">Category</label>
+                      <div className="flex items-center gap-1.5 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setQuickCatModal(true)}
+                          className="text-[#0A4174] dark:text-[#4A8CD2] hover:underline font-bold flex items-center gap-0.5"
+                        >
+                          <Plus className="w-3 h-3" /> + Category
+                        </button>
+                        <span className="text-[#5A6B82]">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuickSubCatModal(true)}
+                          className="text-[#0A4174] dark:text-[#4A8CD2] hover:underline font-bold flex items-center gap-0.5"
+                        >
+                          <Plus className="w-3 h-3" /> + Subcategory
+                        </button>
+                      </div>
+                    </div>
                     <select
                       value={form.category_id}
                       onChange={(e) => setForm({ ...form, category_id: e.target.value })}
                       className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     >
-                      <option value="">-- Select Category --</option>
+                      <option value="">-- Select Category / Subcategory --</option>
                       {categories.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.parent_id ? `↳ ${c.name}` : c.name}
@@ -1444,6 +1535,110 @@ export default function Products() {
           </form>
         </div>
       </div>
+
+      {/* Quick Create Category Modal */}
+      {quickCatModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                Create New Category
+              </h3>
+              <button onClick={() => setQuickCatModal(false)} className="text-[#5A6B82] hover:text-[#1C2736]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveQuickCategory} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#1C2736] dark:text-[#F1F5F9] mb-1">Category Name *</label>
+                <input
+                  required
+                  value={quickCatForm.name}
+                  onChange={(e) => setQuickCatForm({ ...quickCatForm, name: e.target.value })}
+                  placeholder="e.g. Smart TV, Living Room, Desserts"
+                  className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                />
+              </div>
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setQuickCatModal(false)}
+                  className="flex-1 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] font-bold"
+                >
+                  Save Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Create Subcategory Modal */}
+      {quickSubCatModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <Layers className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                Create New Subcategory
+              </h3>
+              <button onClick={() => setQuickSubCatModal(false)} className="text-[#5A6B82] hover:text-[#1C2736]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveQuickSubCategory} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-[#1C2736] dark:text-[#F1F5F9] mb-1">Parent Category *</label>
+                <select
+                  required
+                  value={quickSubCatForm.parent_id}
+                  onChange={(e) => setQuickSubCatForm({ ...quickSubCatForm, parent_id: e.target.value })}
+                  className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                >
+                  <option value="">-- Select Parent Category --</option>
+                  {categories.filter((c) => !c.parent_id).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-[#1C2736] dark:text-[#F1F5F9] mb-1">Subcategory Name *</label>
+                <input
+                  required
+                  value={quickSubCatForm.name}
+                  onChange={(e) => setQuickSubCatForm({ ...quickSubCatForm, name: e.target.value })}
+                  placeholder="e.g. OLED TV, Dining Chairs, Starters"
+                  className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB] dark:bg-[#0B131E] px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                />
+              </div>
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setQuickSubCatModal(false)}
+                  className="flex-1 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-[#5A6B82]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] font-bold"
+                >
+                  Save Subcategory
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
