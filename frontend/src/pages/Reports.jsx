@@ -76,6 +76,11 @@ export default function Reports() {
   const fmt = (n) => formatCurrency(n, currency);
   const c = (key) => t(`reports.cols.${key}`);
 
+  const handleTabChange = (nextTab) => {
+    setData(null);
+    setTab(nextTab);
+  };
+
   return (
     <div>
       <h1 className="mb-3 text-xl font-bold">{t('reports.title')}</h1>
@@ -84,7 +89,7 @@ export default function Reports() {
         {REPORT_TABS.map((key) => (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => handleTabChange(key)}
             className={`rounded-md px-3 py-1.5 text-xs font-medium ${
               tab === key ? 'bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E]' : 'border border-[#DCE5EF] dark:border-[#22354B]'
             }`}
@@ -110,15 +115,15 @@ export default function Reports() {
           {tab === 'sales' && (
             <>
               <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <Stat label={t('reports.stats.invoices')} value={data.totals.invoice_count} />
-                <Stat label={t('reports.stats.subtotal')} value={fmt(data.totals.subtotal)} />
-                <Stat label={t('reports.stats.tax')} value={fmt(data.totals.tax)} />
-                <Stat label={t('reports.stats.grand_total')} value={fmt(data.totals.grand_total)} />
+                <Stat label={t('reports.stats.invoices')} value={data.totals?.invoice_count ?? 0} />
+                <Stat label={t('reports.stats.subtotal')} value={fmt(data.totals?.subtotal ?? 0)} />
+                <Stat label={t('reports.stats.tax')} value={fmt(data.totals?.tax ?? 0)} />
+                <Stat label={t('reports.stats.grand_total')} value={fmt(data.totals?.grand_total ?? 0)} />
               </div>
               <h3 className="mb-1 font-medium text-sm">{t('reports.by_day')}</h3>
               <Table
                 emptyText={t('reports.no_data')}
-                rows={data.by_day}
+                rows={data.by_day || []}
                 cols={[
                   ['day', c('date')],
                   ['invoice_count', c('invoices')],
@@ -128,7 +133,7 @@ export default function Reports() {
               <h3 className="mb-1 mt-4 font-medium text-sm">{t('reports.by_product')}</h3>
               <Table
                 emptyText={t('reports.no_data')}
-                rows={data.by_product}
+                rows={data.by_product || []}
                 cols={[
                   ['product_name', c('product')],
                   ['qty_sold', c('qty_sold')],
@@ -141,14 +146,14 @@ export default function Reports() {
           {tab === 'purchases' && (
             <>
               <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <Stat label={t('reports.stats.purchases')} value={data.totals.purchase_count} />
-                <Stat label={t('reports.stats.grand_total')} value={fmt(data.totals.grand_total)} />
-                <Stat label={t('reports.stats.paid')} value={fmt(data.totals.paid_amount)} />
-                <Stat label={t('reports.stats.balance')} value={fmt(data.totals.balance_amount)} />
+                <Stat label={t('reports.stats.purchases')} value={data.totals?.purchase_count ?? 0} />
+                <Stat label={t('reports.stats.grand_total')} value={fmt(data.totals?.grand_total ?? 0)} />
+                <Stat label={t('reports.stats.paid')} value={fmt(data.totals?.paid_amount ?? 0)} />
+                <Stat label={t('reports.stats.balance')} value={fmt(data.totals?.balance_amount ?? 0)} />
               </div>
               <Table
                 emptyText={t('reports.no_data')}
-                rows={data.list}
+                rows={data.list || []}
                 cols={[
                   ['purchase_no', c('purchase_no')],
                   ['supplier_name', c('supplier')],
@@ -161,24 +166,24 @@ export default function Reports() {
 
           {tab === 'profit_loss' && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-              <Stat label={t('reports.stats.revenue')} value={fmt(data.revenue)} />
-              <Stat label={t('reports.stats.cost_of_goods')} value={fmt(data.cost_of_goods)} />
-              <Stat label={t('reports.stats.gross_profit')} value={fmt(data.gross_profit)} />
-              <Stat label={t('reports.stats.other_income')} value={fmt(data.other_income)} />
-              <Stat label={t('reports.stats.expenses')} value={fmt(data.expenses)} />
-              <Stat label={t('reports.stats.net_profit')} value={fmt(data.net_profit)} highlight />
+              <Stat label={t('reports.stats.revenue')} value={fmt(data.revenue ?? 0)} />
+              <Stat label={t('reports.stats.cost_of_goods')} value={fmt(data.cost_of_goods ?? 0)} />
+              <Stat label={t('reports.stats.gross_profit')} value={fmt(data.gross_profit ?? 0)} />
+              <Stat label={t('reports.stats.other_income')} value={fmt(data.other_income ?? 0)} />
+              <Stat label={t('reports.stats.expenses')} value={fmt(data.expenses ?? 0)} />
+              <Stat label={t('reports.stats.net_profit')} value={fmt(data.net_profit ?? 0)} highlight />
             </div>
           )}
 
           {tab === 'inventory' && (
             <>
               <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
-                <Stat label={t('reports.stats.stock_value_cost')} value={fmt(data.total_value_at_cost)} />
-                <Stat label={t('reports.stats.stock_value_price')} value={fmt(data.total_value_at_price)} />
+                <Stat label={t('reports.stats.stock_value_cost')} value={fmt(data.total_value_at_cost ?? 0)} />
+                <Stat label={t('reports.stats.stock_value_price')} value={fmt(data.total_value_at_price ?? 0)} />
               </div>
               <Table
                 emptyText={t('reports.no_data')}
-                rows={data.items}
+                rows={data.items || []}
                 cols={[
                   ['name', c('product')],
                   ['business_type', c('type')],
