@@ -28,6 +28,9 @@ import {
   PieChart,
   ArrowRight,
   Zap,
+  Crown,
+  Check,
+  Plus,
 } from 'lucide-react';
 
 export default function Dashboard() {
