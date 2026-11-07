@@ -45,12 +45,14 @@ class VanOrderController
             $params['s'] = '%' . $_GET['search'] . '%';
         }
         $stmt = $this->pdo->prepare(
-            "SELECT vo.*, v.name AS vehicle_name, u.full_name AS created_by_name,
+            "SELECT vo.*, COALESCE(v.name, vo.van_number, 'Unassigned Van') AS vehicle_name,
+                    v.registration_no AS vehicle_registration_no,
+                    u.full_name AS created_by_name,
                     emp.full_name AS employee_name, c.name AS customer_name, ord.order_no AS mapped_order_no,
                     (SELECT COUNT(*) FROM van_order_items WHERE van_order_id = vo.id) AS item_count,
                     (SELECT dr.id FROM day_returns dr WHERE dr.van_order_id = vo.id AND dr.status = 'completed' LIMIT 1) AS day_return_id
              FROM van_orders vo
-             JOIN vehicles v ON v.id = vo.vehicle_id
+             LEFT JOIN vehicles v ON v.id = vo.vehicle_id
              LEFT JOIN users u ON u.id = vo.created_by
              LEFT JOIN users emp ON emp.id = vo.employee_id
              LEFT JOIN customers c ON c.id = vo.customer_id
@@ -98,9 +100,31 @@ class VanOrderController
             return [$this->fetchOrder((int) $row['id']), 200];
         }
 
-        if (empty($body['vehicle_id'])) {
-            throw new ValidationException('vehicle_id is required');
+        // Vehicle selection is optional: can use existing vehicle_id, or specify van_number/route_line directly.
+        // If van_number is provided without vehicle_id, auto-create/find a matching vehicle record.
+        $vehicleId = !empty($body['vehicle_id']) ? (int) $body['vehicle_id'] : null;
+        $vanNumber = !empty($body['van_number']) ? trim((string) $body['van_number']) : null;
+        $routeLine = !empty($body['route_line']) ? trim((string) $body['route_line']) : null;
+
+        if (!$vehicleId && !empty($vanNumber)) {
+            $vFind = $this->pdo->prepare('SELECT id FROM vehicles WHERE registration_no = :reg OR name = :name LIMIT 1');
+            $vFind->execute(['reg' => $vanNumber, 'name' => $vanNumber]);
+            if ($row = $vFind->fetch()) {
+                $vehicleId = (int) $row['id'];
+            } else {
+                $vIns = $this->pdo->prepare(
+                    'INSERT INTO vehicles (uuid, name, registration_no, driver_name) VALUES (:uuid, :name, :reg, :driver)'
+                );
+                $vIns->execute([
+                    'uuid' => UuidHelper::v4(),
+                    'name' => 'Van ' . $vanNumber,
+                    'reg' => $vanNumber,
+                    'driver' => $routeLine ? ("Route: " . $routeLine) : null,
+                ]);
+                $vehicleId = (int) $this->pdo->lastInsertId();
+            }
         }
+
         $items = $body['items'] ?? [];
         if (empty($items)) {
             throw new ValidationException('At least one item is required');
@@ -114,14 +138,16 @@ class VanOrderController
             $paidAmount = round((float) ($body['paid_amount'] ?? 0), 2);
 
             $this->pdo->prepare(
-                'INSERT INTO van_orders (uuid, order_no, order_date, vehicle_id, employee_id, order_id, customer_id, subtotal, discount_amount,
+                'INSERT INTO van_orders (uuid, order_no, order_date, vehicle_id, van_number, route_line, employee_id, order_id, customer_id, subtotal, discount_amount,
                     tax_amount, grand_total, paid_amount, balance_amount, notes, created_by)
-                 VALUES (:uuid, :no, :date, :vehicle_id, :employee_id, :order_id, :customer_id, :subtotal, :discount, :tax, :grand_total, :paid, :balance, :notes, :created_by)'
+                 VALUES (:uuid, :no, :date, :vehicle_id, :van_number, :route_line, :employee_id, :order_id, :customer_id, :subtotal, :discount, :tax, :grand_total, :paid, :balance, :notes, :created_by)'
             )->execute([
                 'uuid' => $uuid,
                 'no' => $orderNo,
                 'date' => $body['order_date'] ?? date('Y-m-d'),
-                'vehicle_id' => $body['vehicle_id'],
+                'vehicle_id' => $vehicleId,
+                'van_number' => $vanNumber,
+                'route_line' => $routeLine,
                 'employee_id' => !empty($body['employee_id']) ? (int) $body['employee_id'] : null,
                 'order_id' => !empty($body['order_id']) ? (int) $body['order_id'] : null,
                 'customer_id' => !empty($body['customer_id']) ? (int) $body['customer_id'] : null,
@@ -187,13 +213,16 @@ class VanOrderController
             $paidAmount = round((float) ($body['paid_amount'] ?? $order['paid_amount']), 2);
 
             $this->pdo->prepare(
-                'UPDATE van_orders SET vehicle_id = :vehicle_id, employee_id = :employee_id, order_id = :order_id,
+                'UPDATE van_orders SET vehicle_id = :vehicle_id, van_number = :van_number, route_line = :route_line,
+                    employee_id = :employee_id, order_id = :order_id,
                     customer_id = :customer_id, order_date = :date, subtotal = :subtotal,
                     discount_amount = :discount, tax_amount = :tax, grand_total = :grand_total,
                     paid_amount = :paid, balance_amount = :balance, notes = :notes
                  WHERE id = :id'
             )->execute([
-                'vehicle_id' => $body['vehicle_id'] ?? $order['vehicle_id'],
+                'vehicle_id' => array_key_exists('vehicle_id', $body) ? (!empty($body['vehicle_id']) ? (int) $body['vehicle_id'] : null) : $order['vehicle_id'],
+                'van_number' => $body['van_number'] ?? $order['van_number'],
+                'route_line' => $body['route_line'] ?? $order['route_line'],
                 'employee_id' => array_key_exists('employee_id', $body) ? (!empty($body['employee_id']) ? (int) $body['employee_id'] : null) : $order['employee_id'],
                 'order_id' => array_key_exists('order_id', $body) ? (!empty($body['order_id']) ? (int) $body['order_id'] : null) : $order['order_id'],
                 'customer_id' => array_key_exists('customer_id', $body) ? (!empty($body['customer_id']) ? (int) $body['customer_id'] : null) : $order['customer_id'],
@@ -447,7 +476,7 @@ class VanOrderController
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'van_sales.view');
         $stmt = $this->pdo->prepare(
-            "SELECT o.id, o.order_no, o.order_date, o.customer_id, o.assigned_to, o.notes,
+            "SELECT o.id, o.order_no, o.created_at AS order_date, o.customer_id, o.assigned_to, o.notes,
                     c.name AS customer_name, c.phone AS customer_phone, u.full_name AS assigned_to_name
              FROM orders o
              JOIN customers c ON c.id = o.customer_id
@@ -477,11 +506,13 @@ class VanOrderController
     private function fetchOrder(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT vo.*, v.name AS vehicle_name, u.full_name AS created_by_name,
+            "SELECT vo.*, COALESCE(v.name, vo.van_number, 'Unassigned Van') AS vehicle_name,
+                    v.registration_no AS vehicle_registration_no,
+                    u.full_name AS created_by_name,
                     emp.full_name AS employee_name, c.name AS customer_name, ord.order_no AS mapped_order_no,
                     (SELECT dr.id FROM day_returns dr WHERE dr.van_order_id = vo.id AND dr.status = 'completed' LIMIT 1) AS day_return_id
              FROM van_orders vo
-             JOIN vehicles v ON v.id = vo.vehicle_id
+             LEFT JOIN vehicles v ON v.id = vo.vehicle_id
              LEFT JOIN users u ON u.id = vo.created_by
              LEFT JOIN users emp ON emp.id = vo.employee_id
              LEFT JOIN customers c ON c.id = vo.customer_id

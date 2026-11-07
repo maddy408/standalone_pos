@@ -869,6 +869,8 @@ function OrderEditModal({ editingOrder, setEditingOrder, customers, products, us
 function OrderDispatchModal({ order, vehicles, users, currency, onClose, onSuccess }) {
   const { t } = useTranslation();
   const [vehicleId, setVehicleId] = useState(vehicles[0]?.id || '');
+  const [vanNumber, setVanNumber] = useState('');
+  const [routeLine, setRouteLine] = useState('');
   const [employeeId, setEmployeeId] = useState(order.assigned_to || '');
   const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState(`Dispatched from Pre-Order #${order.order_no}`);
@@ -877,15 +879,17 @@ function OrderDispatchModal({ order, vehicles, users, currency, onClose, onSucce
 
   const handleDispatch = async (e) => {
     e.preventDefault();
-    if (!vehicleId) {
-      setError('Please select a delivery vehicle');
+    if (!vehicleId && !vanNumber.trim()) {
+      setError('Please choose a vehicle or enter a Van Number');
       return;
     }
     setLoading(true);
     setError('');
     try {
       await api.post(`/orders/${order.id}/dispatch-van`, {
-        vehicle_id: vehicleId,
+        vehicle_id: vehicleId || null,
+        van_number: vanNumber.trim() || null,
+        route_line: routeLine.trim() || null,
         employee_id: employeeId || null,
         order_date: orderDate,
         notes: notes || null,
@@ -917,20 +921,48 @@ function OrderDispatchModal({ order, vehicles, users, currency, onClose, onSucce
 
         <form onSubmit={handleDispatch} className="space-y-3 text-xs">
           <div>
-            <label className="block font-semibold mb-1">Select Delivery Vehicle *</label>
+            <label className="block font-semibold mb-1">Select Delivery Vehicle (Optional)</label>
             <select
-              required
               value={vehicleId}
-              onChange={(e) => setVehicleId(e.target.value)}
+              onChange={(e) => {
+                setVehicleId(e.target.value);
+                const found = vehicles.find((v) => String(v.id) === String(e.target.value));
+                if (found) {
+                  setVanNumber(found.registration_no || found.name || '');
+                }
+              }}
               className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
             >
-              <option value="">-- Choose Vehicle --</option>
+              <option value="">-- Choose Existing Vehicle or Type Below --</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.vehicle_no} {v.model ? `(${v.model})` : ''}
+                  {v.name} {v.registration_no ? `(${v.registration_no})` : ''}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block font-semibold mb-1">Van / Vehicle Number</label>
+              <input
+                type="text"
+                placeholder="e.g. TN-01-AB-1234 or Van 1"
+                value={vanNumber}
+                onChange={(e) => setVanNumber(e.target.value)}
+                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
+              />
+            </div>
+            <div>
+              <label className="block font-semibold mb-1">Route / Line</label>
+              <input
+                type="text"
+                placeholder="e.g. Route A / South Town"
+                value={routeLine}
+                onChange={(e) => setRouteLine(e.target.value)}
+                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
+              />
+            </div>
           </div>
 
           <div>
@@ -996,7 +1028,7 @@ function OrderDispatchModal({ order, vehicles, users, currency, onClose, onSucce
             </button>
             <button
               type="submit"
-              disabled={loading || !vehicleId}
+              disabled={loading || (!vehicleId && !vanNumber.trim())}
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50"
             >
               <Truck className="w-3.5 h-3.5" />

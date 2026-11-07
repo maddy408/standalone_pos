@@ -221,9 +221,12 @@ class OrderController
             Response::error('Cannot dispatch an order with status ' . $order['status'], 422);
         }
 
-        $vehicleId = $body['vehicle_id'] ?? null;
-        if (empty($vehicleId)) {
-            Response::error('vehicle_id is required for van dispatch', 422);
+        $vehicleId = !empty($body['vehicle_id']) ? (int) $body['vehicle_id'] : null;
+        $vanNumber = !empty($body['van_number']) ? trim((string) $body['van_number']) : null;
+        $routeLine = !empty($body['route_line']) ? trim((string) $body['route_line']) : null;
+
+        if (empty($vehicleId) && empty($vanNumber)) {
+            Response::error('Please enter a van number or choose a vehicle for van dispatch', 422);
         }
 
         $employeeId = !empty($body['employee_id']) ? (int) $body['employee_id'] : (!empty($order['assigned_to']) ? (int) $order['assigned_to'] : null);
@@ -233,6 +236,8 @@ class OrderController
         $vanOrderController = new VanOrderController($this->pdo);
         $payload = [
             'vehicle_id' => $vehicleId,
+            'van_number' => $vanNumber,
+            'route_line' => $routeLine,
             'employee_id' => $employeeId,
             'order_id' => $order['id'],
             'customer_id' => $order['customer_id'],

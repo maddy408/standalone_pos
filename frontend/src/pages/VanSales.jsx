@@ -120,7 +120,17 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ vehicle_id: '', employee_id: '', order_id: '', customer_id: '', order_date: today(), paid_amount: '', notes: '' });
+  const [form, setForm] = useState({
+    vehicle_id: '',
+    van_number: '',
+    route_line: '',
+    employee_id: '',
+    order_id: '',
+    customer_id: '',
+    order_date: today(),
+    paid_amount: '',
+    notes: '',
+  });
   const [lines, setLines] = useState([emptyLine()]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -193,13 +203,25 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
   };
 
   const resetForm = () => {
-    setForm({ vehicle_id: '', employee_id: '', order_id: '', customer_id: '', order_date: today(), paid_amount: '', notes: '' });
+    setForm({
+      vehicle_id: '',
+      van_number: '',
+      route_line: '',
+      employee_id: '',
+      order_id: '',
+      customer_id: '',
+      order_date: today(),
+      paid_amount: '',
+      notes: '',
+    });
     setLines([emptyLine()]);
   };
 
   const buildPayload = () => ({
     uuid: newUuid(),
-    vehicle_id: form.vehicle_id,
+    vehicle_id: form.vehicle_id || null,
+    van_number: form.van_number?.trim() || null,
+    route_line: form.route_line?.trim() || null,
     employee_id: form.employee_id || null,
     order_id: form.order_id || null,
     customer_id: form.customer_id || null,
@@ -219,8 +241,8 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
-    if (!form.vehicle_id) {
-      setFormError(t('van_sales.select_vehicle_error'));
+    if (!form.vehicle_id && !form.van_number?.trim()) {
+      setFormError('Please select a vehicle or enter Van / Vehicle Number');
       return;
     }
     if (validLines.length === 0) {
@@ -368,17 +390,59 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">{t('van_sales.vehicle')} *</label>
-                  <select required value={form.vehicle_id} onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value }))}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm">
-                    <option value="">{t('van_sales.select_vehicle')}</option>
-                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}{v.registration_no ? ` (${v.registration_no})` : ''}</option>)}
+                  <label className="block text-xs font-semibold mb-1">Select Vehicle (Optional)</label>
+                  <select
+                    value={form.vehicle_id}
+                    onChange={(e) => {
+                      const vid = e.target.value;
+                      const found = vehicles.find((v) => String(v.id) === String(vid));
+                      setForm((f) => ({
+                        ...f,
+                        vehicle_id: vid,
+                        van_number: found ? (found.registration_no || found.name || '') : f.van_number,
+                      }));
+                    }}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                  >
+                    <option value="">-- Choose Existing Vehicle or Type Below --</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}{v.registration_no ? ` (${v.registration_no})` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1">{t('van_sales.order_date')}</label>
-                  <input type="date" value={form.order_date} onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
+                  <input
+                    type="date"
+                    value={form.order_date}
+                    onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Van / Vehicle Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. TN-01-AB-1234 or Van 1"
+                    value={form.van_number}
+                    onChange={(e) => setForm((f) => ({ ...f, van_number: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Route / Line</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Line 1 / West Zone"
+                    value={form.route_line}
+                    onChange={(e) => setForm((f) => ({ ...f, route_line: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                  />
                 </div>
               </div>
 
@@ -489,7 +553,16 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                       )}
                     </td>
                     <td className="px-2 py-2">{o.order_date}</td>
-                    <td className="px-2 py-2">{o.vehicle_name}</td>
+                    <td className="px-2 py-2">
+                      <div className="font-semibold text-slate-800 dark:text-slate-100">
+                        {o.van_number || o.vehicle_name}
+                      </div>
+                      {o.route_line && (
+                        <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
+                          Line: {o.route_line}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-2 py-2">
                       <div className="text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9]">
                         {o.employee_name || '—'}
