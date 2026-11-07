@@ -354,31 +354,66 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
               <Plus className="w-4 h-4" /> {t('van_sales.new_order')}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-3">
-              {/* KC Agency Order Mapping & Employee Assignment */}
-              <div className="grid grid-cols-2 gap-2">
+              {/* KC Agency Order Selection -> Populates items, customer & employee */}
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] flex items-center gap-1.5">
+                    <Truck className="w-4 h-4" /> Select Customer Pre-Order (From Order Management)
+                  </label>
+                  <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
+                    {eligibleOrders.length} Available Order(s)
+                  </span>
+                </div>
+                <select
+                  value={form.order_id}
+                  onChange={(e) => handleSelectEligibleOrder(e.target.value)}
+                  className="w-full rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-[#121E2C] px-3 py-2 text-xs font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Choose Order to Load into Van (e.g. ORD-...) --</option>
+                  {eligibleOrders.map((eo) => (
+                    <option key={eo.id} value={eo.id}>
+                      Order #{eo.order_no} — {eo.customer_name} ({eo.items?.length || 0} items)
+                    </option>
+                  ))}
+                </select>
+                {form.order_id && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    ✓ Order #{eligibleOrders.find((o) => String(o.id) === String(form.order_id))?.order_no} items and customer loaded automatically!
+                  </p>
+                )}
+              </div>
+
+              {/* Van & Staff Assignment (Simple Inputs) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Link Customer Order (Optional)</label>
-                  <select
-                    value={form.order_id}
-                    onChange={(e) => handleSelectEligibleOrder(e.target.value)}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
-                  >
-                    <option value="">-- Direct Van Load (No Order) --</option>
-                    {eligibleOrders.map((eo) => (
-                      <option key={eo.id} value={eo.id}>
-                        {eo.order_no} - {eo.customer_name} ({eo.items?.length || 0} items)
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-xs font-semibold mb-1">Van / Vehicle Number *</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g. TN-01-AB-1234 or Van 1"
+                    value={form.van_number}
+                    onChange={(e) => setForm((f) => ({ ...f, van_number: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-medium"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Assigned Employee / Salesman</label>
+                  <label className="block text-xs font-semibold mb-1">Route / Line</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Route 1 / West Zone"
+                    value={form.route_line}
+                    onChange={(e) => setForm((f) => ({ ...f, route_line: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Assign Salesman / Driver</label>
                   <select
                     value={form.employee_id}
                     onChange={(e) => setForm((f) => ({ ...f, employee_id: e.target.value }))}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs"
                   >
-                    <option value="">-- Select Employee --</option>
+                    <option value="">-- Select Staff --</option>
                     {employees.map((emp) => (
                       <option key={emp.id} value={emp.id}>
                         {emp.full_name || emp.username} ({emp.role})
@@ -390,58 +425,21 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Select Vehicle (Optional)</label>
-                  <select
-                    value={form.vehicle_id}
-                    onChange={(e) => {
-                      const vid = e.target.value;
-                      const found = vehicles.find((v) => String(v.id) === String(vid));
-                      setForm((f) => ({
-                        ...f,
-                        vehicle_id: vid,
-                        van_number: found ? (found.registration_no || found.name || '') : f.van_number,
-                      }));
-                    }}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
-                  >
-                    <option value="">-- Choose Existing Vehicle or Type Below --</option>
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name}{v.registration_no ? ` (${v.registration_no})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
                   <label className="block text-xs font-semibold mb-1">{t('van_sales.order_date')}</label>
                   <input
                     type="date"
                     value={form.order_date}
                     onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">Van / Vehicle Number</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. TN-01-AB-1234 or Van 1"
-                    value={form.van_number}
-                    onChange={(e) => setForm((f) => ({ ...f, van_number: e.target.value }))}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Route / Line</label>
+                  <label className="block text-xs font-semibold mb-1">Order / Dispatch Notes</label>
                   <input
-                    type="text"
-                    placeholder="e.g. Line 1 / West Zone"
-                    value={form.route_line}
-                    onChange={(e) => setForm((f) => ({ ...f, route_line: e.target.value }))}
-                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                    value={form.notes}
+                    onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                    placeholder="e.g. Morning delivery trip"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs"
                   />
                 </div>
               </div>
@@ -890,13 +888,19 @@ function DayReturnTab({ vehicles, currency, settings, can }) {
   const load = () => {
     setLoading(true);
     api.get('/day-returns').then(({ data }) => setReturns(Array.isArray(data) ? data : [])).catch(() => setReturns([])).finally(() => setLoading(false));
+    api.get('/van-orders', { params: { status: 'loaded' } })
+      .then(({ data }) => setLoadedOrders(Array.isArray(data) ? data : [])).catch(() => setLoadedOrders([]));
   };
   useEffect(load, []);
 
   useEffect(() => {
-    if (!form.vehicle_id) { setLoadedOrders([]); return; }
-    api.get('/van-orders', { params: { vehicle_id: form.vehicle_id, status: 'loaded' } })
-      .then(({ data }) => setLoadedOrders(Array.isArray(data) ? data : [])).catch(() => setLoadedOrders([]));
+    if (form.vehicle_id) {
+      api.get('/van-orders', { params: { vehicle_id: form.vehicle_id, status: 'loaded' } })
+        .then(({ data }) => setLoadedOrders(Array.isArray(data) ? data : [])).catch(() => setLoadedOrders([]));
+    } else {
+      api.get('/van-orders', { params: { status: 'loaded' } })
+        .then(({ data }) => setLoadedOrders(Array.isArray(data) ? data : [])).catch(() => setLoadedOrders([]));
+    }
   }, [form.vehicle_id]);
 
   useEffect(() => {
@@ -1011,20 +1015,20 @@ function DayReturnTab({ vehicles, currency, settings, can }) {
                   <input type="date" value={form.return_date} onChange={(e) => setForm((f) => ({ ...f, return_date: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold mb-1">{t('van_sales.vehicle')} *</label>
+                  <label className="block text-xs font-semibold mb-1">Filter by Vehicle (Optional)</label>
                   <select value={form.vehicle_id} onChange={(e) => setForm((f) => ({ ...f, vehicle_id: e.target.value, van_order_id: '' }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm">
-                    <option value="">{t('van_sales.select_vehicle')}</option>
-                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    <option value="">-- All Vehicles / Orders --</option>
+                    {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}{v.registration_no ? ` (${v.registration_no})` : ''}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1">{t('van_sales.loading_reference')} *</label>
-                <select value={form.van_order_id} onChange={(e) => setForm((f) => ({ ...f, van_order_id: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm">
-                  <option value="">{t('van_sales.select_order')}</option>
+                <label className="block text-xs font-semibold mb-1">Select Loaded Van Stock Order *</label>
+                <select value={form.van_order_id} onChange={(e) => setForm((f) => ({ ...f, van_order_id: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm font-medium">
+                  <option value="">-- Select Van Loading Order to Return --</option>
                   {loadedOrders.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.order_no} ({o.order_date}) {o.mapped_order_no ? `• Order: ${o.mapped_order_no}` : ''} {o.employee_name ? `• Staff: ${o.employee_name}` : ''}
+                      {o.order_no} ({o.order_date}) • {o.van_number || o.vehicle_name} {o.mapped_order_no ? `• Order: ${o.mapped_order_no}` : ''} {o.employee_name ? `• Staff: ${o.employee_name}` : ''}
                     </option>
                   ))}
                 </select>
