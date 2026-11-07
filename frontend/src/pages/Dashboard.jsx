@@ -31,12 +31,13 @@ import {
   Crown,
   Check,
   Plus,
+  ClipboardList,
 } from 'lucide-react';
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const { settings } = useSettings();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const currency = settings?.currency_symbol || '₹';
 
   const [summary, setSummary] = useState(null);
@@ -830,6 +831,19 @@ export default function Dashboard() {
               </div>
               <span className="text-[11px] font-extrabold leading-tight">Customer Ledgers</span>
             </Link>
+
+            {/* 5. New Order (Vibrant Teal Card) */}
+            {can('orders.view') && (
+              <Link
+                to="/orders"
+                className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-gradient-to-br from-[#14B8A6] to-[#0D9488] text-white shadow-md shadow-teal-500/25 transition-all hover:scale-[1.03] active:scale-95 text-center group"
+              >
+                <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
+                  <ClipboardList className="w-4 h-4" />
+                </div>
+                <span className="text-[11px] font-extrabold leading-tight">New Order</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>

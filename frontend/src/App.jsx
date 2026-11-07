@@ -20,6 +20,8 @@ import Expenses from './pages/Expenses';
 import Income from './pages/Income';
 import InvoicePrint from './pages/InvoicePrint';
 import Invoices from './pages/Invoices';
+import OrderManagement from './pages/OrderManagement';
+import VanSales from './pages/VanSales';
 import Reports from './pages/Reports';
 import MasterData from './pages/MasterData';
 import Users from './pages/Users';
@@ -49,6 +51,8 @@ export default function App() {
                 <Route path="pos" element={<POS />} />
                 <Route path="products" element={<Products />} />
                 <Route path="invoices" element={<Invoices />} />
+                <Route path="orders" element={<OrderManagement />} />
+                <Route path="van-sales" element={<VanSales />} />
                 <Route path="customers" element={<Customers />} />
                 <Route path="collection" element={<Collection />} />
                 <Route path="collections" element={<Collection />} />

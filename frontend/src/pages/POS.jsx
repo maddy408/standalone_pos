@@ -119,6 +119,10 @@ export default function POS() {
   // Completed Invoice Preview Modal State
   const [completedInvoicePreview, setCompletedInvoicePreview] = useState(null);
 
+  // Set when arriving from Orders ("Convert to Bill") via ?order_id= — on
+  // successful sale we link the resulting invoice back to that order.
+  const [sourceOrderId, setSourceOrderId] = useState(null);
+
   const searchRef = useRef(null);
   const categoryScrollRef = useRef(null);
   const currency = settings?.currency_symbol || '₹';
@@ -237,6 +241,39 @@ export default function POS() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [settings?.business_type]);
+
+  // Prefill the cart from a customer order ("Convert to Bill in POS").
+  useEffect(() => {
+    const orderId = new URLSearchParams(window.location.search).get('order_id');
+    if (!orderId) return;
+    api
+      .get(`/orders/${orderId}`)
+      .then(({ data }) => {
+        if (data.invoice_id) return; // already billed
+        setSourceOrderId(orderId);
+        setSelectedCustomerId(data.customer_id || '');
+        setCart(
+          (data.items || []).map((it) => ({
+            key: `order-${it.id}`,
+            product_id: it.product_id,
+            barcode: it.barcode || it.sku || '—',
+            product_name: it.product_name,
+            weight_label: '',
+            qty: Number(it.qty),
+            mrp: Number(it.rate),
+            unit_price: Number(it.rate),
+            discount_percent: 0,
+            discount_amount: 0,
+            tax_percent: Number(it.tax_percent || 0),
+            tax_amount: Math.round(((Number(it.rate) * Number(it.tax_percent || 0)) / 100) * 100) / 100,
+            addons: [],
+          }))
+        );
+      })
+      .catch(() => {});
+    window.history.replaceState(null, '', window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Selected customer object
   const activeCustomer = useMemo(() => {
@@ -395,8 +432,8 @@ export default function POS() {
           key: `${product.id}-${serial.id}`,
           product_id: product.id,
           serial_id: serial.id,
-          barcode: serial.ime1 || serial.serial_no || product.barcode || product.sku || '—',
-          product_name: `${product.name} (IMEI: ${serial.ime1 || serial.serial_no})`,
+          barcode: serial.imei1 || serial.serial_no || product.barcode || product.sku || '—',
+          product_name: `${product.name} (IMEI: ${serial.imei1 || serial.serial_no})`,
           weight_label: product.unit_code || product.attributes?.net_weight || '',
           qty: 1,
           mrp: mrp > 0 ? mrp : unitPrice,
@@ -410,7 +447,7 @@ export default function POS() {
       setProducts((prev) =>
         prev.map((p) =>
           p.id === product.id
-            ? { ...p, available_serials: p.available_serials.filter((s) => s.id !== serial.id) }
+            ? { ...p, available_serials: (p.available_serials || []).filter((s) => s.id !== serial.id) }
             : p
         )
       );
@@ -449,11 +486,16 @@ export default function POS() {
 
   const handleProductClick = (product) => {
     if (product.track_serial) {
-      if (!product.available_serials?.length) {
+      if (product.available_serials && product.available_serials.length > 0) {
+        setSerialPicker(product);
+        return;
+      }
+      // If no serials in stock or tracked, but stock exists, allow adding directly
+      if (Number(product.stock_qty || 0) <= 0) {
         setMessage('Serial / IMEI devices are out of stock');
         return;
       }
-      setSerialPicker(product);
+      addToCart(product, null, null, [], 1);
       return;
     }
     const hasVariants = product.variants?.length > 0;
@@ -719,6 +761,10 @@ export default function POS() {
 
     try {
       const { data } = await api.post('/invoices', salePayload);
+      if (sourceOrderId) {
+        api.post(`/orders/${sourceOrderId}/link-invoice`, { invoice_id: data.id }).catch(() => {});
+        setSourceOrderId(null);
+      }
       setCompletedInvoicePreview(data);
       resetSale();
       loadProducts();
@@ -748,8 +794,26 @@ export default function POS() {
   };
 
   const scrollCategories = (dir) => {
-    if (categoryScrollRef.current) {
-      categoryScrollRef.current.scrollBy({ left: dir * 180, behavior: 'smooth' });
+    if (!categoriesWithIcons || categoriesWithIcons.length === 0) return;
+    const currentIndex = categoriesWithIcons.findIndex((c) => c.id === selectedCategory);
+    let nextIndex = currentIndex;
+    if (currentIndex === -1) {
+      nextIndex = dir > 0 ? 0 : categoriesWithIcons.length - 1;
+    } else {
+      nextIndex = dir > 0
+        ? Math.min(categoriesWithIcons.length - 1, currentIndex + 1)
+        : Math.max(0, currentIndex - 1);
+    }
+    const nextCat = categoriesWithIcons[nextIndex];
+    if (nextCat) {
+      setSelectedCategory(nextCat.id);
+      // Also scroll into view
+      if (categoryScrollRef.current) {
+        const catButtons = categoryScrollRef.current.querySelectorAll('button');
+        if (catButtons && catButtons[nextIndex]) {
+          catButtons[nextIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
     }
   };
 

@@ -28,7 +28,15 @@ INSERT INTO permissions (code, category, label_en, label_ta, sort_order) VALUES
 ('income.manage', 'finance', 'Record income', 'வருமானத்தை பதிவு செய்யவும்', 2),
 ('reports.view', 'admin', 'View reports', 'அறிக்கைகளைப் பார்க்கவும்', 1),
 ('settings.manage', 'admin', 'Change master settings', 'முதன்மை அமைப்புகளை மாற்றவும்', 2),
-('users.manage', 'admin', 'Manage users and roles', 'பயனர்கள் மற்றும் பாத்திரங்களை நிர்வகிக்கவும்', 3);
+('users.manage', 'admin', 'Manage users and roles', 'பயனர்கள் மற்றும் பாத்திரங்களை நிர்வகிக்கவும்', 3),
+('orders.view', 'orders', 'View customer orders', 'வாடிக்கையாளர் ஆர்டர்களைப் பார்க்கவும்', 1),
+('orders.create', 'orders', 'Create customer orders', 'வாடிக்கையாளர் ஆர்டர்களை உருவாக்கவும்', 2),
+('orders.manage_status', 'orders', 'Confirm/process/cancel orders', 'ஆர்டர்களை உறுதிப்படுத்த/செயல்படுத்த/ரத்து செய்ய', 3),
+('van_sales.view', 'van_sales', 'View van sales / day return', 'வேன் விற்பனை / நாள் வருமானத்தைப் பார்க்கவும்', 1),
+('van_sales.manage_orders', 'van_sales', 'Create/edit/cancel van orders and load stock', 'வேன் ஆர்டர்களை உருவாக்க/திருத்த/ரத்து செய்ய மற்றும் இருப்பை ஏற்ற', 2),
+('van_sales.manage_returns', 'van_sales', 'Create/edit/cancel day returns', 'நாள் வருமானங்களை உருவாக்க/திருத்த/ரத்து செய்ய', 3),
+('van_sales.manage_day_closing', 'van_sales', 'Close or reopen day closing', 'நாள் முடிவை மூட அல்லது மீண்டும் திறக்க', 4),
+('van_sales.manage_vehicles', 'van_sales', 'Manage vehicles / vans master', 'வாகனங்கள் / வேன்களை நிர்வகிக்க', 5);
 
 INSERT INTO role_permissions (role, permission_code)
 SELECT 'admin', code FROM permissions;
@@ -42,10 +50,16 @@ INSERT INTO role_permissions (role, permission_code) VALUES
 ('cashier', 'products.view'),
 ('cashier', 'inventory.view'),
 ('cashier', 'customers.manage'),
-('cashier', 'reports.view');
+('cashier', 'reports.view'),
+('cashier', 'orders.view'),
+('cashier', 'orders.create');
 
 INSERT INTO payment_methods (code, name) VALUES
 ('cash', 'Cash'), ('upi', 'UPI'), ('card', 'Card'), ('credit', 'Credit');
+
+INSERT INTO vehicles (uuid, name, registration_no, driver_name) VALUES
+(UUID(), 'Van 1', 'TN-01-AB-1234', 'Ravi Kumar'),
+(UUID(), 'Van 2', 'TN-01-CD-5678', 'Suresh Babu');
 
 INSERT INTO units (name, short_code) VALUES
 ('Piece', 'pcs'), ('Kilogram', 'kg'), ('Gram', 'g'), ('Inch', 'in'), ('Feet', 'ft'), ('Centimeter', 'cm'), ('Set', 'set');

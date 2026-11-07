@@ -33,6 +33,8 @@ class SyncController
         $suppliers = new SupplierController($this->pdo);
         $stock = new StockController($this->pdo);
         $ledger = new LedgerEntryController($this->pdo);
+        $vanOrders = new VanOrderController($this->pdo);
+        $dayReturns = new DayReturnController($this->pdo);
 
         $results = [];
         foreach ($operations as $op) {
@@ -50,6 +52,8 @@ class SyncController
                     'stock_adjustment' => $stock->adjustFromSync($payload, $claims),
                     'expense' => $ledger->createFromSync('expenses', $payload, $claims),
                     'income' => $ledger->createFromSync('income', $payload, $claims),
+                    'van_order' => $vanOrders->createFromSync($payload, $claims),
+                    'day_return' => $dayReturns->createFromSync($payload, $claims),
                     default => throw new ValidationException("Unknown sync operation type: {$type}"),
                 };
                 $results[] = [

@@ -104,6 +104,10 @@ export default function Products() {
   const [quickSubCatModal, setQuickSubCatModal] = useState(false);
   const [quickSubCatForm, setQuickSubCatForm] = useState({ name: '', parent_id: '', business_type: '' });
 
+  // Separate Category and Subcategory selection state
+  const [selectedMainCatId, setSelectedMainCatId] = useState('');
+  const [selectedSubCatId, setSelectedSubCatId] = useState('');
+
   const currency = settings?.currency_symbol || '₹';
   const businessType = settings?.business_type || 'mobile';
 
@@ -174,6 +178,8 @@ export default function Products() {
       setForm((prev) => ({ ...prev, category_id: data.id }));
       setQuickCatModal(false);
       setQuickCatForm({ name: '', parent_id: '', business_type: '' });
+      setSelectedMainCatId(String(data.id));
+      setSelectedSubCatId('');
       setSuccess('Category created successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -197,6 +203,8 @@ export default function Products() {
       setForm((prev) => ({ ...prev, category_id: data.id }));
       setQuickSubCatModal(false);
       setQuickSubCatForm({ name: '', parent_id: '', business_type: '' });
+      setSelectedMainCatId(String(data.parent_id));
+      setSelectedSubCatId(String(data.id));
       setSuccess('Subcategory created successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -253,6 +261,8 @@ export default function Products() {
       variants: [],
       serials: [{ imei1: '', imei2: '', serial_no: '', color: '', warranty_months: '', warranty_start: '', warranty_end: '' }],
     });
+    setSelectedMainCatId('');
+    setSelectedSubCatId('');
     setIsEditing(false);
     setError('');
     setSuccess('');
@@ -260,6 +270,21 @@ export default function Products() {
   };
 
   const startEdit = (p) => {
+    // Determine main category and subcategory from p.category_id
+    const currentCat = categories.find((c) => String(c.id) === String(p.category_id));
+    if (currentCat) {
+      if (currentCat.parent_id) {
+        setSelectedMainCatId(String(currentCat.parent_id));
+        setSelectedSubCatId(String(currentCat.id));
+      } else {
+        setSelectedMainCatId(String(currentCat.id));
+        setSelectedSubCatId('');
+      }
+    } else {
+      setSelectedMainCatId('');
+      setSelectedSubCatId('');
+    }
+
     setForm({
       ...BLANK_FORM,
       id: p.id,
@@ -403,13 +428,16 @@ export default function Products() {
       return;
     }
 
+    // Determine effective category_id: prefer subcategory if selected, else main category
+    const effectiveCategoryId = selectedSubCatId || selectedMainCatId || form.category_id;
+
     // Prepare payload
     const uuid = form.uuid || newUuid();
     const payload = {
       ...form,
       uuid,
       business_type: businessType,
-      category_id: form.category_id ? Number(form.category_id) : null,
+      category_id: effectiveCategoryId ? Number(effectiveCategoryId) : null,
       brand_id: form.brand_id ? Number(form.brand_id) : null,
       unit_id: form.unit_id ? Number(form.unit_id) : null,
       tax_rate_id: form.tax_rate_id ? Number(form.tax_rate_id) : null,
@@ -704,42 +732,85 @@ export default function Products() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* 1. Main Category */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8]">Category</label>
-                      <div className="flex items-center gap-1.5 text-[10px]">
-                        <button
-                          type="button"
-                          onClick={() => setQuickCatModal(true)}
-                          className="text-[#0A4174] dark:text-[#4A8CD2] hover:underline font-bold flex items-center gap-0.5"
-                        >
-                          <Plus className="w-3 h-3" /> + Category
-                        </button>
-                        <span className="text-[#5A6B82]">|</span>
-                        <button
-                          type="button"
-                          onClick={() => setQuickSubCatModal(true)}
-                          className="text-[#0A4174] dark:text-[#4A8CD2] hover:underline font-bold flex items-center gap-0.5"
-                        >
-                          <Plus className="w-3 h-3" /> + Subcategory
-                        </button>
-                      </div>
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8]">Category *</label>
+                      <button
+                        type="button"
+                        onClick={() => setQuickCatModal(true)}
+                        className="text-[#0A4174] dark:text-[#4A8CD2] hover:underline font-bold flex items-center gap-0.5 text-[10px]"
+                      >
+                        <Plus className="w-3 h-3" /> + Category
+                      </button>
                     </div>
                     <select
-                      value={form.category_id}
-                      onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+                      value={selectedMainCatId}
+                      onChange={(e) => {
+                        const newMainId = e.target.value;
+                        setSelectedMainCatId(newMainId);
+                        setSelectedSubCatId('');
+                        setForm((prev) => ({ ...prev, category_id: newMainId }));
+                      }}
                       className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     >
-                      <option value="">-- Select Category / Subcategory --</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.parent_id ? `↳ ${c.name}` : c.name}
-                        </option>
-                      ))}
+                      <option value="">-- Select Category --</option>
+                      {categories
+                        .filter((c) => !c.parent_id)
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
 
+                  {/* 2. Subcategory (Filtered by selected Category) */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8]">Subcategory</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuickSubCatForm((prev) => ({ ...prev, parent_id: selectedMainCatId || '' }));
+                          setQuickSubCatModal(true);
+                        }}
+                        className="text-[#0A4174] dark:text-[#4A8CD2] hover:underline font-bold flex items-center gap-0.5 text-[10px]"
+                      >
+                        <Plus className="w-3 h-3" /> + Subcategory
+                      </button>
+                    </div>
+                    <select
+                      value={selectedSubCatId}
+                      disabled={!selectedMainCatId}
+                      onChange={(e) => {
+                        const subId = e.target.value;
+                        setSelectedSubCatId(subId);
+                        setForm((prev) => ({ ...prev, category_id: subId || selectedMainCatId }));
+                      }}
+                      className={`w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none ${
+                        !selectedMainCatId ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      <option value="">
+                        {!selectedMainCatId
+                          ? '-- Select Category First --'
+                          : categories.filter((c) => String(c.parent_id) === String(selectedMainCatId)).length === 0
+                          ? '-- No Subcategories Available --'
+                          : '-- Select Subcategory (Optional) --'}
+                      </option>
+                      {categories
+                        .filter((c) => String(c.parent_id) === String(selectedMainCatId))
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {/* 3. Brand */}
                   <div>
                     <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">Brand</label>
                     <select
