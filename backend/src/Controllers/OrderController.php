@@ -21,10 +21,11 @@ use PDO;
  */
 class OrderController
 {
-    private const STATUSES = ['pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled'];
+    private const STATUSES = ['created', 'pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled'];
 
     /** @var array<string, array<int, string>> */
     private const VALID_TRANSITIONS = [
+        'created' => ['processing', 'ready', 'completed', 'cancelled'],
         'pending' => ['confirmed', 'processing', 'ready', 'completed', 'cancelled'],
         'confirmed' => ['processing', 'ready', 'completed', 'cancelled'],
         'processing' => ['ready', 'completed', 'cancelled'],
@@ -307,7 +308,7 @@ class OrderController
             'customer_id' => $body['customer_id'],
             'assigned_to' => !empty($body['assigned_to']) ? $body['assigned_to'] : null,
             'booking_source' => $bookingSource,
-            'status' => 'processing',
+            'status' => 'created',
             'notes' => $body['notes'] ?? null,
             'created_by' => $body['created_by'] ?? null,
         ]);

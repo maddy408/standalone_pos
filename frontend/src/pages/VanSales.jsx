@@ -118,6 +118,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
   const { t } = useTranslation();
   const canManage = can('van_sales.manage_orders');
   const [orders, setOrders] = useState([]);
+  const [localEligibleOrders, setLocalEligibleOrders] = useState(eligibleOrders);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState({
@@ -138,9 +139,20 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
 
+  const fetchEligible = () => {
+    api.get('/van-orders/eligible-orders')
+      .then(({ data }) => setLocalEligibleOrders(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    setLocalEligibleOrders(eligibleOrders);
+  }, [eligibleOrders]);
+
   const load = () => {
     setLoading(true);
     api.get('/van-orders').then(({ data }) => setOrders(Array.isArray(data) ? data : [])).catch(() => setOrders([])).finally(() => setLoading(false));
+    fetchEligible();
   };
   useEffect(load, []);
 
@@ -174,7 +186,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
       setForm((f) => ({ ...f, order_id: '', customer_id: '' }));
       return;
     }
-    const selected = eligibleOrders.find((o) => String(o.id) === String(orderIdStr));
+    const selected = localEligibleOrders.find((o) => String(o.id) === String(orderIdStr));
     if (selected) {
       setForm((f) => ({
         ...f,
@@ -361,7 +373,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                     <Truck className="w-4 h-4" /> Select Customer Pre-Order (From Order Management)
                   </label>
                   <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400">
-                    {eligibleOrders.length} Available Order(s)
+                    {localEligibleOrders.length} Available Order(s)
                   </span>
                 </div>
                 <select
@@ -370,7 +382,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                   className="w-full rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-[#121E2C] px-3 py-2 text-xs font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">-- Choose Order to Load into Van (e.g. ORD-...) --</option>
-                  {eligibleOrders.map((eo) => (
+                  {localEligibleOrders.map((eo) => (
                     <option key={eo.id} value={eo.id}>
                       Order #{eo.order_no} — {eo.customer_name} ({eo.items?.length || 0} items)
                     </option>
@@ -378,7 +390,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                 </select>
                 {form.order_id && (
                   <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    ✓ Order #{eligibleOrders.find((o) => String(o.id) === String(form.order_id))?.order_no} items and customer loaded automatically!
+                    ✓ Order #{localEligibleOrders.find((o) => String(o.id) === String(form.order_id))?.order_no} items and customer loaded automatically!
                   </p>
                 )}
               </div>

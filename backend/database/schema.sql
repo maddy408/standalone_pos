@@ -516,7 +516,7 @@ CREATE TABLE orders (
     customer_id INT NOT NULL,
     assigned_to INT NULL COMMENT 'Salesman / employee this order is assigned to',
     booking_source ENUM('direct','salesman','phone','whatsapp','walk_in') NOT NULL DEFAULT 'direct',
-    status ENUM('pending','confirmed','processing','ready','completed','cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('created','pending','confirmed','processing','ready','completed','cancelled') NOT NULL DEFAULT 'created',
     invoice_id INT NULL,
     notes VARCHAR(255) NULL,
     created_by INT NULL,

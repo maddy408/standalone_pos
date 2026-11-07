@@ -29,13 +29,15 @@ import {
 const BOOKING_SOURCES = ['direct', 'salesman', 'phone', 'whatsapp'];
 
 const NEXT_STATUS = {
-  pending: ['confirmed', 'cancelled'],
+  created: ['processing', 'ready', 'cancelled'],
+  pending: ['confirmed', 'processing', 'cancelled'],
   confirmed: ['processing', 'cancelled'],
   processing: ['ready', 'cancelled'],
   ready: ['completed', 'cancelled'],
 };
 
 const STATUS_BADGE = {
+  created: 'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 font-bold',
   pending: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
   confirmed: 'bg-[#E2EDF8] text-[#0A4174] dark:bg-[#1A2A3D] dark:text-[#4A8CD2]',
   processing: 'bg-[#E2EDF8] text-[#0A4174] dark:bg-[#1A2A3D] dark:text-[#4A8CD2]',
@@ -590,7 +592,7 @@ export default function OrderManagement() {
                               <Receipt className="w-3.5 h-3.5" />
                             </Link>
                           )}
-                          {canCreate && o.status === 'pending' && (
+                          {canCreate && (o.status === 'created' || o.status === 'pending') && (
                             <button title={t('common.edit')} onClick={() => openEdit(o)} className="p-1 text-[#5A6B82] hover:text-amber-600">
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
