@@ -577,16 +577,13 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                       <div className="flex items-center justify-end gap-1">
                         <button title={t('orders.view_details')} onClick={() => setViewing(o)} className="p-1 text-[#5A6B82] hover:text-[#0A4174]"><Eye className="w-3.5 h-3.5" /></button>
                         <button title={t('orders.print_slip')} onClick={async () => { const { data } = await api.get(`/van-orders/${o.id}`); printVanOrder(data, settings); }} className="p-1 text-[#5A6B82] hover:text-[#0A4174]"><Printer className="w-3.5 h-3.5" /></button>
-                        {canManage && o.status === 'pending' && (
-                          <button title={t('van_sales.load_to_van')} onClick={() => loadToVan(o.id)} className="p-1 text-[#5A6B82] hover:text-emerald-600"><PackageCheck className="w-3.5 h-3.5" /></button>
-                        )}
-                        {canManage && (o.status === 'pending' || o.status === 'loaded') && (
+                        {canManage && o.status !== 'completed' && (
                           <button title={t('common.edit')} onClick={() => openEdit(o)} className="p-1 text-[#5A6B82] hover:text-amber-600"><Pencil className="w-3.5 h-3.5" /></button>
                         )}
-                        {canManage && (o.status === 'pending' || o.status === 'loaded') && (
+                        {canManage && o.status !== 'completed' && (
                           <button title={t('van_sales.cancel_order')} onClick={() => cancelOrder(o.id)} className="p-1 text-red-500 hover:text-red-700"><Ban className="w-3.5 h-3.5" /></button>
                         )}
-                        {canManage && (o.status === 'pending' || o.status === 'cancelled') && (
+                        {canManage && (o.status === 'cancelled' || o.status === 'pending') && (
                           <button title={t('common.delete')} onClick={() => deleteOrder(o.id)} className="p-1 text-red-500 hover:text-red-700"><Trash2 className="w-3.5 h-3.5" /></button>
                         )}
                       </div>

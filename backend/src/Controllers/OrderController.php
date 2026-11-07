@@ -299,14 +299,15 @@ class OrderController
             : 'direct';
 
         $this->pdo->prepare(
-            'INSERT INTO orders (uuid, order_no, customer_id, assigned_to, booking_source, notes, created_by)
-             VALUES (:uuid, :order_no, :customer_id, :assigned_to, :booking_source, :notes, :created_by)'
+            'INSERT INTO orders (uuid, order_no, customer_id, assigned_to, booking_source, status, notes, created_by)
+             VALUES (:uuid, :order_no, :customer_id, :assigned_to, :booking_source, :status, :notes, :created_by)'
         )->execute([
             'uuid' => $uuid,
             'order_no' => $orderNo,
             'customer_id' => $body['customer_id'],
             'assigned_to' => !empty($body['assigned_to']) ? $body['assigned_to'] : null,
             'booking_source' => $bookingSource,
+            'status' => 'processing',
             'notes' => $body['notes'] ?? null,
             'created_by' => $body['created_by'] ?? null,
         ]);
