@@ -497,7 +497,7 @@ class VanOrderController
 
         foreach ($orders as &$ord) {
             $itemsStmt = $this->pdo->prepare(
-                "SELECT oi.*, p.name AS product_name, p.barcode, p.sku, p.selling_price, p.tax_percent, p.stock_qty
+                "SELECT oi.*, p.name AS product_name, p.barcode, p.sku, p.selling_price, p.stock_qty
                  FROM order_items oi
                  JOIN products p ON p.id = oi.product_id
                  WHERE oi.order_id = :oid"
