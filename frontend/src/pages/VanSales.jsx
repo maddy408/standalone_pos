@@ -464,7 +464,14 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                           <select value={line.product_id} onChange={(e) => updateLine(idx, { product_id: e.target.value })}
                             className="flex-1 min-w-0 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-xs">
                             <option value="">{t('van_sales.select_item')}</option>
-                            {products.map((p) => <option key={p.id} value={p.id}>{p.name} [{t('van_sales.warehouse_stock')}: {Number(p.stock_qty || 0)}]</option>)}
+                            {products.map((p) => {
+                              const outOfStock = Number(p.stock_qty || 0) <= 0;
+                              return (
+                                <option key={p.id} value={p.id} disabled={outOfStock}>
+                                  {p.name} [{t('van_sales.warehouse_stock')}: {Number(p.stock_qty || 0)}]{outOfStock ? ' — Out of Stock' : ''}
+                                </option>
+                              );
+                            })}
                           </select>
                           <input type="number" step="any" min="0" value={line.qty} onChange={(e) => updateLine(idx, { qty: e.target.value })}
                             placeholder={t('pos.qty')} className="w-16 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-xs" />

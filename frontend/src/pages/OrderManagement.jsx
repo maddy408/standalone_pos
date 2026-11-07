@@ -414,11 +414,14 @@ export default function OrderManagement() {
                               className="flex-1 min-w-0 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-xs"
                             >
                               <option value="">{t('orders.select_item')}</option>
-                              {products.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name} ({p.sku || p.barcode || p.id}) [{t('orders.stock')}: {Number(p.stock_qty || 0)}]
-                                </option>
-                              ))}
+                              {products.map((p) => {
+                                const outOfStock = Number(p.stock_qty || 0) <= 0;
+                                return (
+                                  <option key={p.id} value={p.id} disabled={outOfStock}>
+                                    {p.name} ({p.sku || p.barcode || p.id}) [{t('orders.stock')}: {Number(p.stock_qty || 0)}]{outOfStock ? ' — Out of Stock' : ''}
+                                  </option>
+                                );
+                              })}
                             </select>
                             <input
                               type="number" step="any" min="0"

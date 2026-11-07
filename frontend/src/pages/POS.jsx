@@ -485,13 +485,19 @@ export default function POS() {
   };
 
   const handleProductClick = (product) => {
+    const stock = Number(product.stock_qty || 0);
+    if (stock <= 0) {
+      setMessage(`"${product.name}" is out of stock! Cannot be added.`);
+      return;
+    }
+
     if (product.track_serial) {
       if (product.available_serials && product.available_serials.length > 0) {
         setSerialPicker(product);
         return;
       }
       // If no serials in stock or tracked, but stock exists, allow adding directly
-      if (Number(product.stock_qty || 0) <= 0) {
+      if (stock <= 0) {
         setMessage('Serial / IMEI devices are out of stock');
         return;
       }
@@ -530,6 +536,14 @@ export default function POS() {
           if (l.key !== key) return l;
           const newQty = Math.max(0, l.qty + delta);
           if (newQty === 0) return null;
+          if (delta > 0) {
+            const product = products.find((p) => p.id === l.product_id);
+            const stock = Number(product?.stock_qty || 0);
+            if (stock > 0 && newQty > stock) {
+              setMessage(`Only ${stock} items available in stock for "${l.product_name}"`);
+              return l;
+            }
+          }
           return recalcLine({ ...l, qty: newQty });
         })
         .filter(Boolean)
@@ -544,6 +558,12 @@ export default function POS() {
         .map((l) => {
           if (l.key !== key) return l;
           if (parsed === 0) return null;
+          const product = products.find((p) => p.id === l.product_id);
+          const stock = Number(product?.stock_qty || 0);
+          if (stock > 0 && parsed > stock) {
+            setMessage(`Only ${stock} items available in stock for "${l.product_name}"`);
+            return recalcLine({ ...l, qty: stock });
+          }
           return recalcLine({ ...l, qty: parsed });
         })
         .filter(Boolean)
@@ -988,12 +1008,20 @@ export default function POS() {
               return (
                 <div
                   key={p.id}
-                  onClick={() => handleProductClick(p)}
-                  className="rounded-2xl water-glass-card p-2.5 flex flex-col justify-between hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:shadow-lg transition-all cursor-pointer group relative"
+                  onClick={() => !isOutOfStock && handleProductClick(p)}
+                  className={`rounded-2xl water-glass-card p-2.5 flex flex-col justify-between transition-all relative ${
+                    isOutOfStock
+                      ? 'opacity-60 grayscale-[40%] cursor-not-allowed select-none bg-slate-100/50 dark:bg-slate-900/40 border-dashed border-red-300 dark:border-red-900/40'
+                      : 'hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:shadow-lg cursor-pointer group'
+                  }`}
                 >
-                  {/* Top: Fresh / Discount badge if applicable */}
+                  {/* Top: Fresh / Discount badge or Out of stock badge */}
                   <div className="absolute top-2 right-2 z-10">
-                    {p.is_featured ? (
+                    {isOutOfStock ? (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-red-600 text-white shadow-xs">
+                        Unavailable
+                      </span>
+                    ) : p.is_featured ? (
                       <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-emerald-500 text-white shadow-xs">
                         Fresh
                       </span>
@@ -1006,7 +1034,9 @@ export default function POS() {
                       <img
                         src={imgUrl}
                         alt={p.name}
-                        className="w-full h-full object-contain p-1 group-hover:scale-105 transition-transform duration-200"
+                        className={`w-full h-full object-contain p-1 transition-transform duration-200 ${
+                          isOutOfStock ? 'opacity-40' : 'group-hover:scale-105'
+                        }`}
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -1026,11 +1056,11 @@ export default function POS() {
                     </p>
                     <div className="pt-0.5">
                       {isOutOfStock ? (
-                        <span className="text-[9px] font-bold text-red-500 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/60 px-1.5 py-0.5 rounded inline-block">
                           Out of Stock
                         </span>
                       ) : (
-                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded inline-block">
                           In Stock ({stock})
                         </span>
                       )}
@@ -1039,16 +1069,21 @@ export default function POS() {
 
                   {/* Bottom: Price + Circular (+) Button */}
                   <div className="mt-2 pt-2 border-t border-[#DCE5EF]/60 dark:border-[#22354B]/60 flex items-center justify-between">
-                    <span className="text-sm font-extrabold text-[#0A4174] dark:text-[#4A8CD2]">
+                    <span className={`text-sm font-extrabold ${isOutOfStock ? 'text-slate-400' : 'text-[#0A4174] dark:text-[#4A8CD2]'}`}>
                       {formatCurrency(price, currency)}
                     </span>
                     <button
                       type="button"
+                      disabled={isOutOfStock}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleProductClick(p);
+                        if (!isOutOfStock) handleProductClick(p);
                       }}
-                      className="w-6 h-6 rounded-full bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] flex items-center justify-center shadow-xs transition-transform active:scale-90"
+                      className={`w-6 h-6 rounded-full flex items-center justify-center shadow-xs transition-all ${
+                        isOutOfStock
+                          ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
+                          : 'bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] active:scale-90 cursor-pointer'
+                      }`}
                     >
                       <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                     </button>
