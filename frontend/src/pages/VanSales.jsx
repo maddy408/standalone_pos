@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
 import { formatCurrency } from '../utils/currency';
 import { printVanOrder, printDayReturn, printDayClosing } from '../print/vanSalesPrint';
+import VanStockPreviewModal from '../components/VanStockPreviewModal';
 import { newUuid, enqueueOutboxItem } from '../db/db';
 import { refreshPendingCount } from '../db/syncService';
 import {
@@ -138,6 +139,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
   const [formSuccess, setFormSuccess] = useState('');
   const [viewing, setViewing] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [previewVanOrder, setPreviewVanOrder] = useState(null);
 
   const fetchEligible = () => {
     api.get('/van-orders/eligible-orders')
@@ -583,7 +585,20 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
                     <td className="px-2 py-2">
                       <div className="flex items-center justify-end gap-1">
                         <button title={t('orders.view_details')} onClick={() => setViewing(o)} className="p-1 text-[#5A6B82] hover:text-[#0A4174]"><Eye className="w-3.5 h-3.5" /></button>
-                        <button title={t('orders.print_slip')} onClick={async () => { const { data } = await api.get(`/van-orders/${o.id}`); printVanOrder(data, settings); }} className="p-1 text-[#5A6B82] hover:text-[#0A4174]"><Printer className="w-3.5 h-3.5" /></button>
+                        <button
+                          title="Van Stock Preview & Print"
+                          onClick={async () => {
+                            try {
+                              const { data } = await api.get(`/van-orders/${o.id}`);
+                              setPreviewVanOrder(data);
+                            } catch {
+                              printVanOrder(o, settings);
+                            }
+                          }}
+                          className="p-1 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0]"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
                         {canManage && o.status !== 'completed' && (
                           <button title={t('common.edit')} onClick={() => openEdit(o)} className="p-1 text-[#5A6B82] hover:text-amber-600"><Pencil className="w-3.5 h-3.5" /></button>
                         )}
@@ -603,10 +618,29 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
         </div>
       </div>
 
-      {viewing && <VanOrderViewModal order={viewing} currency={currency} onClose={() => setViewing(null)} onPrint={() => printVanOrder(viewing, settings)} t={t} />}
+      {viewing && (
+        <VanOrderViewModal
+          order={viewing}
+          currency={currency}
+          onClose={() => setViewing(null)}
+          onPrint={() => {
+            const v = viewing;
+            setViewing(null);
+            setPreviewVanOrder(v);
+          }}
+          t={t}
+        />
+      )}
       {editing && (
         <VanOrderEditModal editing={editing} setEditing={setEditing} vehicles={vehicles} products={products} currency={currency}
           onCancel={() => setEditing(null)} onSave={saveEdit} t={t} />
+      )}
+      {previewVanOrder && (
+        <VanStockPreviewModal
+          vanOrder={previewVanOrder}
+          settings={settings}
+          onClose={() => setPreviewVanOrder(null)}
+        />
       )}
     </div>
   );

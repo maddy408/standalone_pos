@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSettings } from '../hooks/useSettings';
 import { formatCurrency } from '../utils/currency';
 import { openOrderSlipWindow } from '../print/orderSlip';
+import OrderPreviewModal from '../components/OrderPreviewModal';
 import { exportTableCsv } from '../utils/reportExport';
 import { VanStockTab } from './VanSales';
 import {
@@ -120,6 +121,7 @@ export default function OrderManagement() {
 
   const [viewingOrder, setViewingOrder] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [previewOrder, setPreviewOrder] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -574,12 +576,16 @@ export default function OrderManagement() {
                             <Eye className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            title={t('orders.print_slip')}
+                            title="Order Preview & Print"
                             onClick={async () => {
-                              const { data } = await api.get(`/orders/${o.id}`);
-                              openOrderSlipWindow(data, settings);
+                              try {
+                                const { data } = await api.get(`/orders/${o.id}`);
+                                setPreviewOrder(data);
+                              } catch {
+                                openOrderSlipWindow(o, settings);
+                              }
                             }}
-                            className="p-1 text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2]"
+                            className="p-1 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0]"
                           >
                             <Printer className="w-3.5 h-3.5" />
                           </button>
@@ -638,7 +644,19 @@ export default function OrderManagement() {
           currency={currency}
           canManageStatus={canManageStatus}
           onClose={() => setViewingOrder(null)}
-          onPrint={() => openOrderSlipWindow(viewingOrder, settings)}
+          onPrint={() => {
+            const ord = viewingOrder;
+            setViewingOrder(null);
+            setPreviewOrder(ord);
+          }}
+        />
+      )}
+
+      {previewOrder && (
+        <OrderPreviewModal
+          order={previewOrder}
+          settings={settings}
+          onClose={() => setPreviewOrder(null)}
         />
       )}
 
@@ -707,7 +725,7 @@ function OrderViewModal({ order, currency, canManageStatus, onClose, onPrint }) 
               </Link>
             )}
             <button onClick={onPrint} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] text-xs font-bold">
-              <Printer className="w-3.5 h-3.5" /> {t('orders.print_slip')}
+              <Printer className="w-3.5 h-3.5" /> Order Slip
             </button>
           </div>
           <button onClick={onClose} className="px-3 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] text-xs font-bold">{t('common.close')}</button>
