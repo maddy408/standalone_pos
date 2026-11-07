@@ -564,6 +564,7 @@ CREATE TABLE van_orders (
     order_no VARCHAR(30) NOT NULL UNIQUE,
     order_date DATE NOT NULL,
     vehicle_id INT NOT NULL,
+    employee_id INT NULL COMMENT 'Salesman / driver assigned to this van trip, KC Agency dispatch-employee style',
     status ENUM('pending','loaded','completed','cancelled') NOT NULL DEFAULT 'pending',
     subtotal DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -579,6 +580,7 @@ CREATE TABLE van_orders (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_vanorder_vehicle FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
+    CONSTRAINT fk_vanorder_employee FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE SET NULL,
     CONSTRAINT fk_vanorder_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_vanorder_status (status),
     INDEX idx_vanorder_vehicle_date (vehicle_id, order_date)

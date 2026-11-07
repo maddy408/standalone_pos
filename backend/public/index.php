@@ -141,6 +141,7 @@ $router->put('/api/orders/{id}', fn ($id) => $orders->update($id));
 $router->put('/api/orders/{id}/status', fn ($id) => $orders->updateStatus($id));
 $router->post('/api/orders/{id}/cancel', fn ($id) => $orders->cancel($id));
 $router->post('/api/orders/{id}/link-invoice', fn ($id) => $orders->linkInvoice($id));
+$router->post('/api/orders/{id}/dispatch-van', fn ($id) => $orders->dispatchVan($id));
 
 $stock = new StockController($pdo);
 $router->get('/api/stock/movements', fn () => $stock->movements());
@@ -159,6 +160,7 @@ $router->delete('/api/vehicles/{id}', fn ($id) => $vehicles->destroy($id));
 
 $vanOrders = new VanOrderController($pdo);
 $router->get('/api/van-orders', fn () => $vanOrders->index());
+$router->get('/api/van-orders/eligible-orders', fn () => $vanOrders->eligibleOrders());
 $router->post('/api/van-orders', fn () => $vanOrders->store());
 $router->get('/api/van-orders/{id}', fn ($id) => $vanOrders->show($id));
 $router->put('/api/van-orders/{id}', fn ($id) => $vanOrders->update($id));

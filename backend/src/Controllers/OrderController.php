@@ -55,7 +55,7 @@ class OrderController
 
         $stmt = $this->pdo->prepare(
             "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone,
-                    u.full_name AS assigned_to_name, i.invoice_no,
+                    u.full_name AS assigned_to_name, i.invoice_no, vo.order_no AS van_order_no,
                     (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
                     (SELECT COALESCE(SUM(oi.qty * oi.rate * (1 + oi.tax_percent / 100)), 0)
                        FROM order_items oi WHERE oi.order_id = o.id) AS estimated_total
@@ -63,6 +63,7 @@ class OrderController
              JOIN customers c ON c.id = o.customer_id
              LEFT JOIN users u ON u.id = o.assigned_to
              LEFT JOIN invoices i ON i.id = o.invoice_id
+             LEFT JOIN van_orders vo ON vo.id = o.van_order_id
              {$where}
              ORDER BY o.id DESC LIMIT 1000"
         );
@@ -199,6 +200,77 @@ class OrderController
         Response::json(['message' => 'Order linked to invoice and completed']);
     }
 
+    /**
+     * Dispatch an order directly into a Van Stock Loading Order.
+     * Maps order_id, customer_id, employee_id and order items to a van order.
+     */
+    public function dispatchVan(string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'orders.manage_status');
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+        $order = $this->fetchOrder((int) $id);
+        if (!$order) {
+            Response::error('Order not found', 404);
+        }
+        if (!empty($order['van_order_id'])) {
+            Response::error('Order is already dispatched to Van Order: ' . ($order['van_order_no'] ?? $order['van_order_id']), 422);
+        }
+        if (in_array($order['status'], ['cancelled', 'completed'], true)) {
+            Response::error('Cannot dispatch an order with status ' . $order['status'], 422);
+        }
+
+        $vehicleId = $body['vehicle_id'] ?? null;
+        if (empty($vehicleId)) {
+            Response::error('vehicle_id is required for van dispatch', 422);
+        }
+
+        $employeeId = !empty($body['employee_id']) ? (int) $body['employee_id'] : (!empty($order['assigned_to']) ? (int) $order['assigned_to'] : null);
+        $orderDate = $body['order_date'] ?? date('Y-m-d');
+        $notes = $body['notes'] ?? ('Dispatched from Pre-Order #' . $order['order_no']);
+
+        $vanOrderController = new VanOrderController($this->pdo);
+        $payload = [
+            'vehicle_id' => $vehicleId,
+            'employee_id' => $employeeId,
+            'order_id' => $order['id'],
+            'customer_id' => $order['customer_id'],
+            'order_date' => $orderDate,
+            'notes' => $notes,
+            'items' => array_map(function ($it) {
+                return [
+                    'product_id' => $it['product_id'],
+                    'qty' => $it['qty'],
+                    'rate' => $it['rate'],
+                    'tax_percent' => $it['tax_percent'] ?? 0,
+                    'discount_amount' => 0,
+                ];
+            }, $order['items'] ?? []),
+        ];
+
+        try {
+            [$vanOrder, $statusCode] = $vanOrderController->createFromSync($payload, $claims);
+            // Update order status to processing/ready
+            $this->pdo->prepare("UPDATE orders SET status = 'processing', van_order_id = :vo_id WHERE id = :id")
+                ->execute(['vo_id' => $vanOrder['id'], 'id' => $order['id']]);
+
+            AuditLogger::log($this->pdo, $claims, 'dispatch_van', 'orders', (int) $order['id'], [
+                'van_order_id' => $vanOrder['id'],
+                'van_order_no' => $vanOrder['order_no'],
+                'vehicle_id' => $vehicleId,
+            ]);
+
+            Response::json([
+                'message' => 'Order successfully dispatched to van loading order',
+                'van_order' => $vanOrder,
+                'order' => $this->fetchOrder((int) $id),
+            ], 201);
+        } catch (\Throwable $e) {
+            Response::error('Dispatch failed: ' . $e->getMessage(), 422);
+        }
+    }
+
     /** @param array<string, mixed> $body */
     private function createOrder(string $uuid, array $body): int
     {
@@ -307,11 +379,12 @@ class OrderController
     {
         $stmt = $this->pdo->prepare(
             "SELECT o.*, c.name AS customer_name, c.phone AS customer_phone,
-                    u.full_name AS assigned_to_name, i.invoice_no
+                    u.full_name AS assigned_to_name, i.invoice_no, vo.order_no AS van_order_no
              FROM orders o
              JOIN customers c ON c.id = o.customer_id
              LEFT JOIN users u ON u.id = o.assigned_to
              LEFT JOIN invoices i ON i.id = o.invoice_id
+             LEFT JOIN van_orders vo ON vo.id = o.van_order_id
              WHERE o.id = :id"
         );
         $stmt->execute(['id' => $id]);

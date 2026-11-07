@@ -45,10 +45,12 @@ class DayReturnController
             $params['to'] = $_GET['to'];
         }
         $stmt = $this->pdo->prepare(
-            "SELECT dr.*, v.name AS vehicle_name, vo.order_no
+            "SELECT dr.*, v.name AS vehicle_name, vo.order_no, emp.full_name AS employee_name, c.name AS customer_name
              FROM day_returns dr
              JOIN vehicles v ON v.id = dr.vehicle_id
              JOIN van_orders vo ON vo.id = dr.van_order_id
+             LEFT JOIN users emp ON emp.id = vo.employee_id
+             LEFT JOIN customers c ON c.id = vo.customer_id
              {$where}
              ORDER BY dr.id DESC LIMIT 1000"
         );
@@ -469,10 +471,12 @@ class DayReturnController
     private function fetchReturn(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT dr.*, v.name AS vehicle_name, vo.order_no
+            "SELECT dr.*, v.name AS vehicle_name, vo.order_no, emp.full_name AS employee_name, c.name AS customer_name
              FROM day_returns dr
              JOIN vehicles v ON v.id = dr.vehicle_id
              JOIN van_orders vo ON vo.id = dr.van_order_id
+             LEFT JOIN users emp ON emp.id = vo.employee_id
+             LEFT JOIN customers c ON c.id = vo.customer_id
              WHERE dr.id = :id"
         );
         $stmt->execute(['id' => $id]);

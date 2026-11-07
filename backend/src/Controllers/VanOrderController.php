@@ -46,11 +46,15 @@ class VanOrderController
         }
         $stmt = $this->pdo->prepare(
             "SELECT vo.*, v.name AS vehicle_name, u.full_name AS created_by_name,
+                    emp.full_name AS employee_name, c.name AS customer_name, ord.order_no AS mapped_order_no,
                     (SELECT COUNT(*) FROM van_order_items WHERE van_order_id = vo.id) AS item_count,
                     (SELECT dr.id FROM day_returns dr WHERE dr.van_order_id = vo.id AND dr.status = 'completed' LIMIT 1) AS day_return_id
              FROM van_orders vo
              JOIN vehicles v ON v.id = vo.vehicle_id
              LEFT JOIN users u ON u.id = vo.created_by
+             LEFT JOIN users emp ON emp.id = vo.employee_id
+             LEFT JOIN customers c ON c.id = vo.customer_id
+             LEFT JOIN orders ord ON ord.id = vo.order_id
              {$where}
              ORDER BY vo.id DESC LIMIT 1000"
         );
@@ -110,14 +114,17 @@ class VanOrderController
             $paidAmount = round((float) ($body['paid_amount'] ?? 0), 2);
 
             $this->pdo->prepare(
-                'INSERT INTO van_orders (uuid, order_no, order_date, vehicle_id, subtotal, discount_amount,
+                'INSERT INTO van_orders (uuid, order_no, order_date, vehicle_id, employee_id, order_id, customer_id, subtotal, discount_amount,
                     tax_amount, grand_total, paid_amount, balance_amount, notes, created_by)
-                 VALUES (:uuid, :no, :date, :vehicle_id, :subtotal, :discount, :tax, :grand_total, :paid, :balance, :notes, :created_by)'
+                 VALUES (:uuid, :no, :date, :vehicle_id, :employee_id, :order_id, :customer_id, :subtotal, :discount, :tax, :grand_total, :paid, :balance, :notes, :created_by)'
             )->execute([
                 'uuid' => $uuid,
                 'no' => $orderNo,
                 'date' => $body['order_date'] ?? date('Y-m-d'),
                 'vehicle_id' => $body['vehicle_id'],
+                'employee_id' => !empty($body['employee_id']) ? (int) $body['employee_id'] : null,
+                'order_id' => !empty($body['order_id']) ? (int) $body['order_id'] : null,
+                'customer_id' => !empty($body['customer_id']) ? (int) $body['customer_id'] : null,
                 'subtotal' => $subtotal,
                 'discount' => $discountTotal,
                 'tax' => $taxTotal,
@@ -129,6 +136,12 @@ class VanOrderController
             ]);
             $id = (int) $this->pdo->lastInsertId();
             $this->insertItems($id, $rows);
+
+            // If an order_id was mapped, link it in the orders table
+            if (!empty($body['order_id'])) {
+                $this->pdo->prepare('UPDATE orders SET van_order_id = :vo_id WHERE id = :ord_id')
+                    ->execute(['vo_id' => $id, 'ord_id' => (int) $body['order_id']]);
+            }
 
             $this->pdo->commit();
             AuditLogger::log($this->pdo, $claims, 'create', 'van_orders', $id, ['order_no' => $orderNo]);
@@ -174,12 +187,16 @@ class VanOrderController
             $paidAmount = round((float) ($body['paid_amount'] ?? $order['paid_amount']), 2);
 
             $this->pdo->prepare(
-                'UPDATE van_orders SET vehicle_id = :vehicle_id, order_date = :date, subtotal = :subtotal,
+                'UPDATE van_orders SET vehicle_id = :vehicle_id, employee_id = :employee_id, order_id = :order_id,
+                    customer_id = :customer_id, order_date = :date, subtotal = :subtotal,
                     discount_amount = :discount, tax_amount = :tax, grand_total = :grand_total,
                     paid_amount = :paid, balance_amount = :balance, notes = :notes
                  WHERE id = :id'
             )->execute([
                 'vehicle_id' => $body['vehicle_id'] ?? $order['vehicle_id'],
+                'employee_id' => array_key_exists('employee_id', $body) ? (!empty($body['employee_id']) ? (int) $body['employee_id'] : null) : $order['employee_id'],
+                'order_id' => array_key_exists('order_id', $body) ? (!empty($body['order_id']) ? (int) $body['order_id'] : null) : $order['order_id'],
+                'customer_id' => array_key_exists('customer_id', $body) ? (!empty($body['customer_id']) ? (int) $body['customer_id'] : null) : $order['customer_id'],
                 'date' => $body['order_date'] ?? $order['order_date'],
                 'subtotal' => $subtotal,
                 'discount' => $discountTotal,
@@ -192,6 +209,11 @@ class VanOrderController
             ]);
             $this->pdo->prepare('DELETE FROM van_order_items WHERE van_order_id = :id')->execute(['id' => $id]);
             $this->insertItems((int) $id, $rows);
+
+            if (!empty($body['order_id'])) {
+                $this->pdo->prepare('UPDATE orders SET van_order_id = :vo_id WHERE id = :ord_id')
+                    ->execute(['vo_id' => $id, 'ord_id' => (int) $body['order_id']]);
+            }
 
             if ($order['status'] === 'loaded') {
                 // Re-fetch the (possibly new) vehicle_id/items to reload against.
@@ -420,15 +442,50 @@ class VanOrderController
         }
     }
 
+    public function eligibleOrders(): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'van_sales.view');
+        $stmt = $this->pdo->prepare(
+            "SELECT o.id, o.order_no, o.order_date, o.customer_id, o.assigned_to, o.notes,
+                    c.name AS customer_name, c.phone AS customer_phone, u.full_name AS assigned_to_name
+             FROM orders o
+             JOIN customers c ON c.id = o.customer_id
+             LEFT JOIN users u ON u.id = o.assigned_to
+             WHERE o.status IN ('pending', 'confirmed', 'processing')
+               AND o.van_order_id IS NULL
+             ORDER BY o.id DESC LIMIT 100"
+        );
+        $stmt->execute();
+        $orders = $stmt->fetchAll();
+
+        foreach ($orders as &$ord) {
+            $itemsStmt = $this->pdo->prepare(
+                "SELECT oi.*, p.name AS product_name, p.barcode, p.sku, p.selling_price, p.tax_percent, p.stock_qty
+                 FROM order_items oi
+                 JOIN products p ON p.id = oi.product_id
+                 WHERE oi.order_id = :oid"
+            );
+            $itemsStmt->execute(['oid' => $ord['id']]);
+            $ord['items'] = $itemsStmt->fetchAll();
+        }
+
+        Response::json($orders);
+    }
+
     /** @return array<string, mixed>|null */
     private function fetchOrder(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
             "SELECT vo.*, v.name AS vehicle_name, u.full_name AS created_by_name,
+                    emp.full_name AS employee_name, c.name AS customer_name, ord.order_no AS mapped_order_no,
                     (SELECT dr.id FROM day_returns dr WHERE dr.van_order_id = vo.id AND dr.status = 'completed' LIMIT 1) AS day_return_id
              FROM van_orders vo
              JOIN vehicles v ON v.id = vo.vehicle_id
              LEFT JOIN users u ON u.id = vo.created_by
+             LEFT JOIN users emp ON emp.id = vo.employee_id
+             LEFT JOIN customers c ON c.id = vo.customer_id
+             LEFT JOIN orders ord ON ord.id = vo.order_id
              WHERE vo.id = :id"
         );
         $stmt->execute(['id' => $id]);

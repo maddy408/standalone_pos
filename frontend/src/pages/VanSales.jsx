@@ -35,9 +35,13 @@ export default function VanSales() {
   const [tab, setTab] = useState('orders');
   const [vehicles, setVehicles] = useState([]);
   const [products, setProducts] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [eligibleOrders, setEligibleOrders] = useState([]);
 
   const loadShared = () => {
     api.get('/vehicles', { params: { is_active: 1 } }).then(({ data }) => setVehicles(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/users').then(({ data }) => setEmployees(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/van-orders/eligible-orders').then(({ data }) => setEligibleOrders(Array.isArray(data) ? data : [])).catch(() => {});
     const params = settings?.business_type ? { business_type: settings.business_type } : {};
     api.get('/products', { params }).then(({ data }) => setProducts(Array.isArray(data) ? data : [])).catch(() => {});
   };
@@ -75,8 +79,19 @@ export default function VanSales() {
         ))}
       </div>
 
-      {tab === 'orders' && <OrdersTab vehicles={vehicles} products={products} currency={currency} settings={settings} can={can} />}
-      {tab === 'van_stock' && <VanStockTab vehicles={vehicles} currency={currency} can={can} />}
+      {tab === 'orders' && (
+        <OrdersTab
+          vehicles={vehicles}
+          products={products}
+          employees={employees}
+          eligibleOrders={eligibleOrders}
+          onOrdersChanged={loadShared}
+          currency={currency}
+          settings={settings}
+          can={can}
+        />
+      )}
+      {tab === 'van_stock' && <VanStockTab vehicles={vehicles} employees={employees} currency={currency} can={can} />}
       {tab === 'day_return' && <DayReturnTab vehicles={vehicles} currency={currency} settings={settings} can={can} />}
       {tab === 'day_closing' && <DayClosingTab vehicles={vehicles} currency={currency} settings={settings} can={can} />}
     </div>
@@ -99,13 +114,13 @@ function lineTotal(l) {
 // Orders tab
 // ---------------------------------------------------------------------------
 
-function OrdersTab({ vehicles, products, currency, settings, can }) {
+function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], onOrdersChanged, currency, settings, can }) {
   const { t } = useTranslation();
   const canManage = can('van_sales.manage_orders');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ vehicle_id: '', order_date: today(), paid_amount: '', notes: '' });
+  const [form, setForm] = useState({ vehicle_id: '', employee_id: '', order_id: '', customer_id: '', order_date: today(), paid_amount: '', notes: '' });
   const [lines, setLines] = useState([emptyLine()]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -144,14 +159,50 @@ function OrdersTab({ vehicles, products, currency, settings, can }) {
     return { subtotal, discount, tax, grandTotal: subtotal - discount + tax };
   }, [validLines]);
 
+  const handleSelectEligibleOrder = (orderIdStr) => {
+    if (!orderIdStr) {
+      setForm((f) => ({ ...f, order_id: '', customer_id: '' }));
+      return;
+    }
+    const selected = eligibleOrders.find((o) => String(o.id) === String(orderIdStr));
+    if (selected) {
+      setForm((f) => ({
+        ...f,
+        order_id: selected.id,
+        customer_id: selected.customer_id || '',
+        employee_id: selected.assigned_to ? String(selected.assigned_to) : f.employee_id,
+        notes: `Order ${selected.order_no} for ${selected.customer_name || 'Customer'}`,
+      }));
+      if (Array.isArray(selected.items) && selected.items.length > 0) {
+        setLines(
+          selected.items.map((it) => {
+            const prod = products.find((p) => String(p.id) === String(it.product_id));
+            const unitPrice = Number(it.rate || prod?.selling_price || 0);
+            const taxPercent = Number(it.tax_percent || prod?.tax_percent || 0);
+            return {
+              product_id: it.product_id,
+              qty: Number(it.qty || 1),
+              unit_price: unitPrice,
+              discount_amount: 0,
+              tax_percent: taxPercent,
+            };
+          })
+        );
+      }
+    }
+  };
+
   const resetForm = () => {
-    setForm({ vehicle_id: '', order_date: today(), paid_amount: '', notes: '' });
+    setForm({ vehicle_id: '', employee_id: '', order_id: '', customer_id: '', order_date: today(), paid_amount: '', notes: '' });
     setLines([emptyLine()]);
   };
 
   const buildPayload = () => ({
     uuid: newUuid(),
     vehicle_id: form.vehicle_id,
+    employee_id: form.employee_id || null,
+    order_id: form.order_id || null,
+    customer_id: form.customer_id || null,
     order_date: form.order_date,
     paid_amount: Number(form.paid_amount || 0),
     notes: form.notes || null,
@@ -183,6 +234,7 @@ function OrdersTab({ vehicles, products, currency, settings, can }) {
       setFormSuccess(t('van_sales.order_created'));
       resetForm();
       load();
+      onOrdersChanged?.();
       setTimeout(() => setFormSuccess(''), 3000);
     } catch (err) {
       if (!err.response) {
@@ -280,6 +332,40 @@ function OrdersTab({ vehicles, products, currency, settings, can }) {
               <Plus className="w-4 h-4" /> {t('van_sales.new_order')}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-3">
+              {/* KC Agency Order Mapping & Employee Assignment */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Link Customer Order (Optional)</label>
+                  <select
+                    value={form.order_id}
+                    onChange={(e) => handleSelectEligibleOrder(e.target.value)}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                  >
+                    <option value="">-- Direct Van Load (No Order) --</option>
+                    {eligibleOrders.map((eo) => (
+                      <option key={eo.id} value={eo.id}>
+                        {eo.order_no} - {eo.customer_name} ({eo.items?.length || 0} items)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Assigned Employee / Salesman</label>
+                  <select
+                    value={form.employee_id}
+                    onChange={(e) => setForm((f) => ({ ...f, employee_id: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-xs"
+                  >
+                    <option value="">-- Select Employee --</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.full_name || emp.username} ({emp.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-semibold mb-1">{t('van_sales.vehicle')} *</label>
@@ -383,19 +469,37 @@ function OrdersTab({ vehicles, products, currency, settings, can }) {
                   <th className="px-2 py-2">{t('van_sales.order_no')}</th>
                   <th className="px-2 py-2">{t('common.date')}</th>
                   <th className="px-2 py-2">{t('van_sales.vehicle')}</th>
+                  <th className="px-2 py-2">Assigned Staff</th>
                   <th className="px-2 py-2 text-right">{t('pos.grand_total')}</th>
                   <th className="px-2 py-2">{t('common.status')}</th>
                   <th className="px-2 py-2 text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {loading && <tr><td colSpan={6} className="py-6 text-center text-[#5A6B82]">{t('common.loading')}</td></tr>}
-                {!loading && filtered.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-[#5A6B82]">{t('van_sales.no_orders')}</td></tr>}
+                {loading && <tr><td colSpan={7} className="py-6 text-center text-[#5A6B82]">{t('common.loading')}</td></tr>}
+                {!loading && filtered.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-[#5A6B82]">{t('van_sales.no_orders')}</td></tr>}
                 {!loading && filtered.map((o) => (
                   <tr key={o.id} className="border-t border-[#DCE5EF] dark:border-[#22354B]">
-                    <td className="px-2 py-2 font-mono">{o.order_no}</td>
+                    <td className="px-2 py-2">
+                      <div className="font-mono font-bold text-[#0A4174] dark:text-[#4A8CD2]">{o.order_no}</div>
+                      {o.mapped_order_no && (
+                        <div className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                          Order: {o.mapped_order_no}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-2 py-2">{o.order_date}</td>
                     <td className="px-2 py-2">{o.vehicle_name}</td>
+                    <td className="px-2 py-2">
+                      <div className="text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9]">
+                        {o.employee_name || '—'}
+                      </div>
+                      {o.customer_name && (
+                        <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
+                          Cust: {o.customer_name}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-2 py-2 text-right font-semibold">{formatCurrency(o.grand_total, currency)}</td>
                     <td className="px-2 py-2"><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${STATUS_BADGE[o.status] || ''}`}>{o.status}</span></td>
                     <td className="px-2 py-2">
@@ -445,6 +549,8 @@ function VanOrderViewModal({ order, currency, onClose, onPrint, t }) {
         </div>
         <div className="space-y-1 text-xs mb-3">
           <div>{t('van_sales.vehicle')}: <strong>{full.vehicle_name}</strong></div>
+          {full.employee_name && <div>Assigned Staff: <strong>{full.employee_name}</strong></div>}
+          {full.mapped_order_no && <div>Mapped Order: <strong>{full.mapped_order_no}</strong> {full.customer_name ? `(${full.customer_name})` : ''}</div>}
           <div>{t('common.status')}: <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${STATUS_BADGE[full.status] || ''}`}>{full.status}</span></div>
         </div>
         <table className="w-full text-xs mb-3">
@@ -843,7 +949,11 @@ function DayReturnTab({ vehicles, currency, settings, can }) {
                 <label className="block text-xs font-semibold mb-1">{t('van_sales.loading_reference')} *</label>
                 <select value={form.van_order_id} onChange={(e) => setForm((f) => ({ ...f, van_order_id: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm">
                   <option value="">{t('van_sales.select_order')}</option>
-                  {loadedOrders.map((o) => <option key={o.id} value={o.id}>{o.order_no} ({o.order_date})</option>)}
+                  {loadedOrders.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.order_no} ({o.order_date}) {o.mapped_order_no ? `• Order: ${o.mapped_order_no}` : ''} {o.employee_name ? `• Staff: ${o.employee_name}` : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -937,19 +1047,27 @@ function DayReturnTab({ vehicles, currency, settings, can }) {
                   <th className="px-2 py-2">{t('van_sales.return_no')}</th>
                   <th className="px-2 py-2">{t('common.date')}</th>
                   <th className="px-2 py-2">{t('van_sales.vehicle')}</th>
+                  <th className="px-2 py-2">Assigned Staff</th>
                   <th className="px-2 py-2 text-right">{t('van_sales.total_sold_value')}</th>
                   <th className="px-2 py-2">{t('common.status')}</th>
                   <th className="px-2 py-2 text-right">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {loading && <tr><td colSpan={6} className="py-6 text-center text-[#5A6B82]">{t('common.loading')}</td></tr>}
-                {!loading && returns.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-[#5A6B82]">{t('reports.no_data')}</td></tr>}
+                {loading && <tr><td colSpan={7} className="py-6 text-center text-[#5A6B82]">{t('common.loading')}</td></tr>}
+                {!loading && returns.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-[#5A6B82]">{t('reports.no_data')}</td></tr>}
                 {!loading && returns.map((r) => (
                   <tr key={r.id} className="border-t border-[#DCE5EF] dark:border-[#22354B]">
-                    <td className="px-2 py-2 font-mono">{r.return_no}</td>
+                    <td className="px-2 py-2">
+                      <div className="font-mono font-bold text-[#0A4174] dark:text-[#4A8CD2]">{r.return_no}</div>
+                      <div className="text-[10px] text-[#5A6B82] font-mono">Load: {r.order_no}</div>
+                    </td>
                     <td className="px-2 py-2">{r.return_date}</td>
                     <td className="px-2 py-2">{r.vehicle_name}</td>
+                    <td className="px-2 py-2">
+                      <div className="text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9]">{r.employee_name || '—'}</div>
+                      {r.customer_name && <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">Cust: {r.customer_name}</div>}
+                    </td>
                     <td className="px-2 py-2 text-right font-semibold">{formatCurrency(r.total_sold_value, currency)}</td>
                     <td className="px-2 py-2">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${STATUS_BADGE[r.status] || ''}`}>{r.status}</span>
