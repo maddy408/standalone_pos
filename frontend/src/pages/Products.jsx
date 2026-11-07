@@ -221,15 +221,16 @@ export default function Products() {
     const bt = settings?.business_type;
     loadCategories();
 
-    api.get('/lookup/brands', { params: bt ? { business_type: bt } : {} }).then(async ({ data }) => {
+    api.get('/lookup/brands', { params: bt ? { business_type: bt, is_active: 1 } : { is_active: 1 } }).then(async ({ data }) => {
       let bList = Array.isArray(data) ? data : [];
       if (bList.length === 0 && bt) {
         try {
-          const allBrands = await api.get('/lookup/brands');
+          const allBrands = await api.get('/lookup/brands', { params: { is_active: 1 } });
           if (Array.isArray(allBrands.data) && allBrands.data.length > 0) bList = allBrands.data;
         } catch {}
       }
-      setBrands(bList);
+      // Ensure only active brands are available for product creation
+      setBrands(bList.filter((b) => b.is_active !== 0 && b.is_active !== false && b.is_active !== '0'));
     }).catch(() => {});
 
     api.get('/lookup/units').then(({ data }) => setUnits(Array.isArray(data) ? data : [])).catch(() => {});
@@ -819,11 +820,13 @@ export default function Products() {
                       className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     >
                       <option value="">-- Select Brand --</option>
-                      {brands.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
+                      {brands
+                        .filter((b) => b.is_active !== 0 && b.is_active !== false && b.is_active !== '0')
+                        .map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 </div>

@@ -132,7 +132,7 @@ export default function Purchases() {
           product_id: Number(it.product_id),
           qty: serials.length || Number(it.qty || 1),
           unit_price: Number(it.unit_price || 0),
-          discount_amount: 0,
+          discount_amount: Number(it.discount || 0),
           tax_amount: 0,
           serials,
         };

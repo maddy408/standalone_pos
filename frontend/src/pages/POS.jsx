@@ -551,6 +551,12 @@ export default function POS() {
   };
 
   const setLineQtyDirect = (key, val) => {
+    if (val === '' || val === null) {
+      setCart((c) =>
+        c.map((l) => (l.key === key ? { ...l, qty: '' } : l))
+      );
+      return;
+    }
     const parsed = parseFloat(val);
     if (isNaN(parsed) || parsed < 0) return;
     setCart((c) =>
@@ -1345,6 +1351,14 @@ export default function POS() {
                   min="1"
                   step="any"
                   value={line.qty}
+                  onFocus={(e) => e.target.select()}
+                  onBlur={() => {
+                    if (!line.qty || Number(line.qty) <= 0) {
+                      setCart((c) =>
+                        c.map((l) => (l.key === line.key ? recalcLine({ ...l, qty: 1 }) : l))
+                      );
+                    }
+                  }}
                   onChange={(e) => setLineQtyDirect(line.key, e.target.value)}
                   className="pos-qty-input w-7 py-0.5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-center font-bold text-[10px] text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
                 />
