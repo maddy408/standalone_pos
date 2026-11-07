@@ -42,7 +42,7 @@ export function openReceiptWindow(invoice, settings) {
       <div class="center">${settings?.company_address || ''}</div>
       <div class="center">${settings?.company_phone || ''}</div>
       <hr />
-      <div>${t('receipt.invoice_label')}: ${invoice.invoice_no} ${invoice.source === 'offline' ? `(${t('receipt.offline_pending')})` : ''}</div>
+      <div>${t('receipt.invoice_label')}: ${invoice.invoice_no}</div>
       <div>${t('common.date')}: ${new Date(invoice.created_at || Date.now()).toLocaleString()}</div>
       ${invoice.customer_name ? `<div>${t('pos.customer')}: ${invoice.customer_name}</div>` : ''}
       <hr />

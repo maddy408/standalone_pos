@@ -179,8 +179,7 @@ export default function InvoicePreviewModal({ invoice, settings, onClose }) {
 
             <div className="space-y-0.5 text-[11px]">
               <div>
-                {t('receipt.invoice_label')}: {invoice.invoice_no}{' '}
-                {invoice.source === 'offline' ? `(${t('receipt.offline_pending')})` : ''}
+                {t('receipt.invoice_label')}: {invoice.invoice_no}
               </div>
               <div>
                 {t('common.date')}: {new Date(invoice.created_at || Date.now()).toLocaleString()}
