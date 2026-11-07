@@ -1169,26 +1169,26 @@ export default function POS() {
       {/* ======================================================== */}
       <div className="w-full lg:w-[410px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm">
         {/* Cart Top Header: Current Bill #POS-XXXX + + New Customer */}
-        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40">
+        <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40">
           <div className="flex items-center gap-2">
-            <span className="font-black text-sm text-[#1C2736] dark:text-[#F1F5F9]">
+            <span className="font-black text-xs text-[#1C2736] dark:text-[#F1F5F9]">
               Current Bill
             </span>
-            <span className="px-2 py-0.5 rounded-lg font-mono text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D]">
+            <span className="px-1.5 py-0.5 rounded-lg font-mono text-[11px] font-bold text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D]">
               {currentInvoiceNo}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={() => setShowHeldModal(true)}
               title="Held Bills"
-              className="p-1.5 rounded-xl water-glass-pill text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] relative"
+              className="p-1 rounded-lg water-glass-pill text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] relative"
             >
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3.5 h-3.5" />
               {heldBills.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-black flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-white text-[8px] font-black flex items-center justify-center shadow-xs">
                   {heldBills.length}
                 </span>
               )}
@@ -1196,24 +1196,24 @@ export default function POS() {
             <button
               type="button"
               onClick={() => setShowNewCustomer(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-xs font-bold shadow-xs transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] text-[11px] font-bold shadow-xs transition-colors"
             >
-              <UserPlus className="w-3.5 h-3.5" />
+              <UserPlus className="w-3 h-3" />
               <span>+ New Customer</span>
             </button>
           </div>
         </div>
 
         {/* Customer Info Card matching Nova Retail */}
-        <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/20 dark:bg-[#0B131E]/20">
+        <div className="px-3 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/20 dark:bg-[#0B131E]/20">
           <div className="relative">
-            <div className="flex items-center justify-between p-2 rounded-xl water-glass-pill">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center flex-shrink-0 font-bold">
-                  <User className="w-4 h-4" />
+            <div className="flex items-center justify-between p-1.5 rounded-xl water-glass-pill">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-6 h-6 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center flex-shrink-0 font-bold">
+                  <User className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-semibold leading-none">
+                  <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] font-semibold leading-none">
                     Customer
                   </div>
                   <button
@@ -1224,7 +1224,7 @@ export default function POS() {
                     <span>{activeCustomer?.name || 'Walk-in Customer'}</span>
                     <ChevronDown className="w-3 h-3 text-[#5A6B82]" />
                   </button>
-                  <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-mono leading-none pt-0.5">
+                  <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] font-mono leading-none">
                     {activeCustomer?.phone || '+91 98765 43210'}
                   </div>
                 </div>
@@ -1232,11 +1232,11 @@ export default function POS() {
 
               {/* Loyalty Points Badge */}
               <div className="text-right flex-shrink-0">
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[10px] font-bold text-[#0A4174] dark:text-[#4A8CD2]">
-                  <Crown className="w-3 h-3 text-amber-500 fill-amber-500" />
+                <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[9px] font-bold text-[#0A4174] dark:text-[#4A8CD2]">
+                  <Crown className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
                   <span>125 pts</span>
                 </div>
-                <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] font-semibold mt-0.5">
+                <div className="text-[8px] text-[#5A6B82] dark:text-[#94A3B8] font-semibold">
                   Silver Member
                 </div>
               </div>
@@ -1287,52 +1287,52 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Cart Items Table Header */}
-        <div className="px-3 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/40 dark:bg-[#0B131E]/30 grid grid-cols-12 gap-1 text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8]">
-          <div className="col-span-1 text-center">No.</div>
-          <div className="col-span-3">Product</div>
-          <div className="col-span-2">Barcode</div>
-          <div className="col-span-2 text-center">Qty</div>
-          <div className="col-span-1 text-right">Price</div>
-          <div className="col-span-1 text-center">Disc.</div>
-          <div className="col-span-1 text-right">Total</div>
-          <div className="col-span-1 text-center">
+        {/* Cart Items Table Header - Flexbox based with dedicated fixed widths */}
+        <div className="px-2.5 py-1 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/40 flex items-center text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8]">
+          <div className="w-5 text-center flex-shrink-0">#</div>
+          <div className="flex-1 min-w-0 pr-1 truncate">Product</div>
+          <div className="w-16 hidden sm:block text-left flex-shrink-0 text-[9px]">Barcode</div>
+          <div className="w-20 text-center flex-shrink-0">Qty</div>
+          <div className="w-14 text-right flex-shrink-0">Price</div>
+          <div className="w-10 text-center flex-shrink-0">Disc</div>
+          <div className="w-16 text-right flex-shrink-0">Total</div>
+          <div className="w-6 text-center flex-shrink-0">
             {cart.length > 0 && (
-              <button onClick={clearCart} title="Clear All" className="hover:text-red-500">
-                <Trash2 className="w-3 h-3 mx-auto" />
+              <button onClick={clearCart} title="Clear All" className="hover:text-red-500 inline-flex items-center justify-center">
+                <Trash2 className="w-3 h-3" />
               </button>
             )}
           </div>
         </div>
 
-        {/* Cart Items Scrollable List */}
-        <div className="flex-1 overflow-y-auto px-3 py-1.5 space-y-1.5 scrollbar-thin divide-y divide-[#DCE5EF]/40 dark:divide-[#22354B]/40">
+        {/* Cart Items Scrollable List - 3+ items scroll without clipping delete icon */}
+        <div className="flex-1 min-h-[160px] max-h-[40vh] lg:max-h-none overflow-y-auto px-2.5 py-1 space-y-1 scrollbar-thin divide-y divide-[#DCE5EF]/40 dark:divide-[#22354B]/40">
           {cart.map((line, idx) => (
-            <div key={line.key} className="pt-1.5 first:pt-0 grid grid-cols-12 gap-1 items-center text-xs">
+            <div key={line.key} className="pt-1 first:pt-0 flex items-center text-[11px] leading-tight group">
               {/* No. */}
-              <div className="col-span-1 text-center font-bold text-[#5A6B82] text-[11px]">
+              <div className="w-5 text-center font-bold text-[#5A6B82] text-[10px] flex-shrink-0">
                 {idx + 1}
               </div>
 
               {/* Product Info */}
-              <div className="col-span-3 min-w-0 pr-1">
-                <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate leading-tight" title={line.product_name}>
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate text-[11px]" title={line.product_name}>
                   {line.product_name}
                 </div>
                 {line.weight_label && (
-                  <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] truncate">
+                  <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] truncate leading-none">
                     {line.weight_label}
                   </div>
                 )}
               </div>
 
-              {/* Barcode / SKU */}
-              <div className="col-span-2 min-w-0 font-mono text-[10px] text-[#5A6B82] dark:text-[#94A3B8] truncate" title={line.barcode}>
+              {/* Barcode / SKU (hidden on very small viewports if needed, shown here) */}
+              <div className="w-16 hidden sm:block font-mono text-[9px] text-[#5A6B82] dark:text-[#94A3B8] truncate flex-shrink-0" title={line.barcode}>
                 {line.barcode || '—'}
               </div>
 
               {/* Quantity Stepper [-] [editable input] [+] */}
-              <div className="col-span-2 flex items-center justify-center gap-0.5">
+              <div className="w-20 flex items-center justify-center gap-0.5 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => updateLineQty(line.key, -1)}
@@ -1346,7 +1346,7 @@ export default function POS() {
                   step="any"
                   value={line.qty}
                   onChange={(e) => setLineQtyDirect(line.key, e.target.value)}
-                  className="pos-qty-input w-8 py-0.5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-center font-bold text-[11px] text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+                  className="pos-qty-input w-7 py-0.5 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-center font-bold text-[10px] text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
                 />
                 <button
                   type="button"
@@ -1358,44 +1358,45 @@ export default function POS() {
               </div>
 
               {/* Unit Selling Price */}
-              <div className="col-span-1 text-right font-semibold text-[#1C2736] dark:text-[#F1F5F9] text-[11px]">
+              <div className="w-14 text-right font-medium text-[#1C2736] dark:text-[#F1F5F9] text-[10px] truncate flex-shrink-0">
                 {formatCurrency(lineUnitWithAddons(line), currency)}
               </div>
 
               {/* Discount % */}
-              <div className="col-span-1 text-center">
+              <div className="w-10 text-center flex-shrink-0">
                 {line.discount_percent > 0 ? (
-                  <span className="inline-block px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">
+                  <span className="inline-block px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold text-[9px]">
                     {line.discount_percent}%
                   </span>
                 ) : (
-                  <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">0%</span>
+                  <span className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8]">0%</span>
                 )}
               </div>
 
               {/* Line Total */}
-              <div className="col-span-1 text-right font-extrabold text-[#0A4174] dark:text-[#4A8CD2] text-[11px]">
+              <div className="w-16 text-right font-bold text-[#0A4174] dark:text-[#4A8CD2] text-[11px] truncate flex-shrink-0">
                 {formatCurrency(line.qty * lineUnitWithAddons(line), currency)}
               </div>
 
-              {/* Remove Action */}
-              <div className="col-span-1 text-center">
+              {/* Remove Action - Fixed always visible, never clipped */}
+              <div className="w-6 text-center flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => removeLine(line.key)}
-                  className="p-1 text-[#5A6B82] hover:text-red-500 rounded transition-colors"
+                  className="p-1 text-[#5A6B82] hover:text-red-500 rounded transition-colors inline-flex items-center justify-center"
+                  title="Remove item"
                 >
-                  <Trash2 className="w-3 h-3 mx-auto" />
+                  <Trash2 className="w-3 h-3" />
                 </button>
               </div>
             </div>
           ))}
 
           {cart.length === 0 && (
-            <div className="py-12 text-center text-[#5A6B82] dark:text-[#94A3B8] text-xs space-y-1.5">
-              <ShoppingCart className="w-8 h-8 mx-auto text-[#DCE5EF] dark:text-[#22354B]" />
-              <p className="font-semibold">Cart is currently empty</p>
-              <p className="text-[10px]">Click or scan items to add to bill</p>
+            <div className="py-8 text-center text-[#5A6B82] dark:text-[#94A3B8] text-xs space-y-1">
+              <ShoppingCart className="w-7 h-7 mx-auto text-[#DCE5EF] dark:text-[#22354B]" />
+              <p className="font-semibold text-[11px]">Cart is currently empty</p>
+              <p className="text-[9px]">Click or scan items to add to bill</p>
             </div>
           )}
         </div>
