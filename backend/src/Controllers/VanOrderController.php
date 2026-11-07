@@ -163,9 +163,16 @@ class VanOrderController
             $id = (int) $this->pdo->lastInsertId();
             $this->insertItems($id, $rows);
 
-            // If an order_id was mapped, link it in the orders table
+            // Directly auto-load stock into the van so creating the van order = van loaded with stock!
+            $freshOrder = $this->fetchOrder($id);
+            if ($freshOrder) {
+                $this->applyLoad($id, $freshOrder, $claims);
+                $this->pdo->prepare("UPDATE van_orders SET status = 'loaded', loaded_at = NOW() WHERE id = :id")->execute(['id' => $id]);
+            }
+
+            // If an order_id was mapped, link it in the orders table and update to processing
             if (!empty($body['order_id'])) {
-                $this->pdo->prepare('UPDATE orders SET van_order_id = :vo_id WHERE id = :ord_id')
+                $this->pdo->prepare("UPDATE orders SET van_order_id = :vo_id, status = 'processing' WHERE id = :ord_id")
                     ->execute(['vo_id' => $id, 'ord_id' => (int) $body['order_id']]);
             }
 

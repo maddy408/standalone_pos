@@ -1022,85 +1022,102 @@ function DayReturnTab({ vehicles, currency, settings, can }) {
                   </select>
                 </div>
               </div>
+              {/* Van Stock Trip Loading Reference */}
               <div>
-                <label className="block text-xs font-semibold mb-1">Select Loaded Van Stock Order *</label>
-                <select value={form.van_order_id} onChange={(e) => setForm((f) => ({ ...f, van_order_id: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm font-medium">
-                  <option value="">-- Select Van Loading Order to Return --</option>
+                <label className="block text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] mb-1">
+                  Choose Van Stock Loading ID (Trip / Vehicle) *
+                </label>
+                <select
+                  required
+                  value={form.van_order_id}
+                  onChange={(e) => setForm((f) => ({ ...f, van_order_id: e.target.value }))}
+                  className="w-full rounded-lg border border-blue-300 dark:border-blue-700 bg-white dark:bg-[#121E2C] px-3 py-2 text-xs font-semibold shadow-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Select Van Trip ID (Order / Vehicle) --</option>
                   {loadedOrders.map((o) => (
                     <option key={o.id} value={o.id}>
-                      {o.order_no} ({o.order_date}) • {o.van_number || o.vehicle_name} {o.mapped_order_no ? `• Order: ${o.mapped_order_no}` : ''} {o.employee_name ? `• Staff: ${o.employee_name}` : ''}
+                      {o.order_no} ({o.order_date}) • {o.van_number || o.vehicle_name} {o.mapped_order_no ? `• Order #${o.mapped_order_no}` : ''} {o.employee_name ? `• Staff: ${o.employee_name}` : ''}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Product Quantities: Loaded & Returned (Sold is auto-calculated) */}
               {computedLines.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-xs">
-                    <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left">
-                      <tr>
-                        <th className="px-2 py-1.5">{t('receipt.item')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('van_sales.loaded_qty')}</th>
-                        <th className="px-2 py-1.5 text-center">{t('van_sales.returned_qty')}</th>
-                        <th className="px-2 py-1.5 text-center">{t('van_sales.damaged_qty')}</th>
-                        <th className="px-2 py-1.5 text-center">{t('van_sales.missing_qty')}</th>
-                        <th className="px-2 py-1.5 text-right">{t('van_sales.sold_qty')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {computedLines.map((l) => (
-                        <tr key={l.product_id} className="border-t border-[#DCE5EF] dark:border-[#22354B]">
-                          <td className="px-2 py-1.5">{l.product_name}</td>
-                          <td className="px-2 py-1.5 text-right">{l.qty}</td>
-                          <td className="px-2 py-1.5">
-                            <input type="number" step="any" min="0" value={lineInputs[l.product_id]?.returned_qty ?? ''} onChange={(e) => updateInput(l.product_id, 'returned_qty', e.target.value)} className="w-16 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-1 py-0.5 text-xs text-center" />
-                          </td>
-                          <td className="px-2 py-1.5">
-                            <input type="number" step="any" min="0" value={lineInputs[l.product_id]?.damaged_qty ?? ''} onChange={(e) => updateInput(l.product_id, 'damaged_qty', e.target.value)} className="w-16 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-1 py-0.5 text-xs text-center" />
-                          </td>
-                          <td className="px-2 py-1.5">
-                            <input type="number" step="any" min="0" value={lineInputs[l.product_id]?.missing_qty ?? ''} onChange={(e) => updateInput(l.product_id, 'missing_qty', e.target.value)} className="w-16 rounded border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-1 py-0.5 text-xs text-center" />
-                          </td>
-                          <td className="px-2 py-1.5 text-right font-semibold">{l.soldQty}</td>
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Product Day Return & Sales Quantity
+                  </label>
+                  <div className="overflow-x-auto border border-[#DCE5EF] dark:border-[#22354B] rounded-lg">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-[#F4F7FB] dark:bg-[#1A2A3D] text-left">
+                        <tr>
+                          <th className="px-2.5 py-2 font-semibold">Product</th>
+                          <th className="px-2.5 py-2 text-right font-semibold">Loaded Qty</th>
+                          <th className="px-2.5 py-2 text-center font-semibold text-blue-600 dark:text-blue-400">Return Qty</th>
+                          <th className="px-2.5 py-2 text-right font-semibold text-emerald-600 dark:text-emerald-400">Sold Qty</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {computedLines.map((l) => (
+                          <tr key={l.product_id} className="border-t border-[#DCE5EF] dark:border-[#22354B]">
+                            <td className="px-2.5 py-2 font-medium">{l.product_name}</td>
+                            <td className="px-2.5 py-2 text-right font-bold text-slate-700 dark:text-slate-300">{l.qty}</td>
+                            <td className="px-2.5 py-2 text-center">
+                              <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                max={l.qty}
+                                placeholder="0"
+                                value={lineInputs[l.product_id]?.returned_qty ?? ''}
+                                onChange={(e) => updateInput(l.product_id, 'returned_qty', e.target.value)}
+                                className="w-20 rounded border border-blue-300 dark:border-blue-700 bg-white dark:bg-[#121E2C] px-2 py-1 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                              {l.soldQty}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
+              {/* Total Sold Value & Amount Collected */}
               {computedLines.length > 0 && (
-                <div className="rounded-lg bg-[#F4F7FB] dark:bg-[#1A2A3D] p-2.5 text-xs space-y-1">
-                  <div className="flex justify-between"><span>{t('van_sales.total_sold_value')}</span><span className="font-bold">{formatCurrency(totals.soldValue, currency)}</span></div>
-                  <div className="flex justify-between"><span>{t('van_sales.total_returned_value')}</span><span>{formatCurrency(totals.returnedValue, currency)}</span></div>
-                  <div className="flex justify-between"><span>{t('van_sales.total_damaged_value')}</span><span>{formatCurrency(totals.damagedValue, currency)}</span></div>
-                  <div className="flex justify-between"><span>{t('van_sales.total_missing_value')}</span><span>{formatCurrency(totals.missingValue, currency)}</span></div>
+                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 p-3 space-y-1 text-xs">
+                  <div className="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold">Total Sold Value:</span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(totals.soldValue, currency)}
+                    </span>
+                  </div>
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">{t('van_sales.amount_collected')}</label>
-                  <input type="number" step="any" min="0" value={form.amount_collected} onChange={(e) => setForm((f) => ({ ...f, amount_collected: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">{t('van_sales.credit_amount')}</label>
-                  <input type="number" step="any" min="0" value={form.credit_amount} onChange={(e) => setForm((f) => ({ ...f, credit_amount: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold mb-1">{t('van_sales.other_adjustment')}</label>
-                  <input type="number" step="any" value={form.other_adjustment} onChange={(e) => setForm((f) => ({ ...f, other_adjustment: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
+              {/* Amount Collected Input */}
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  Cash / Amount Collected from Van *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-xs">
+                    {currency}
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    placeholder="Enter collected amount"
+                    value={form.amount_collected}
+                    onChange={(e) => setForm((f) => ({ ...f, amount_collected: e.target.value }))}
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent pl-7 pr-3 py-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
-              {Number(form.other_adjustment || 0) !== 0 && (
-                <input placeholder={t('van_sales.adjustment_reason')} value={form.adjustment_reason} onChange={(e) => setForm((f) => ({ ...f, adjustment_reason: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
-              )}
-
-              {computedLines.length > 0 && (
-                <div className={`rounded-lg p-2.5 text-xs flex justify-between font-bold ${Math.abs(totals.outstanding) > 0.009 ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'}`}>
-                  <span>{t('van_sales.outstanding_amount')}</span><span>{formatCurrency(totals.outstanding, currency)}</span>
-                </div>
-              )}
 
               <textarea rows={1} placeholder={t('orders.notes')} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1.5 text-sm" />
 

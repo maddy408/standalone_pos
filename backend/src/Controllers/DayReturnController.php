@@ -45,9 +45,11 @@ class DayReturnController
             $params['to'] = $_GET['to'];
         }
         $stmt = $this->pdo->prepare(
-            "SELECT dr.*, v.name AS vehicle_name, vo.order_no, emp.full_name AS employee_name, c.name AS customer_name
+            "SELECT dr.*, COALESCE(v.name, vo.van_number, 'Van') AS vehicle_name, vo.order_no,
+                    vo.van_number, vo.route_line,
+                    emp.full_name AS employee_name, c.name AS customer_name
              FROM day_returns dr
-             JOIN vehicles v ON v.id = dr.vehicle_id
+             LEFT JOIN vehicles v ON v.id = dr.vehicle_id
              JOIN van_orders vo ON vo.id = dr.van_order_id
              LEFT JOIN users emp ON emp.id = vo.employee_id
              LEFT JOIN customers c ON c.id = vo.customer_id
@@ -98,7 +100,10 @@ class DayReturnController
             throw new ValidationException('van_order_id is required');
         }
         $orderStmt = $this->pdo->prepare(
-            "SELECT vo.*, v.name AS vehicle_name FROM van_orders vo JOIN vehicles v ON v.id = vo.vehicle_id WHERE vo.id = :id"
+            "SELECT vo.*, COALESCE(v.name, vo.van_number, 'Van') AS vehicle_name
+             FROM van_orders vo
+             LEFT JOIN vehicles v ON v.id = vo.vehicle_id
+             WHERE vo.id = :id"
         );
         $orderStmt->execute(['id' => $body['van_order_id']]);
         $order = $orderStmt->fetch();
@@ -471,9 +476,11 @@ class DayReturnController
     private function fetchReturn(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
-            "SELECT dr.*, v.name AS vehicle_name, vo.order_no, emp.full_name AS employee_name, c.name AS customer_name
+            "SELECT dr.*, COALESCE(v.name, vo.van_number, 'Van') AS vehicle_name, vo.order_no,
+                    vo.van_number, vo.route_line,
+                    emp.full_name AS employee_name, c.name AS customer_name
              FROM day_returns dr
-             JOIN vehicles v ON v.id = dr.vehicle_id
+             LEFT JOIN vehicles v ON v.id = dr.vehicle_id
              JOIN van_orders vo ON vo.id = dr.van_order_id
              LEFT JOIN users emp ON emp.id = vo.employee_id
              LEFT JOIN customers c ON c.id = vo.customer_id
