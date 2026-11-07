@@ -548,7 +548,7 @@ function VanOrderEditModal({ editing, setEditing, vehicles, products, currency, 
 // Van Stock tab
 // ---------------------------------------------------------------------------
 
-function VanStockTab({ vehicles, currency, can }) {
+export function VanStockTab({ vehicles, currency, can }) {
   const { t } = useTranslation();
   const [vehicleId, setVehicleId] = useState('');
   const [from, setFrom] = useState(new Date().toISOString().slice(0, 8) + '01');

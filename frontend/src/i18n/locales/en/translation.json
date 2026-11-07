@@ -212,6 +212,10 @@
     "no_orders": "No customer orders found.",
     "not_an_invoice": "Pre-Booking / Order Request — Not an invoice",
     "create_order": "Create Order",
+    "tabs": {
+      "pre_bookings": "Pre-Bookings",
+      "van_stock": "Van Stock Adjustment"
+    },
     "cols": {
       "order_no": "Order #"
     }

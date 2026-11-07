@@ -7,6 +7,7 @@ import { useSettings } from '../hooks/useSettings';
 import { formatCurrency } from '../utils/currency';
 import { openOrderSlipWindow } from '../print/orderSlip';
 import { exportTableCsv } from '../utils/reportExport';
+import { VanStockTab } from './VanSales';
 import {
   ClipboardList,
   Plus,
@@ -22,6 +23,7 @@ import {
   RefreshCw,
   FileSpreadsheet,
   AlertTriangle,
+  Truck,
 } from 'lucide-react';
 
 const BOOKING_SOURCES = ['direct', 'salesman', 'phone', 'whatsapp'];
@@ -90,6 +92,10 @@ export default function OrderManagement() {
 
   const canCreate = can('orders.create');
   const canManageStatus = can('orders.manage_status');
+  const canViewVanStock = can('van_sales.view');
+
+  const [section, setSection] = useState('pre_bookings');
+  const [vehicles, setVehicles] = useState([]);
 
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -129,6 +135,10 @@ export default function OrderManagement() {
     load();
     api.get('/customers').then(({ data }) => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/users').then(({ data }) => setUsers(Array.isArray(data) ? data : [])).catch(() => {});
+    if (canViewVanStock) {
+      api.get('/vehicles', { params: { is_active: 1 } }).then(({ data }) => setVehicles(Array.isArray(data) ? data : [])).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -309,6 +319,32 @@ export default function OrderManagement() {
         </button>
       </div>
 
+      {canViewVanStock && (
+        <div className="mb-4 flex flex-wrap gap-1">
+          <button
+            onClick={() => setSection('pre_bookings')}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              section === 'pre_bookings' ? 'bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E]' : 'border border-[#DCE5EF] dark:border-[#22354B]'
+            }`}
+          >
+            {t('orders.tabs.pre_bookings')}
+          </button>
+          <button
+            onClick={() => setSection('van_stock')}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium ${
+              section === 'van_stock' ? 'bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E]' : 'border border-[#DCE5EF] dark:border-[#22354B]'
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5" /> {t('orders.tabs.van_stock')}
+          </button>
+        </div>
+      )}
+
+      {section === 'van_stock' && canViewVanStock && (
+        <VanStockTab vehicles={vehicles} currency={currency} can={can} />
+      )}
+
+      {section === 'pre_bookings' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {canCreate && (
           <div className="lg:col-span-5">
@@ -587,6 +623,7 @@ export default function OrderManagement() {
           </div>
         </div>
       </div>
+      )}
 
       {viewingOrder && (
         <OrderViewModal
