@@ -1173,7 +1173,7 @@ export default function POS() {
       {/* ======================================================== */}
       {/* RIGHT COLUMN: Cart / Customer / Totals / Payments         */}
       {/* ======================================================== */}
-      <div className="w-full lg:w-[410px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm">
+      <div className="w-full lg:w-[460px] xl:w-[480px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm">
         {/* Cart Top Header: Current Bill #POS-XXXX + + New Customer */}
         <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40">
           <div className="flex items-center gap-2">
@@ -1293,15 +1293,14 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Cart Items Table Header - Flexbox based with dedicated fixed widths */}
-        <div className="px-2.5 py-1 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/40 flex items-center text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8]">
+        {/* Cart Items Table Header - Clean layout with full product name space */}
+        <div className="px-2.5 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/40 flex items-center text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8]">
           <div className="w-5 text-center flex-shrink-0">#</div>
-          <div className="flex-1 min-w-0 pr-1 truncate">Product</div>
-          <div className="w-16 hidden sm:block text-left flex-shrink-0 text-[9px]">Barcode</div>
-          <div className="w-20 text-center flex-shrink-0">Qty</div>
-          <div className="w-14 text-right flex-shrink-0">Price</div>
-          <div className="w-10 text-center flex-shrink-0">Disc</div>
-          <div className="w-16 text-right flex-shrink-0">Total</div>
+          <div className="flex-1 min-w-0 pr-1">Product</div>
+          <div className="w-18 text-center flex-shrink-0">Qty</div>
+          <div className="w-16 text-right flex-shrink-0">Price</div>
+          <div className="w-9 text-center flex-shrink-0">Disc</div>
+          <div className="w-18 text-right flex-shrink-0">Total</div>
           <div className="w-6 text-center flex-shrink-0">
             {cart.length > 0 && (
               <button onClick={clearCart} title="Clear All" className="hover:text-red-500 inline-flex items-center justify-center">
@@ -1311,34 +1310,36 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Cart Items Scrollable List - 3+ items scroll without clipping delete icon */}
+        {/* Cart Items Scrollable List - Full product name visible, wrapped if needed */}
         <div className="flex-1 min-h-[160px] max-h-[40vh] lg:max-h-none overflow-y-auto px-2.5 py-1 space-y-1 scrollbar-thin divide-y divide-[#DCE5EF]/40 dark:divide-[#22354B]/40">
           {cart.map((line, idx) => (
-            <div key={line.key} className="pt-1 first:pt-0 flex items-center text-[11px] leading-tight group">
+            <div key={line.key} className="pt-1.5 first:pt-0 flex items-center text-[11px] group">
               {/* No. */}
               <div className="w-5 text-center font-bold text-[#5A6B82] text-[10px] flex-shrink-0">
                 {idx + 1}
               </div>
 
-              {/* Product Info */}
-              <div className="flex-1 min-w-0 pr-1">
-                <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] truncate text-[11px]" title={line.product_name}>
+              {/* Product Info - Full name displayed clearly without cut-off */}
+              <div className="flex-1 min-w-0 pr-2">
+                <div className="font-bold text-[#1C2736] dark:text-[#F1F5F9] text-[11px] leading-snug break-words">
                   {line.product_name}
                 </div>
-                {line.weight_label && (
-                  <div className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] truncate leading-none">
-                    {line.weight_label}
-                  </div>
-                )}
-              </div>
-
-              {/* Barcode / SKU (hidden on very small viewports if needed, shown here) */}
-              <div className="w-16 hidden sm:block font-mono text-[9px] text-[#5A6B82] dark:text-[#94A3B8] truncate flex-shrink-0" title={line.barcode}>
-                {line.barcode || '—'}
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {line.barcode && line.barcode !== '—' && (
+                    <span className="font-mono text-[9px] text-[#5A6B82] dark:text-[#94A3B8]">
+                      {line.barcode}
+                    </span>
+                  )}
+                  {line.weight_label && (
+                    <span className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] font-medium">
+                      • {line.weight_label}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Quantity Stepper [-] [editable input] [+] */}
-              <div className="w-20 flex items-center justify-center gap-0.5 flex-shrink-0">
+              <div className="w-18 flex items-center justify-center gap-0.5 flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => updateLineQty(line.key, -1)}
@@ -1372,12 +1373,12 @@ export default function POS() {
               </div>
 
               {/* Unit Selling Price */}
-              <div className="w-14 text-right font-medium text-[#1C2736] dark:text-[#F1F5F9] text-[10px] truncate flex-shrink-0">
+              <div className="w-16 text-right font-medium text-[#1C2736] dark:text-[#F1F5F9] text-[10.5px] truncate flex-shrink-0">
                 {formatCurrency(lineUnitWithAddons(line), currency)}
               </div>
 
               {/* Discount % */}
-              <div className="w-10 text-center flex-shrink-0">
+              <div className="w-9 text-center flex-shrink-0">
                 {line.discount_percent > 0 ? (
                   <span className="inline-block px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold text-[9px]">
                     {line.discount_percent}%
@@ -1388,7 +1389,7 @@ export default function POS() {
               </div>
 
               {/* Line Total */}
-              <div className="w-16 text-right font-bold text-[#0A4174] dark:text-[#4A8CD2] text-[11px] truncate flex-shrink-0">
+              <div className="w-18 text-right font-bold text-[#0A4174] dark:text-[#4A8CD2] text-[11px] truncate flex-shrink-0">
                 {formatCurrency(line.qty * lineUnitWithAddons(line), currency)}
               </div>
 
