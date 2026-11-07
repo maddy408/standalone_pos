@@ -253,10 +253,6 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
-    if (!form.vehicle_id && !form.van_number?.trim()) {
-      setFormError('Please select a vehicle or enter Van / Vehicle Number');
-      return;
-    }
     if (validLines.length === 0) {
       setFormError(t('van_sales.select_item_error'));
       return;
@@ -398,9 +394,8 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
               {/* Van & Staff Assignment (Simple Inputs) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold mb-1">Van / Vehicle Number *</label>
+                  <label className="block text-xs font-semibold mb-1">Van / Vehicle Number (Optional)</label>
                   <input
-                    required
                     type="text"
                     placeholder="e.g. TN-01-AB-1234 or Van 1"
                     value={form.van_number}
@@ -517,7 +512,7 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
               {formError && <div className="rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 px-2.5 py-1.5 text-xs text-red-600 dark:text-red-400">{formError}</div>}
               {formSuccess && <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-1.5 text-xs text-emerald-600 dark:text-emerald-400">{formSuccess}</div>}
 
-              <button type="submit" disabled={!form.vehicle_id || submitting}
+              <button type="submit" disabled={validLines.length === 0 || submitting}
                 className="w-full rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] py-2 text-xs font-bold disabled:opacity-50">
                 {submitting ? t('common.loading') : t('van_sales.create_order')}
               </button>
