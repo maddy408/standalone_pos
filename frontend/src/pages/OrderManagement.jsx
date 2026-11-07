@@ -118,7 +118,6 @@ export default function OrderManagement() {
 
   const [viewingOrder, setViewingOrder] = useState(null);
   const [editingOrder, setEditingOrder] = useState(null);
-  const [dispatchingOrder, setDispatchingOrder] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -569,15 +568,6 @@ export default function OrderManagement() {
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex items-center justify-end gap-1">
-                          {canViewVanStock && !o.van_order_no && !o.invoice_id && ['pending', 'confirmed'].includes(o.status) && (
-                            <button
-                              title="Dispatch to Van Stock (Assign vehicle & staff)"
-                              onClick={() => setDispatchingOrder(o)}
-                              className="p-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
-                            >
-                              <Truck className="w-3.5 h-3.5" />
-                            </button>
-                          )}
                           <button title={t('orders.view_details')} onClick={() => setViewingOrder(o)} className="p-1 text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2]">
                             <Eye className="w-3.5 h-3.5" />
                           </button>
@@ -660,20 +650,6 @@ export default function OrderManagement() {
           currency={currency}
           onCancel={() => setEditingOrder(null)}
           onSave={saveEdit}
-        />
-      )}
-
-      {dispatchingOrder && (
-        <OrderDispatchModal
-          order={dispatchingOrder}
-          vehicles={vehicles}
-          users={users}
-          currency={currency}
-          onClose={() => setDispatchingOrder(null)}
-          onSuccess={() => {
-            setDispatchingOrder(null);
-            load();
-          }}
         />
       )}
     </div>
@@ -861,181 +837,6 @@ function OrderEditModal({ editingOrder, setEditingOrder, customers, products, us
             {t('common.save')}
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function OrderDispatchModal({ order, vehicles, users, currency, onClose, onSuccess }) {
-  const { t } = useTranslation();
-  const [vehicleId, setVehicleId] = useState(vehicles[0]?.id || '');
-  const [vanNumber, setVanNumber] = useState('');
-  const [routeLine, setRouteLine] = useState('');
-  const [employeeId, setEmployeeId] = useState(order.assigned_to || '');
-  const [orderDate, setOrderDate] = useState(new Date().toISOString().slice(0, 10));
-  const [notes, setNotes] = useState(`Dispatched from Pre-Order #${order.order_no}`);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleDispatch = async (e) => {
-    e.preventDefault();
-    if (!vehicleId && !vanNumber.trim()) {
-      setError('Please choose a vehicle or enter a Van Number');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      await api.post(`/orders/${order.id}/dispatch-van`, {
-        vehicle_id: vehicleId || null,
-        van_number: vanNumber.trim() || null,
-        route_line: routeLine.trim() || null,
-        employee_id: employeeId || null,
-        order_date: orderDate,
-        notes: notes || null,
-      });
-      onSuccess();
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Failed to dispatch order to van');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white dark:bg-[#121E2C] p-5 shadow-xl">
-        <div className="mb-3 flex items-center justify-between border-b border-[#DCE5EF] dark:border-[#22354B] pb-2">
-          <div className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            <h3 className="font-bold text-sm text-[#0A4174] dark:text-[#4A8CD2]">
-              Dispatch to Van Stock
-            </h3>
-          </div>
-          <button onClick={onClose}><X className="w-4 h-4 text-[#5A6B82]" /></button>
-        </div>
-
-        <p className="text-xs text-[#5A6B82] dark:text-[#94A3B8] mb-3">
-          This will map customer order <strong className="text-slate-800 dark:text-slate-200 font-mono">{order.order_no}</strong> ({order.customer_name}) into a Van Stock Loading Order, allocate stock, and assign the delivery staff.
-        </p>
-
-        <form onSubmit={handleDispatch} className="space-y-3 text-xs">
-          <div>
-            <label className="block font-semibold mb-1">Select Delivery Vehicle (Optional)</label>
-            <select
-              value={vehicleId}
-              onChange={(e) => {
-                setVehicleId(e.target.value);
-                const found = vehicles.find((v) => String(v.id) === String(e.target.value));
-                if (found) {
-                  setVanNumber(found.registration_no || found.name || '');
-                }
-              }}
-              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
-            >
-              <option value="">-- Choose Existing Vehicle or Type Below --</option>
-              {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} {v.registration_no ? `(${v.registration_no})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block font-semibold mb-1">Van / Vehicle Number</label>
-              <input
-                type="text"
-                placeholder="e.g. TN-01-AB-1234 or Van 1"
-                value={vanNumber}
-                onChange={(e) => setVanNumber(e.target.value)}
-                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Route / Line</label>
-              <input
-                type="text"
-                placeholder="e.g. Route A / South Town"
-                value={routeLine}
-                onChange={(e) => setRouteLine(e.target.value)}
-                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">Assigned Salesman / Driver</label>
-            <select
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
-            >
-              <option value="">-- None / Select Staff --</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.full_name} ({u.role})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block font-semibold mb-1">Dispatch Date</label>
-              <input
-                type="date"
-                value={orderDate}
-                onChange={(e) => setOrderDate(e.target.value)}
-                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold mb-1">Order Total</label>
-              <input
-                type="text"
-                disabled
-                value={formatCurrency(order.estimated_total, currency)}
-                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 font-bold text-emerald-600 dark:text-emerald-400"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-1">Dispatch Notes</label>
-            <textarea
-              rows={2}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/40 px-2.5 py-1.5 text-red-600 dark:text-red-400">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#DCE5EF] dark:border-[#22354B]">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-3 py-1.5 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] text-xs font-bold"
-            >
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={loading || (!vehicleId && !vanNumber.trim())}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50"
-            >
-              <Truck className="w-3.5 h-3.5" />
-              {loading ? 'Dispatching...' : 'Dispatch to Van'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

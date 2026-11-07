@@ -488,7 +488,7 @@ class VanOrderController
              FROM orders o
              JOIN customers c ON c.id = o.customer_id
              LEFT JOIN users u ON u.id = o.assigned_to
-             WHERE o.status IN ('pending', 'confirmed', 'processing')
+             WHERE o.status != 'cancelled'
                AND o.van_order_id IS NULL
              ORDER BY o.id DESC LIMIT 100"
         );
