@@ -74,6 +74,7 @@ export default function POS() {
   const { can } = useAuth();
   const canDiscount = can('pos.apply_discount');
 
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'cart' for mobile tabs
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
@@ -856,11 +857,44 @@ export default function POS() {
   }, [products]);
 
   return (
-    <div className="h-[calc(100vh-6.25rem)] w-full flex flex-col lg:flex-row gap-3.5 overflow-hidden font-sans select-none">
+    <div className="h-[calc(100vh-8.5rem)] md:h-[calc(100vh-6.25rem)] w-full flex flex-col lg:flex-row gap-3.5 overflow-hidden font-sans select-none">
+      {/* Mobile Top View Switcher (Catalog vs Cart) */}
+      <div className="lg:hidden flex items-center p-1 rounded-2xl bg-white/70 dark:bg-[#121E2C]/70 border border-[#DCE5EF] dark:border-[#22354B] flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setActiveTab('catalog')}
+          className={`flex-1 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
+            activeTab === 'catalog'
+              ? 'bg-[#0A4174] text-white shadow-md dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+              : 'text-[#5A6B82] dark:text-[#94A3B8]'
+          }`}
+        >
+          <Package className="w-4 h-4" />
+          <span>Products</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('cart')}
+          className={`flex-1 py-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all relative ${
+            activeTab === 'cart'
+              ? 'bg-[#0A4174] text-white shadow-md dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+              : 'text-[#5A6B82] dark:text-[#94A3B8]'
+          }`}
+        >
+          <ShoppingCart className="w-4 h-4" />
+          <span>Bill & Cart</span>
+          {cart.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-white font-black">
+              {cart.reduce((s, i) => s + i.qty, 0)}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* ======================================================== */}
       {/* LEFT COLUMN: Catalog / Product Grid / Scanner / Hardware */}
       {/* ======================================================== */}
-      <div className="flex-1 flex flex-col min-w-0 water-glass-card rounded-2xl overflow-hidden shadow-sm">
+      <div className={`flex-1 flex flex-col min-w-0 water-glass-card rounded-2xl overflow-hidden shadow-sm ${activeTab === 'catalog' ? 'flex' : 'hidden lg:flex'}`}>
         {/* Sub-Header: Search bar with shortcut tags */}
         <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/40 dark:bg-[#121E2C]/40 flex items-center gap-3">
           {/* Barcode Search Input with clean icon-only buttons */}
@@ -1198,7 +1232,7 @@ export default function POS() {
       {/* ======================================================== */}
       {/* RIGHT COLUMN: Cart / Customer / Totals / Payments         */}
       {/* ======================================================== */}
-      <div className="w-full lg:w-[460px] xl:w-[480px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm">
+      <div className={`w-full lg:w-[460px] xl:w-[480px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm ${activeTab === 'cart' ? 'flex' : 'hidden lg:flex'}`}>
         {/* Cart Top Header: Current Bill #POS-XXXX + + New Customer */}
         <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40">
           <div className="flex items-center gap-2">
