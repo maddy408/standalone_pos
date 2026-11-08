@@ -56,6 +56,6 @@ return [
 
     'jwt_secret' => $getEnv(
         'JWT_SECRET',
-        'universal-pos-dev-secret'
+        'universal-pos-dev-secret-super-long-secure-key-32chars!'
     ),
 ];

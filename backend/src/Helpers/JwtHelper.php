@@ -12,7 +12,12 @@ class JwtHelper
     private static function secret(): string
     {
         $config = require __DIR__ . '/../../config/config.php';
-        return $config['jwt_secret'];
+        $key = (string) ($config['jwt_secret'] ?? '');
+        // Firebase JWT HS256 requires minimum 256 bits (32 bytes). Pad if needed.
+        if (strlen($key) < 32) {
+            $key = str_pad($key, 32, '0');
+        }
+        return $key;
     }
 
     /** @param array<string, mixed> $claims */
