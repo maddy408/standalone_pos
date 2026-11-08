@@ -864,14 +864,16 @@ export default function POS() {
         {/* Sub-Header: Search bar with shortcut tags */}
         <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/40 dark:bg-[#121E2C]/40 flex items-center gap-3">
           {/* Barcode Search Input with interactive camera scanner & image OCR trigger */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 flex items-center">
+            {/* Live Camera Scanner Trigger Button - Explicitly styled and always visible */}
             <button
               type="button"
               onClick={() => setShowScannerModal(true)}
-              title="Open Live Barcode Camera Scanner"
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] p-1 rounded-lg transition-colors cursor-pointer group"
+              title="Click to Scan Barcode with Camera"
+              className="absolute left-1.5 z-10 flex items-center gap-1 bg-[#0A4174]/10 hover:bg-[#0A4174] dark:bg-[#4A8CD2]/20 dark:hover:bg-[#4A8CD2] text-[#0A4174] hover:text-white dark:text-[#4A8CD2] dark:hover:text-[#0B131E] px-2 py-1 rounded-lg transition-all cursor-pointer font-bold text-[10px] shadow-2xs"
             >
-              <Barcode className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <Barcode className="w-4 h-4" />
+              <span className="hidden md:inline">Scan</span>
             </button>
             <input
               ref={searchRef}
@@ -896,16 +898,17 @@ export default function POS() {
                 }
               }}
               placeholder="Scan barcode or search product name / SKU..."
-              className="w-full pl-10 pr-16 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/80 dark:bg-[#121E2C]/80 backdrop-blur-md text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#0A4174] dark:focus:ring-[#4A8CD2] shadow-xs placeholder-[#94A3B8]"
+              className="w-full pl-16 md:pl-20 pr-18 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/90 dark:bg-[#121E2C]/90 backdrop-blur-md text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#0A4174] dark:focus:ring-[#4A8CD2] shadow-xs placeholder-[#94A3B8]"
             />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
               <button
                 type="button"
                 onClick={() => setShowImageOcrModal(true)}
                 title="Upload Photo / Receipt to Auto-Add Items (OCR)"
-                className="p-1 rounded-lg text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
+                className="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500 text-amber-600 hover:text-white dark:text-amber-400 dark:hover:text-black transition-all font-bold text-[10px]"
               >
                 <Camera className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Image</span>
               </button>
               <button
                 type="button"

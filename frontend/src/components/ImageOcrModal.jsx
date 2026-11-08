@@ -52,41 +52,57 @@ export default function ImageOcrModal({ isOpen, onClose, products, onAddProduct 
       }
 
       // Match products from recognized text
-      const cleanText = text.toLowerCase();
+      const cleanText = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
+      const textTokens = cleanText.split(/\s+/).filter((t) => t.length >= 2);
       const matched = [];
 
       for (const p of products) {
-        const pName = (p.name || '').toLowerCase().trim();
+        const pName = (p.name || '').toLowerCase();
         const pBarcode = (p.barcode || '').toLowerCase().trim();
         const pSku = (p.sku || '').toLowerCase().trim();
 
         // 1. Exact or partial barcode match
-        if (pBarcode && cleanText.includes(pBarcode)) {
+        if (pBarcode && (cleanText.includes(pBarcode) || textTokens.includes(pBarcode))) {
           matched.push({ product: p, matchReason: `Matched Barcode (${p.barcode})` });
           continue;
         }
 
         // 2. Exact or partial SKU match
-        if (pSku && pSku.length >= 3 && cleanText.includes(pSku)) {
+        if (pSku && pSku.length >= 2 && (cleanText.includes(pSku) || textTokens.includes(pSku))) {
           matched.push({ product: p, matchReason: `Matched SKU (${p.sku})` });
           continue;
         }
 
-        // 3. Name tokens match
-        if (pName && pName.length >= 3) {
-          if (cleanText.includes(pName)) {
-            matched.push({ product: p, matchReason: `Exact Name Match: "${p.name}"` });
+        // 3. Name tokens & fuzzy match
+        if (pName && pName.length >= 2) {
+          const cleanPName = pName.replace(/[^a-z0-9\s]/g, ' ').trim();
+          if (cleanText.includes(cleanPName)) {
+            matched.push({ product: p, matchReason: `Exact Name: "${p.name}"` });
             continue;
           }
 
-          // Check if words of product name appear in text
-          const words = pName.split(/\s+/).filter((w) => w.length > 2);
-          const matchingWords = words.filter((w) => cleanText.includes(w));
-          if (matchingWords.length >= Math.ceil(words.length * 0.6) && words.length > 0) {
-            matched.push({
-              product: p,
-              matchReason: `Matched Keywords: ${matchingWords.join(', ')}`,
-            });
+          // Check token overlap
+          const nameWords = cleanPName.split(/\s+/).filter((w) => w.length >= 3);
+          if (nameWords.length > 0) {
+            const matches = nameWords.filter((w) => textTokens.some((t) => t.includes(w) || w.includes(t)));
+            if (matches.length > 0 && matches.length >= Math.min(2, nameWords.length)) {
+              matched.push({
+                product: p,
+                matchReason: `Matched Product Name: ${matches.join(', ')}`,
+              });
+              continue;
+            }
+          }
+        }
+
+        // 4. Variant names match
+        if (Array.isArray(p.variants)) {
+          for (const v of p.variants) {
+            const vName = (v.variant_name || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+            if (vName && vName.length >= 3 && cleanText.includes(vName)) {
+              matched.push({ product: p, matchReason: `Matched Variant: "${v.variant_name}"` });
+              break;
+            }
           }
         }
       }
