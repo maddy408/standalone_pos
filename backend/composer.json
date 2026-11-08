@@ -13,6 +13,6 @@
         }
     },
     "scripts": {
-        "serve": "php -S 0.0.0.0:8091 -t public"
-    }
+    "serve": "php -S 0.0.0.0:$PORT -t public"
+}
 }
