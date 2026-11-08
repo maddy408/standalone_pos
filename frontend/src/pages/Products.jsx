@@ -675,10 +675,9 @@ export default function Products() {
               { id: 'basic', label: '1. Basic Info' },
               { id: 'pricing', label: '2. Pricing & Tax' },
               { id: 'inventory', label: '3. Inventory' },
-              { id: 'specs', label: `4. ${businessType.toUpperCase()} Specs` },
-              { id: 'variants', label: '5. Variants' },
-              ...(businessType === 'food' ? [{ id: 'addons', label: '6. Add-ons' }] : []),
-              { id: 'settings', label: '7. Settings' },
+              { id: 'variants', label: '4. Variants' },
+              ...(businessType === 'food' ? [{ id: 'addons', label: '5. Add-ons' }] : []),
+              { id: 'settings', label: '6. Settings' },
             ].map((sec) => (
               <button
                 key={sec.id}
@@ -1086,29 +1085,15 @@ export default function Products() {
 
                   <div>
                     <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
-                      Current Stock Qty
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      value={form.stock_qty}
-                      onChange={(e) => setForm({ ...form, stock_qty: e.target.value })}
-                      placeholder="0"
-                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 font-bold focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
                       Opening Stock
                     </label>
                     <input
                       type="number"
                       step="any"
                       value={form.opening_stock}
-                      onChange={(e) => setForm({ ...form, opening_stock: e.target.value })}
+                      onChange={(e) => setForm({ ...form, opening_stock: e.target.value, stock_qty: e.target.value })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 font-bold focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1259,104 +1244,7 @@ export default function Products() {
               </div>
             )}
 
-            {/* SECTION 4: DYNAMIC BUSINESS SPECIFICATIONS */}
-            {activeFormSection === 'specs' && (
-              <div className="space-y-4 animate-in fade-in duration-150">
-                <div className="p-3.5 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {businessIcon}
-                    <span className="font-bold text-xs uppercase text-[#1C2736] dark:text-[#94A3B8]">
-                      {businessType} Specific Attributes
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-[#5A6B82] font-medium">
-                    {attributeFields.length} dynamic fields configured
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {attributeFields.map((field) => {
-                    const value = form.attributes?.[field.field_key];
-                    const label = `${field.label_en} ${field.unit_suffix ? `(${field.unit_suffix})` : ''}`;
-
-                    if (field.field_type === 'select') {
-                      let options = [];
-                      try {
-                        options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || []);
-                      } catch {
-                        options = [];
-                      }
-                      return (
-                        <div key={field.field_key}>
-                          <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
-                            {label} {field.is_required ? '*' : ''}
-                          </label>
-                          <select
-                            value={value ?? ''}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                attributes: { ...form.attributes, [field.field_key]: e.target.value },
-                              })
-                            }
-                            className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                          >
-                            <option value="">-- Choose {field.label_en} --</option>
-                            {options.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label_en}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      );
-                    }
-
-                    if (field.field_type === 'textarea') {
-                      return (
-                        <div key={field.field_key} className="sm:col-span-2">
-                          <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
-                            {label}
-                          </label>
-                          <textarea
-                            rows={2}
-                            value={value ?? ''}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                attributes: { ...form.attributes, [field.field_key]: e.target.value },
-                              })
-                            }
-                            className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                          />
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div key={field.field_key}>
-                        <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1">
-                          {label} {field.is_required ? '*' : ''}
-                        </label>
-                        <input
-                          type={field.field_type === 'number' ? 'number' : 'text'}
-                          value={value ?? ''}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              attributes: { ...form.attributes, [field.field_key]: e.target.value },
-                            })
-                          }
-                          className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* SECTION 5: REUSABLE PRODUCT VARIANTS */}
+            {/* SECTION 4: REUSABLE PRODUCT VARIANTS */}
             {activeFormSection === 'variants' && (
               <div className="space-y-4 animate-in fade-in duration-150">
                 <div className="flex items-center justify-between p-3 rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B]">
@@ -1365,7 +1253,7 @@ export default function Products() {
                       Product Variants
                     </span>
                     <span className="text-[11px] text-[#5A6B82]">
-                      e.g. Size (Small/Large), RAM/Storage (8GB/128GB), Color (Teak/Walnut)
+                      e.g. Color (Red/Black), Size/Storage (128GB/256GB), Attributes
                     </span>
                   </div>
                   <button
@@ -1378,83 +1266,136 @@ export default function Products() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {form.variants?.map((v, i) => (
-                    <div key={i} className="p-3 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-[#0A4174] dark:text-[#4A8CD2]">Variant #{i + 1}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeVariantRow(i)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                  {form.variants?.map((v, i) => {
+                    const attrs = typeof v.attributes === 'object' && v.attributes !== null ? v.attributes : {};
+                    const updateAttr = (key, val) => {
+                      const newAttrs = { ...attrs, [key]: val };
+                      const parts = [newAttrs.color, newAttrs.size, newAttrs.spec].filter(Boolean);
+                      const autoName = parts.length > 0 ? parts.join(' - ') : v.variant_name;
+                      updateVariantRow(i, {
+                        attributes: newAttrs,
+                        variant_name: autoName || v.variant_name
+                      });
+                    };
 
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                        <div className="sm:col-span-2">
-                          <input
-                            value={v.variant_name}
-                            onChange={(e) => updateVariantRow(i, { variant_name: e.target.value })}
-                            placeholder="Variant Name (e.g. 256GB Space Gray / Half / 6-Seater)"
-                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-medium"
-                          />
+                    return (
+                      <div key={i} className="p-3.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-2.5 shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-[#DCE5EF]/60 dark:border-[#22354B]/60 pb-1.5">
+                          <span className="font-bold text-xs text-[#0A4174] dark:text-[#4A8CD2]">Variant #{i + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeVariantRow(i)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                        <div>
-                          <input
-                            value={v.sku}
-                            onChange={(e) => updateVariantRow(i, { sku: e.target.value })}
-                            placeholder="Variant SKU"
-                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <input
-                            value={v.barcode}
-                            onChange={(e) => updateVariantRow(i, { barcode: e.target.value })}
-                            placeholder="Variant Barcode"
-                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-mono"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div>
-                          <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Price Adjust ({currency})</label>
-                          <input
-                            type="number"
-                            step="any"
-                            value={v.price_adjustment}
-                            onChange={(e) => updateVariantRow(i, { price_adjustment: e.target.value })}
-                            placeholder="+/- 0.00"
-                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs"
-                          />
+                        {/* Structured Color & Attributes */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-[#F4F7FB]/70 dark:bg-[#1A2A3D]/40 p-2.5 rounded-lg border border-[#DCE5EF]/60 dark:border-[#22354B]/60">
+                          <div>
+                            <label className="text-[10px] font-bold text-[#1C2736] dark:text-[#94A3B8] block mb-0.5">
+                              Color / Shade
+                            </label>
+                            <input
+                              value={attrs.color || ''}
+                              onChange={(e) => updateAttr('color', e.target.value)}
+                              placeholder="e.g. Red / Black / Gold"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-[#1C2736] dark:text-[#94A3B8] block mb-0.5">
+                              Size / Storage
+                            </label>
+                            <input
+                              value={attrs.size || ''}
+                              onChange={(e) => updateAttr('size', e.target.value)}
+                              placeholder="e.g. 128GB / XL / 6-Seater"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-[#1C2736] dark:text-[#94A3B8] block mb-0.5">
+                              Other Spec
+                            </label>
+                            <input
+                              value={attrs.spec || ''}
+                              onChange={(e) => updateAttr('spec', e.target.value)}
+                              placeholder="e.g. 8GB RAM / 5G"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1 text-xs"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Exact Selling Price ({currency})</label>
-                          <input
-                            type="number"
-                            step="any"
-                            value={v.selling_price}
-                            onChange={(e) => updateVariantRow(i, { selling_price: e.target.value })}
-                            placeholder="Override Price"
-                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2]"
-                          />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                          <div className="sm:col-span-2">
+                            <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block mb-0.5">Variant Display Name</label>
+                            <input
+                              value={v.variant_name}
+                              onChange={(e) => updateVariantRow(i, { variant_name: e.target.value })}
+                              placeholder="Variant Name (e.g. Red - 128GB)"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-semibold"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block mb-0.5">SKU</label>
+                            <input
+                              value={v.sku}
+                              onChange={(e) => updateVariantRow(i, { sku: e.target.value })}
+                              placeholder="Variant SKU"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block mb-0.5">Barcode</label>
+                            <input
+                              value={v.barcode}
+                              onChange={(e) => updateVariantRow(i, { barcode: e.target.value })}
+                              placeholder="Barcode"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1.5 text-xs font-mono"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Variant Stock</label>
-                          <input
-                            type="number"
-                            step="any"
-                            value={v.stock_qty}
-                            onChange={(e) => updateVariantRow(i, { stock_qty: e.target.value })}
-                            placeholder="0"
-                            className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs"
-                          />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div>
+                            <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Price Adjust ({currency})</label>
+                            <input
+                              type="number"
+                              step="any"
+                              value={v.price_adjustment}
+                              onChange={(e) => updateVariantRow(i, { price_adjustment: e.target.value })}
+                              placeholder="+/- 0.00"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Exact Selling Price ({currency})</label>
+                            <input
+                              type="number"
+                              step="any"
+                              value={v.selling_price}
+                              onChange={(e) => updateVariantRow(i, { selling_price: e.target.value })}
+                              placeholder="Override Price"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2]"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] block">Variant Stock</label>
+                            <input
+                              type="number"
+                              step="any"
+                              value={v.stock_qty}
+                              onChange={(e) => updateVariantRow(i, { stock_qty: e.target.value })}
+                              placeholder="0"
+                              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2.5 py-1 text-xs"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(!form.variants || form.variants.length === 0) && (
                     <div className="p-8 text-center text-[#5A6B82] dark:text-[#94A3B8] border border-dashed border-[#DCE5EF] dark:border-[#22354B] rounded-xl">
                       No variants added. This product will be sold as a single standard item.

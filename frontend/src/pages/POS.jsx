@@ -455,7 +455,8 @@ export default function POS() {
     }
 
     setCart((c) => {
-      const existing = c.find((l) => l.product_id === product.id && !l.serial_id && !l.variant_id);
+      const matchKey = `${product.id}-${variant ? variant.id : 'base'}`;
+      const existing = c.find((l) => l.key === matchKey);
       if (existing) {
         return c.map((l) => (l.key === existing.key ? recalcLine({ ...l, qty: l.qty + qtyToAdd }) : l));
       }
@@ -867,6 +868,8 @@ export default function POS() {
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
                   const term = search.trim().toLowerCase();
                   if (!term) return;
                   const match =
@@ -1659,7 +1662,13 @@ export default function POS() {
                           onChange={() => setCustomizer((c) => ({ ...c, variantId: v.id }))}
                           className="accent-[#0A4174]"
                         />
-                        <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{v.variant_name}</span>
+                        <div>
+                          <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">{v.variant_name}</span>
+                          {v.sku && <span className="ml-2 font-mono text-[10px] text-[#5A6B82]">({v.sku})</span>}
+                          {v.stock_qty !== undefined && (
+                            <span className="ml-2 text-[10px] text-emerald-600 font-medium">Stock: {v.stock_qty}</span>
+                          )}
+                        </div>
                       </div>
                       <span className="text-[11px] font-bold text-[#0A4174] dark:text-[#4A8CD2]">
                         {v.selling_price && Number(v.selling_price) > 0

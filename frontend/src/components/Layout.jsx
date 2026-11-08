@@ -211,7 +211,7 @@ export default function Layout() {
             className={customNavItemClass(isCustomersActive)}
           >
             <Users className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>Customers & Collection</span>
+            <span>Customers & Credit</span>
           </Link>
         )}
 

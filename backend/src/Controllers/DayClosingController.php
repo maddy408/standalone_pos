@@ -157,7 +157,7 @@ class DayClosingController
     {
         $returnsStmt = $this->pdo->prepare(
             "SELECT * FROM day_returns
-             WHERE vehicle_id = :vid AND return_date = :date AND status = 'completed' AND day_closing_id IS NULL"
+             WHERE vehicle_id = :vid AND return_date <= :date AND status = 'completed' AND day_closing_id IS NULL"
         );
         $returnsStmt->execute(['vid' => $vehicleId, 'date' => $date]);
         $returns = $returnsStmt->fetchAll();

@@ -148,6 +148,192 @@ class InvoiceController
         }
     }
 
+    /** PUT /api/invoices/{id} — updates an existing invoice, adjusts stock & re-calculates balances. */
+    public function update(string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'pos.access');
+        $invoiceId = $this->resolveId($id);
+
+        $stmt = $this->pdo->prepare('SELECT * FROM invoices WHERE id = :id');
+        $stmt->execute(['id' => $invoiceId]);
+        $existingInvoice = $stmt->fetch();
+        if (!$existingInvoice) {
+            Response::error('Invoice not found', 404);
+        }
+        if ($existingInvoice['status'] === 'cancelled') {
+            Response::error('Cancelled invoices cannot be edited', 422);
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $items = $body['items'] ?? [];
+        if (empty($items)) {
+            Response::error('Invoice must have at least one item', 422);
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            // 1. Fetch old invoice items and return their deducted stock
+            $oldItemsStmt = $this->pdo->prepare('SELECT * FROM invoice_items WHERE invoice_id = :id');
+            $oldItemsStmt->execute(['id' => $invoiceId]);
+            $oldItems = $oldItemsStmt->fetchAll();
+
+            foreach ($oldItems as $oldItem) {
+                if ($oldItem['product_id']) {
+                    $this->restock(
+                        (int) $oldItem['product_id'],
+                        (float) $oldItem['qty'],
+                        'sale_return',
+                        'invoices',
+                        $invoiceId,
+                        $oldItem['serial_id'] ? (int) $oldItem['serial_id'] : null
+                    );
+                }
+            }
+
+            // 2. Reverse customer balance change from old invoice
+            if ($existingInvoice['customer_id'] && (float) $existingInvoice['balance_amount'] > 0) {
+                $this->pdo->prepare('UPDATE customers SET balance = balance - :amt WHERE id = :id')
+                    ->execute(['amt' => (float) $existingInvoice['balance_amount'], 'id' => $existingInvoice['customer_id']]);
+            }
+
+            // 3. Delete existing invoice items
+            $this->pdo->prepare('DELETE FROM invoice_items WHERE invoice_id = :id')->execute(['id' => $invoiceId]);
+
+            // 4. Calculate new totals and re-insert items
+            $subtotal = 0.0;
+            $discountTotal = 0.0;
+            $taxTotal = 0.0;
+            $lineRows = [];
+
+            foreach ($items as $item) {
+                $qty = (float) ($item['qty'] ?? 0);
+                if ($qty <= 0) {
+                    throw new ValidationException('Item quantity must be greater than zero');
+                }
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                $addonsTotal = 0.0;
+                foreach ($item['addons'] ?? [] as $addon) {
+                    $addonsTotal += (float) ($addon['price'] ?? 0);
+                }
+                $lineBase = ($unitPrice + $addonsTotal) * $qty;
+                $discountAmount = (float) ($item['discount_amount'] ?? 0);
+                $taxAmount = (float) ($item['tax_amount'] ?? 0);
+                $lineTotal = round($lineBase - $discountAmount + $taxAmount, 2);
+
+                $subtotal += $lineBase;
+                $discountTotal += $discountAmount;
+                $taxTotal += $taxAmount;
+
+                $lineRows[] = [
+                    'product_id' => $item['product_id'] ?? null,
+                    'variant_id' => $item['variant_id'] ?? null,
+                    'serial_id' => $item['serial_id'] ?? null,
+                    'product_name_snapshot' => $item['product_name'] ?? ($item['product_name_snapshot'] ?? 'Item'),
+                    'qty' => $qty,
+                    'unit_price' => $unitPrice,
+                    'discount_amount' => $discountAmount,
+                    'tax_amount' => $taxAmount,
+                    'line_total' => $lineTotal,
+                    'addons' => !empty($item['addons']) ? (is_string($item['addons']) ? $item['addons'] : json_encode($item['addons'], JSON_UNESCAPED_UNICODE)) : null,
+                    'customization' => !empty($item['customization']) ? (is_string($item['customization']) ? $item['customization'] : json_encode($item['customization'], JSON_UNESCAPED_UNICODE)) : null,
+                ];
+            }
+
+            $billDiscount = (float) ($body['discount_amount'] ?? 0);
+            $subtotal = round($subtotal, 2);
+            $discountTotal = round($discountTotal + $billDiscount, 2);
+            $taxTotal = round($taxTotal, 2);
+            $grandTotal = round($subtotal - $discountTotal + $taxTotal, 2);
+
+            $paidAmount = isset($body['paid_amount']) ? (float) $body['paid_amount'] : (float) $existingInvoice['paid_amount'];
+            $balanceAmount = round(max(0, $grandTotal - $paidAmount), 2);
+
+            // 5. Update invoice record
+            $customerId = $body['customer_id'] ?? $existingInvoice['customer_id'];
+            $this->pdo->prepare(
+                'UPDATE invoices SET
+                    customer_id = :customer_id,
+                    subtotal = :subtotal,
+                    discount_amount = :discount_amount,
+                    tax_amount = :tax_amount,
+                    grand_total = :grand_total,
+                    paid_amount = :paid_amount,
+                    balance_amount = :balance_amount,
+                    slogan = :slogan,
+                    customer_type = :customer_type
+                 WHERE id = :id'
+            )->execute([
+                'customer_id' => $customerId,
+                'subtotal' => $subtotal,
+                'discount_amount' => $discountTotal,
+                'tax_amount' => $taxTotal,
+                'grand_total' => $grandTotal,
+                'paid_amount' => $paidAmount,
+                'balance_amount' => $balanceAmount,
+                'slogan' => $body['slogan'] ?? $existingInvoice['slogan'],
+                'customer_type' => $body['customer_type'] ?? $existingInvoice['customer_type'],
+                'id' => $invoiceId,
+            ]);
+
+            // 6. Insert new items and deduct stock
+            $insertItem = $this->pdo->prepare(
+                'INSERT INTO invoice_items
+                    (invoice_id, product_id, variant_id, serial_id, product_name_snapshot, qty, unit_price,
+                     discount_amount, tax_amount, line_total, addons, customization)
+                 VALUES
+                    (:invoice_id, :product_id, :variant_id, :serial_id, :name, :qty, :unit_price,
+                     :discount_amount, :tax_amount, :line_total, :addons, :customization)'
+            );
+            foreach ($lineRows as $line) {
+                $insertItem->execute([
+                    'invoice_id' => $invoiceId,
+                    'product_id' => $line['product_id'],
+                    'variant_id' => $line['variant_id'],
+                    'serial_id' => $line['serial_id'],
+                    'name' => $line['product_name_snapshot'],
+                    'qty' => $line['qty'],
+                    'unit_price' => $line['unit_price'],
+                    'discount_amount' => $line['discount_amount'],
+                    'tax_amount' => $line['tax_amount'],
+                    'line_total' => $line['line_total'],
+                    'addons' => $line['addons'],
+                    'customization' => $line['customization'],
+                ]);
+
+                if ($line['product_id']) {
+                    $this->deductStock(
+                        (int) $line['product_id'],
+                        (float) $line['qty'],
+                        'online',
+                        $invoiceId,
+                        $line['serial_id'] ? (int) $line['serial_id'] : null,
+                        (int) $claims['uid']
+                    );
+                }
+            }
+
+            // 7. Update customer balance if applicable
+            if ($customerId && $balanceAmount > 0) {
+                $this->pdo->prepare('UPDATE customers SET balance = balance + :amt WHERE id = :id')
+                    ->execute(['amt' => $balanceAmount, 'id' => $customerId]);
+            }
+
+            $this->pdo->commit();
+            AuditLogger::log($this->pdo, $claims, 'update', 'invoices', $invoiceId, [
+                'invoice_no' => $existingInvoice['invoice_no'],
+                'grand_total' => $grandTotal,
+            ]);
+            Response::json($this->fetchInvoice($invoiceId));
+        } catch (ValidationException $e) {
+            $this->pdo->rollBack();
+            Response::error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            Response::error('Failed to update invoice: ' . $e->getMessage(), 500);
+        }
+    }
+
     /** POST /api/invoices/{id}/cancel — reverses stock and marks cancelled. */
     public function cancel(string $id): void
     {

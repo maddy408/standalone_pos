@@ -109,6 +109,7 @@ $invoices = new InvoiceController($pdo);
 $router->get('/api/invoices', fn () => $invoices->index());
 $router->get('/api/invoices/{id}', fn ($id) => $invoices->show($id));
 $router->post('/api/invoices', fn () => $invoices->store());
+$router->put('/api/invoices/{id}', fn ($id) => $invoices->update($id));
 $router->get('/api/invoices/{id}/print', fn ($id) => $invoices->print($id));
 $router->post('/api/invoices/{id}/cancel', fn ($id) => $invoices->cancel($id));
 $router->delete('/api/invoices/{id}', fn ($id) => $invoices->cancel($id));
