@@ -266,11 +266,11 @@ class ProductController
             $stmt = $this->pdo->prepare(
                 'INSERT INTO products
                     (uuid, business_type, name, description, images, category_id, brand_id, unit_id, tax_rate_id, tax_inclusive, supplier_id,
-                     barcode, sku, hsn_code, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
+                     barcode, mfg_date, exp_date, sku, hsn_code, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
                      stock_qty, opening_stock, low_stock_threshold, min_stock, max_stock, track_serial, pos_enabled, online_enabled, is_returnable, attributes)
                  VALUES
                     (:uuid, :business_type, :name, :description, :images, :category_id, :brand_id, :unit_id, :tax_rate_id, :tax_inclusive, :supplier_id,
-                     :barcode, :sku, :hsn_code, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
+                     :barcode, :mfg_date, :exp_date, :sku, :hsn_code, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
                      :stock_qty, :opening_stock, :low_stock_threshold, :min_stock, :max_stock, :track_serial, :pos_enabled, :online_enabled, :is_returnable, :attributes)'
             );
             $stmt->execute([
@@ -286,6 +286,8 @@ class ProductController
                 'tax_inclusive' => !empty($body['tax_inclusive']) ? 1 : 0,
                 'supplier_id' => $body['supplier_id'] ?? null,
                 'barcode' => $barcode,
+                'mfg_date' => !empty($body['mfg_date']) ? $body['mfg_date'] : null,
+                'exp_date' => !empty($body['exp_date']) ? $body['exp_date'] : null,
                 'sku' => $body['sku'] ?? null,
                 'hsn_code' => $body['hsn_code'] ?? null,
                 'purchase_price' => $purchasePrice,
@@ -370,7 +372,8 @@ class ProductController
             'UPDATE products SET
                 business_type = :business_type, name = :name, description = :description, images = :images,
                 category_id = :category_id, brand_id = :brand_id, unit_id = :unit_id, tax_rate_id = :tax_rate_id,
-                tax_inclusive = :tax_inclusive, supplier_id = :supplier_id, barcode = :barcode, sku = :sku,
+                tax_inclusive = :tax_inclusive, supplier_id = :supplier_id, barcode = :barcode,
+                mfg_date = :mfg_date, exp_date = :exp_date, sku = :sku,
                 hsn_code = :hsn_code, purchase_price = :purchase_price, selling_price = :selling_price, mrp = :mrp,
                 retail_price = :retail_price, wholesale_price = :wholesale_price, customer_price = :customer_price,
                 stock_qty = :stock_qty, opening_stock = :opening_stock, low_stock_threshold = :low_stock_threshold,
@@ -391,6 +394,8 @@ class ProductController
             'tax_inclusive' => !empty($body['tax_inclusive']) ? 1 : 0,
             'supplier_id' => $body['supplier_id'] ?? null,
             'barcode' => $barcode,
+            'mfg_date' => !empty($body['mfg_date']) ? $body['mfg_date'] : null,
+            'exp_date' => !empty($body['exp_date']) ? $body['exp_date'] : null,
             'sku' => $body['sku'] ?? null,
             'hsn_code' => $body['hsn_code'] ?? null,
             'purchase_price' => $purchasePrice,

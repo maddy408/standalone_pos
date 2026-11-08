@@ -49,6 +49,8 @@ const BLANK_FORM = {
   tax_inclusive: false,
   supplier_id: '',
   barcode: '',
+  mfg_date: '',
+  exp_date: '',
   sku: '',
   hsn_code: '',
   purchase_price: '',
@@ -867,6 +869,32 @@ export default function Products() {
                       onChange={(e) => setForm({ ...form, hsn_code: e.target.value })}
                       placeholder="e.g. 85171200"
                       className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional Mfg Date & Expiry Date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-[#F4F7FB]/60 dark:bg-[#1A2A3D]/40 border border-[#DCE5EF]/80 dark:border-[#22354B]">
+                  <div>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1 text-xs">
+                      Manufacturing Date (Mfg) <span className="text-[#5A6B82] font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={form.mfg_date || ''}
+                      onChange={(e) => setForm({ ...form, mfg_date: e.target.value })}
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-1.5 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-1 text-xs">
+                      Expiry Date (Exp) <span className="text-[#5A6B82] font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={form.exp_date || ''}
+                      onChange={(e) => setForm({ ...form, exp_date: e.target.value })}
+                      className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-1.5 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                     />
                   </div>
                 </div>

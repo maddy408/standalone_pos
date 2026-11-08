@@ -38,6 +38,9 @@ export default function Inventory() {
   const [qty, setQty] = useState(1);
   const [adjustType, setAdjustType] = useState('purchase'); // increase: 'purchase', 'other'; decrease: 'damage', 'other'
   const [customReason, setCustomReason] = useState('');
+  const [batchBarcode, setBatchBarcode] = useState('');
+  const [batchMfgDate, setBatchMfgDate] = useState('');
+  const [batchExpDate, setBatchExpDate] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
@@ -87,6 +90,9 @@ export default function Inventory() {
     setQty(1);
     setAdjustType('purchase');
     setCustomReason('');
+    setBatchBarcode(product?.barcode || '');
+    setBatchMfgDate(product?.mfg_date || '');
+    setBatchExpDate(product?.exp_date || '');
     setModalOpen(true);
   };
 
@@ -112,6 +118,9 @@ export default function Inventory() {
       product_id: Number(selectedProduct.id),
       qty_change: delta,
       reason: reasonText,
+      barcode: (direction === 'increase' && adjustType === 'purchase') ? (batchBarcode || null) : null,
+      mfg_date: (direction === 'increase' && adjustType === 'purchase') ? (batchMfgDate || null) : null,
+      exp_date: (direction === 'increase' && adjustType === 'purchase') ? (batchExpDate || null) : null,
     };
 
     try {
@@ -433,6 +442,50 @@ export default function Inventory() {
                   </select>
                 )}
               </div>
+
+              {direction === 'increase' && adjustType === 'purchase' && (
+                <div className="p-3 rounded-xl bg-[#F4F7FB]/70 dark:bg-[#1A2A3D]/40 border border-[#DCE5EF] dark:border-[#22354B] space-y-2 text-xs">
+                  <div className="font-bold text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-between">
+                    <span>New Stock Batch Details</span>
+                    <span className="text-[10px] text-[#5A6B82] font-normal">Optional if unchanged</span>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-0.5">
+                      Batch Barcode
+                    </label>
+                    <input
+                      value={batchBarcode}
+                      onChange={(e) => setBatchBarcode(e.target.value)}
+                      placeholder="e.g. New barcode or leave as existing"
+                      className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2.5 py-1.5 font-mono text-xs focus:ring-1 focus:ring-[#0A4174]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-0.5">
+                        Mfg Date
+                      </label>
+                      <input
+                        type="date"
+                        value={batchMfgDate}
+                        onChange={(e) => setBatchMfgDate(e.target.value)}
+                        className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2 py-1 text-xs focus:ring-1 focus:ring-[#0A4174]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-[#1C2736] dark:text-[#94A3B8] mb-0.5">
+                        Expiry Date
+                      </label>
+                      <input
+                        type="date"
+                        value={batchExpDate}
+                        onChange={(e) => setBatchExpDate(e.target.value)}
+                        className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-2 py-1 text-xs focus:ring-1 focus:ring-[#0A4174]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {adjustType === 'other' && (
                 <div>

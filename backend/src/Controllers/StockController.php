@@ -108,14 +108,43 @@ class StockController
             $this->pdo->prepare('UPDATE products SET stock_qty = stock_qty + :qty WHERE id = :id')
                 ->execute(['qty' => $qtyChange, 'id' => $productId]);
 
+            // If new barcode or dates provided, update product active metadata if present
+            $mfgDate = !empty($body['mfg_date']) ? $body['mfg_date'] : null;
+            $expDate = !empty($body['exp_date']) ? $body['exp_date'] : null;
+            $barcode = !empty($body['barcode']) ? trim($body['barcode']) : null;
+
+            if ($barcode || $mfgDate || $expDate) {
+                $updates = [];
+                $uParams = ['id' => $productId];
+                if ($barcode) {
+                    $updates[] = 'barcode = :barcode';
+                    $uParams['barcode'] = $barcode;
+                }
+                if ($mfgDate) {
+                    $updates[] = 'mfg_date = :mfg';
+                    $uParams['mfg'] = $mfgDate;
+                }
+                if ($expDate) {
+                    $updates[] = 'exp_date = :exp';
+                    $uParams['exp'] = $expDate;
+                }
+                if (!empty($updates)) {
+                    $this->pdo->prepare('UPDATE products SET ' . implode(', ', $updates) . ' WHERE id = :id')
+                        ->execute($uParams);
+                }
+            }
+
             $this->pdo->prepare(
-                "INSERT INTO stock_movements (uuid, product_id, qty_change, movement_type, ref_type, notes, user_id)
-                 VALUES (:uuid, :pid, :qty, 'adjustment', 'manual', :notes, :user_id)"
+                "INSERT INTO stock_movements (uuid, product_id, qty_change, movement_type, ref_type, notes, mfg_date, exp_date, barcode, user_id)
+                 VALUES (:uuid, :pid, :qty, 'adjustment', 'manual', :notes, :mfg, :exp, :barcode, :user_id)"
             )->execute([
                 'uuid' => $uuid,
                 'pid' => $productId,
                 'qty' => $qtyChange,
                 'notes' => $body['reason'] ?? null,
+                'mfg' => $mfgDate,
+                'exp' => $expDate,
+                'barcode' => $barcode,
                 'user_id' => $claims['uid'],
             ]);
             $this->pdo->commit();

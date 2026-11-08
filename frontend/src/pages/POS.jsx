@@ -20,6 +20,8 @@ import {
 import { refreshPendingCount } from '../db/syncService';
 import { openReceiptWindow } from '../print/receipt';
 import InvoicePreviewModal from '../components/InvoicePreviewModal';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ImageOcrModal from '../components/ImageOcrModal';
 import {
   Search,
   ShoppingCart,
@@ -118,6 +120,10 @@ export default function POS() {
 
   // Completed Invoice Preview Modal State
   const [completedInvoicePreview, setCompletedInvoicePreview] = useState(null);
+
+  // Live Barcode Scanner & Image OCR modals
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [showImageOcrModal, setShowImageOcrModal] = useState(false);
 
   // Set when arriving from Orders ("Convert to Bill") via ?order_id= — on
   // successful sale we link the resulting invoice back to that order.
@@ -857,11 +863,16 @@ export default function POS() {
       <div className="flex-1 flex flex-col min-w-0 water-glass-card rounded-2xl overflow-hidden shadow-sm">
         {/* Sub-Header: Search bar with shortcut tags */}
         <div className="p-3 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/40 dark:bg-[#121E2C]/40 flex items-center gap-3">
-          {/* Barcode Search Input with prefix icon & search icon */}
+          {/* Barcode Search Input with interactive camera scanner & image OCR trigger */}
           <div className="relative flex-1">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-[#5A6B82] dark:text-[#94A3B8]">
-              <Barcode className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowScannerModal(true)}
+              title="Open Live Barcode Camera Scanner"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] p-1 rounded-lg transition-colors cursor-pointer group"
+            >
+              <Barcode className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            </button>
             <input
               ref={searchRef}
               value={search}
@@ -885,20 +896,30 @@ export default function POS() {
                 }
               }}
               placeholder="Scan barcode or search product name / SKU..."
-              className="w-full pl-10 pr-9 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/80 dark:bg-[#121E2C]/80 backdrop-blur-md text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#0A4174] dark:focus:ring-[#4A8CD2] shadow-xs placeholder-[#94A3B8]"
+              className="w-full pl-10 pr-16 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white/80 dark:bg-[#121E2C]/80 backdrop-blur-md text-xs font-medium text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-2 focus:ring-[#0A4174] dark:focus:ring-[#4A8CD2] shadow-xs placeholder-[#94A3B8]"
             />
-            <button
-              type="button"
-              onClick={() => {
-                if (filteredProducts[0]) {
-                  handleProductClick(filteredProducts[0]);
-                  setSearch('');
-                }
-              }}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2]"
-            >
-              <Search className="w-4 h-4" />
-            </button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setShowImageOcrModal(true)}
+                title="Upload Photo / Receipt to Auto-Add Items (OCR)"
+                className="p-1 rounded-lg text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] transition-colors"
+              >
+                <Camera className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (filteredProducts[0]) {
+                    handleProductClick(filteredProducts[0]);
+                    setSearch('');
+                  }
+                }}
+                className="p-1 text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2]"
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Shortcut Badges matching reference screenshot */}
@@ -1944,6 +1965,37 @@ export default function POS() {
           onClose={() => setCompletedInvoicePreview(null)}
         />
       )}
+
+      {/* Live Barcode Camera Scanner Modal */}
+      <BarcodeScannerModal
+        isOpen={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onScanSuccess={(scannedCode) => {
+          const match = products.find(
+            (p) =>
+              (p.barcode && p.barcode.toLowerCase() === scannedCode.toLowerCase()) ||
+              (p.sku && p.sku.toLowerCase() === scannedCode.toLowerCase())
+          );
+          if (match) {
+            handleProductClick(match);
+            setMessage(`Scanned & Added: "${match.name}"`);
+          } else {
+            setSearch(scannedCode);
+            setMessage(`Barcode scanned: ${scannedCode}. No exact match found.`);
+          }
+        }}
+      />
+
+      {/* Image OCR Text Extraction Modal */}
+      <ImageOcrModal
+        isOpen={showImageOcrModal}
+        onClose={() => setShowImageOcrModal(false)}
+        products={products}
+        onAddProduct={(p) => {
+          handleProductClick(p);
+          setMessage(`Added "${p.name}" from image text!`);
+        }}
+      />
     </div>
   );
 }

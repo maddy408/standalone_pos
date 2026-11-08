@@ -8,7 +8,7 @@ import { formatCurrency } from '../utils/currency';
 import { openOrderSlipWindow } from '../print/orderSlip';
 import OrderPreviewModal from '../components/OrderPreviewModal';
 import { exportTableCsv } from '../utils/reportExport';
-import { VanStockTab } from './VanSales';
+import VanSales from './VanSales';
 import {
   ClipboardList,
   Plus,
@@ -323,6 +323,36 @@ export default function OrderManagement() {
         </button>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-1 border-b border-[#DCE5EF] dark:border-[#22354B] pb-2">
+        <button
+          onClick={() => setSection('pre_bookings')}
+          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+            section === 'pre_bookings'
+              ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-sm'
+              : 'text-[#5A6B82] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]'
+          }`}
+        >
+          Customer Orders & Pre-Bookings
+        </button>
+        {canViewVanStock && (
+          <button
+            onClick={() => setSection('van_sales')}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+              section === 'van_sales'
+                ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-sm'
+                : 'text-[#5A6B82] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]'
+            }`}
+          >
+            <Truck className="w-3.5 h-3.5" /> Van Sales & Distribution
+          </button>
+        )}
+      </div>
+
+      {section === 'van_sales' && canViewVanStock && (
+        <VanSales />
+      )}
+
+      {section === 'pre_bookings' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {canCreate && (
           <div className="lg:col-span-5">
@@ -613,6 +643,7 @@ export default function OrderManagement() {
           </div>
         </div>
       </div>
+      )}
 
       {viewingOrder && (
         <OrderViewModal

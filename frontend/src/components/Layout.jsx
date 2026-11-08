@@ -188,19 +188,11 @@ export default function Layout() {
           </NavLink>
         )}
 
-        {/* 4b. Orders */}
-        {can('orders.view') && (
+        {/* 4b. Orders & Pre-Bookings / Van Sales */}
+        {(can('orders.view') || can('van_sales.view')) && (
           <NavLink to="/orders" className={navItemClass}>
             <ClipboardList className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{t('nav.orders')}</span>
-          </NavLink>
-        )}
-
-        {/* 4c. Van Sales */}
-        {can('van_sales.view') && (
-          <NavLink to="/van-sales" className={navItemClass}>
-            <Truck className="w-3.5 h-3.5 flex-shrink-0" />
-            <span>{t('nav.van_sales')}</span>
           </NavLink>
         )}
 
