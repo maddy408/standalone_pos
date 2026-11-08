@@ -54,8 +54,19 @@ export default function Layout() {
     location.pathname.startsWith('/expenses') ||
     location.pathname.startsWith('/income');
 
-  const navItemClass = ({ isActive }) => theme.header.navItem(isActive);
-  const customNavItemClass = (isActive) => theme.header.navItem(isActive);
+const navItemClass = ({ isActive }) =>
+  `h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 tracking-normal transition-all flex-shrink-0 whitespace-nowrap ${
+    isActive
+      ? 'bg-[#0A4174] text-white shadow-md font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+      : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/80 dark:hover:bg-[#1A2A3D]'
+  }`;
+
+const customNavItemClass = (isActive) =>
+  `h-8 px-2.5 xl:px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 tracking-normal transition-all flex-shrink-0 whitespace-nowrap ${
+    isActive
+      ? 'bg-[#0A4174] text-white shadow-md font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
+      : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/80 dark:hover:bg-[#1A2A3D]'
+  }`;
 
   return (
     <div className="flex flex-col h-screen text-[#1C2736] dark:text-[#F1F5F9] overflow-hidden font-sans">
