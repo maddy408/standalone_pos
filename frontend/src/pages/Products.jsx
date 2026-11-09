@@ -33,7 +33,10 @@ import {
   Calendar,
   Sliders,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Eye,
+  Clock,
+  TrendingUp
 } from 'lucide-react';
 
 const BLANK_FORM = {
@@ -109,6 +112,10 @@ export default function Products() {
   // Separate Category and Subcategory selection state
   const [selectedMainCatId, setSelectedMainCatId] = useState('');
   const [selectedSubCatId, setSelectedSubCatId] = useState('');
+
+  // Product Details & Batch History State
+  const [detailProduct, setDetailProduct] = useState(null);
+  const [movements, setMovements] = useState([]);
 
   const currency = settings?.currency_symbol || '₹';
   const businessType = settings?.business_type || 'mobile';
@@ -247,6 +254,11 @@ export default function Products() {
     if (bt === 'food') {
       api.get('/lookup/addons').then(({ data }) => setAddonsList(Array.isArray(data) ? data : [])).catch(() => {});
     }
+
+    // Load stock movements for batch breakdown
+    api.get('/stock/movements').then(({ data }) => {
+      setMovements(Array.isArray(data) ? data : []);
+    }).catch(() => {});
   }, [settings?.business_type]);
 
   // Barcode Auto Generator
@@ -619,6 +631,13 @@ export default function Products() {
                       <td className="px-3.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1.5">
                           <button
+                            onClick={() => setDetailProduct(p)}
+                            title="View Product Details & Batches"
+                            className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => startEdit(p)}
                             title="Edit"
                             className="p-1 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded transition-colors"
@@ -660,15 +679,29 @@ export default function Products() {
               </h2>
               <p className="text-xs text-[#5A6B82]">Fill common information, pricing, variants & business specifications</p>
             </div>
-            {isEditing && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] flex items-center gap-1"
-              >
-                <X className="w-3.5 h-3.5" /> Cancel
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {form.id && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const prod = products.find((p) => p.id === form.id);
+                    if (prod) setDetailProduct(prod);
+                  }}
+                  className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors shadow-2xs"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Details & Batches
+                </button>
+              )}
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="text-xs font-semibold text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#5A6B82] flex items-center gap-1"
+                >
+                  <X className="w-3.5 h-3.5" /> Cancel
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Form Section Navigation Pills */}
@@ -1730,6 +1763,224 @@ export default function Products() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Product Details & Batch History Modal */}
+      {detailProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl rounded-2xl bg-white dark:bg-[#121E2C] p-6 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-5 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto scrollbar-thin">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-4 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold flex-shrink-0 shadow-inner">
+                  <Package className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-extrabold text-base text-[#1C2736] dark:text-[#F1F5F9]">
+                      {detailProduct.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2]">
+                      {detailProduct.category_name || 'General'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#5A6B82] dark:text-[#94A3B8] flex items-center gap-3 mt-0.5">
+                    {detailProduct.sku && <span>SKU: <b className="font-mono">{detailProduct.sku}</b></span>}
+                    {detailProduct.barcode && <span>Barcode: <b className="font-mono">#{detailProduct.barcode}</b></span>}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setDetailProduct(null)}
+                className="p-1.5 rounded-xl text-[#5A6B82] hover:bg-slate-100 dark:hover:bg-[#1A2A3D] transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Key Price & Stock Metrics Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
+                <span className="text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400 block tracking-wider">
+                  Purchase Price
+                </span>
+                <span className="text-base font-black text-[#0A4174] dark:text-[#4A8CD2] mt-0.5 block">
+                  {formatCurrency(detailProduct.purchase_price || 0, currency)}
+                </span>
+                <span className="text-[10px] text-[#5A6B82]">Cost per unit</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
+                <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-400 block tracking-wider">
+                  Selling Price
+                </span>
+                <span className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                  {formatCurrency(detailProduct.selling_price || detailProduct.retail_price || 0, currency)}
+                </span>
+                <span className="text-[10px] text-[#5A6B82]">
+                  Margin: {Number(detailProduct.purchase_price || 0) > 0
+                    ? `+${Math.round(((Number(detailProduct.selling_price || 0) - Number(detailProduct.purchase_price || 0)) / Number(detailProduct.purchase_price || 1)) * 100)}%`
+                    : '100%'}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40">
+                <span className="text-[10px] uppercase font-bold text-purple-700 dark:text-purple-400 block tracking-wider">
+                  Current Stock
+                </span>
+                <span className="text-base font-black text-purple-700 dark:text-purple-300 mt-0.5 block">
+                  {Number(detailProduct.stock_qty || 0)} {detailProduct.unit_code || 'pcs'}
+                </span>
+                <span className="text-[10px] text-[#5A6B82]">Available in store</span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/40">
+                <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block tracking-wider">
+                  Total Batches
+                </span>
+                <span className="text-base font-black text-amber-700 dark:text-amber-400 mt-0.5 block">
+                  {movements.filter((m) => m.product_id === detailProduct.id && Number(m.qty_change) > 0).length || 1}
+                </span>
+                <span className="text-[10px] text-[#5A6B82]">Purchase entries</span>
+              </div>
+            </div>
+
+            {/* Manufacturing & Expiry Dates */}
+            <div className="p-4 rounded-2xl bg-[#F4F7FB] dark:bg-[#1A2A3D]/50 border border-[#DCE5EF] dark:border-[#22354B] space-y-2">
+              <div className="text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                Product Dates & Lifespan
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B]">
+                  <span className="text-[#5A6B82] dark:text-[#94A3B8] font-medium">Manufacturing Date (Mfg):</span>
+                  <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9]">
+                    {detailProduct.mfg_date || 'Not Specified'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B]">
+                  <span className="text-[#5A6B82] dark:text-[#94A3B8] font-medium">Expiry Date (Exp):</span>
+                  <span className={`font-bold ${detailProduct.exp_date ? 'text-amber-600 dark:text-amber-400' : 'text-[#1C2736] dark:text-[#F1F5F9]'}`}>
+                    {detailProduct.exp_date || 'Not Specified'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Batch Breakdown Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                  Stock Purchase Batches & Inward History
+                </div>
+                <span className="text-[11px] font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
+                  Batch wise additions
+                </span>
+              </div>
+
+              {(() => {
+                const prodMovements = movements.filter(
+                  (m) => m.product_id === detailProduct.id && Number(m.qty_change) > 0
+                );
+
+                if (prodMovements.length === 0) {
+                  return (
+                    <div className="p-4 rounded-2xl border border-dashed border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg font-black text-xs bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60">
+                            Batch #1 (Opening Stock)
+                          </span>
+                          <span className="text-[11px] text-[#5A6B82] dark:text-[#94A3B8]">
+                            Initial stock recorded on product creation
+                          </span>
+                        </div>
+                        <span className="px-3 py-1 rounded-xl font-black text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60">
+                          +{Number(detailProduct.stock_qty || 0)} {detailProduct.unit_code || 'pcs'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[#5A6B82] flex items-center gap-3 pt-1 border-t border-[#DCE5EF]/60">
+                        <span>Cost: <b>{formatCurrency(detailProduct.purchase_price || 0, currency)}</b></span>
+                        <span>Selling: <b>{formatCurrency(detailProduct.selling_price || 0, currency)}</b></span>
+                        {detailProduct.mfg_date && <span>Mfg: <b>{detailProduct.mfg_date}</b></span>}
+                        {detailProduct.exp_date && <span>Exp: <b className="text-amber-600">{detailProduct.exp_date}</b></span>}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1 scrollbar-thin">
+                    {prodMovements.map((batch, idx) => {
+                      const batchNumber = prodMovements.length - idx;
+                      return (
+                        <div
+                          key={batch.id}
+                          className="p-3.5 rounded-2xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] hover:border-[#0A4174]/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs"
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-lg font-black text-xs bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50">
+                                Batch #{batchNumber}
+                              </span>
+                              <span className="font-bold text-[#1C2736] dark:text-[#F1F5F9] capitalize">
+                                {batch.notes || batch.movement_type || 'Purchase Inward'}
+                              </span>
+                            </div>
+
+                            <div className="text-[11px] text-[#5A6B82] dark:text-[#94A3B8] flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <span className="flex items-center gap-1 font-medium">
+                                <Clock className="w-3 h-3 text-[#5A6B82]" />
+                                {new Date(batch.created_at).toLocaleDateString()} {new Date(batch.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              {batch.barcode && (
+                                <span>Batch Barcode: <b className="font-mono text-[#1C2736] dark:text-white">#{batch.barcode}</b></span>
+                              )}
+                              {batch.exp_date && (
+                                <span>Expiry: <b className="text-amber-600 dark:text-amber-400">{batch.exp_date}</b></span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#DCE5EF]">
+                            <div className="text-right">
+                              <span className="text-[10px] text-[#5A6B82] block">Stock Added</span>
+                              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-200/50 inline-block">
+                                +{Number(batch.qty_change)} {detailProduct.unit_code || 'pcs'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#DCE5EF] dark:border-[#22354B]">
+              <button
+                type="button"
+                onClick={() => {
+                  startEdit(detailProduct);
+                  setDetailProduct(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] text-white dark:text-[#0B131E] font-bold text-xs flex items-center gap-1.5 shadow-sm"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit This Product
+              </button>
+              <button
+                type="button"
+                onClick={() => setDetailProduct(null)}
+                className="px-4 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
