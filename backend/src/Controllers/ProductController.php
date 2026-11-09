@@ -263,17 +263,26 @@ class ProductController
         $openingStock = isset($body['opening_stock']) ? (float)$body['opening_stock'] : $stockQty;
 
         if ($id === null) {
+            $hasMfg = $this->hasProductColumn('mfg_date');
+            $hasExp = $this->hasProductColumn('exp_date');
+
+            $mfgCol = $hasMfg ? ', mfg_date' : '';
+            $mfgVal = $hasMfg ? ', :mfg_date' : '';
+            $expCol = $hasExp ? ', exp_date' : '';
+            $expVal = $hasExp ? ', :exp_date' : '';
+
             $stmt = $this->pdo->prepare(
-                'INSERT INTO products
+                "INSERT INTO products
                     (uuid, business_type, name, description, images, category_id, brand_id, unit_id, tax_rate_id, tax_inclusive, supplier_id,
-                     barcode, mfg_date, exp_date, sku, hsn_code, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
-                     stock_qty, opening_stock, low_stock_threshold, min_stock, max_stock, track_serial, pos_enabled, online_enabled, is_returnable, attributes)
+                     barcode, sku, hsn_code, purchase_price, selling_price, mrp, retail_price, wholesale_price, customer_price,
+                     stock_qty, opening_stock, low_stock_threshold, min_stock, max_stock, track_serial, pos_enabled, online_enabled, is_returnable, attributes{$mfgCol}{$expCol})
                  VALUES
                     (:uuid, :business_type, :name, :description, :images, :category_id, :brand_id, :unit_id, :tax_rate_id, :tax_inclusive, :supplier_id,
-                     :barcode, :mfg_date, :exp_date, :sku, :hsn_code, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
-                     :stock_qty, :opening_stock, :low_stock_threshold, :min_stock, :max_stock, :track_serial, :pos_enabled, :online_enabled, :is_returnable, :attributes)'
+                     :barcode, :sku, :hsn_code, :purchase_price, :selling_price, :mrp, :retail_price, :wholesale_price, :customer_price,
+                     :stock_qty, :opening_stock, :low_stock_threshold, :min_stock, :max_stock, :track_serial, :pos_enabled, :online_enabled, :is_returnable, :attributes{$mfgVal}{$expVal})"
             );
-            $stmt->execute([
+
+            $params = [
                 'uuid' => $body['uuid'] ?? UuidHelper::v4(),
                 'business_type' => $body['business_type'],
                 'name' => $body['name'],
@@ -286,8 +295,6 @@ class ProductController
                 'tax_inclusive' => !empty($body['tax_inclusive']) ? 1 : 0,
                 'supplier_id' => $body['supplier_id'] ?? null,
                 'barcode' => $barcode,
-                'mfg_date' => !empty($body['mfg_date']) ? $body['mfg_date'] : null,
-                'exp_date' => !empty($body['exp_date']) ? $body['exp_date'] : null,
                 'sku' => $body['sku'] ?? null,
                 'hsn_code' => $body['hsn_code'] ?? null,
                 'purchase_price' => $purchasePrice,
@@ -306,7 +313,16 @@ class ProductController
                 'online_enabled' => isset($body['online_enabled']) ? (!empty($body['online_enabled']) ? 1 : 0) : 1,
                 'is_returnable' => isset($body['is_returnable']) ? (!empty($body['is_returnable']) ? 1 : 0) : 1,
                 'attributes' => $attributesJson,
-            ]);
+            ];
+
+            if ($hasMfg) {
+                $params['mfg_date'] = !empty($body['mfg_date']) ? $body['mfg_date'] : null;
+            }
+            if ($hasExp) {
+                $params['exp_date'] = !empty($body['exp_date']) ? $body['exp_date'] : null;
+            }
+
+            $stmt->execute($params);
             $newId = (int) $this->pdo->lastInsertId();
 
             // Insert Serials / IMEIs
@@ -368,21 +384,28 @@ class ProductController
         $oldStock = (float) ($curStockStmt->fetchColumn() ?? 0);
         $newStock = isset($body['stock_qty']) ? (float) $body['stock_qty'] : $oldStock;
 
+        $hasMfg = $this->hasProductColumn('mfg_date');
+        $hasExp = $this->hasProductColumn('exp_date');
+
+        $mfgSet = $hasMfg ? ', mfg_date = :mfg_date' : '';
+        $expSet = $hasExp ? ', exp_date = :exp_date' : '';
+
         $stmt = $this->pdo->prepare(
-            'UPDATE products SET
+            "UPDATE products SET
                 business_type = :business_type, name = :name, description = :description, images = :images,
                 category_id = :category_id, brand_id = :brand_id, unit_id = :unit_id, tax_rate_id = :tax_rate_id,
                 tax_inclusive = :tax_inclusive, supplier_id = :supplier_id, barcode = :barcode,
-                mfg_date = :mfg_date, exp_date = :exp_date, sku = :sku,
+                sku = :sku,
                 hsn_code = :hsn_code, purchase_price = :purchase_price, selling_price = :selling_price, mrp = :mrp,
                 retail_price = :retail_price, wholesale_price = :wholesale_price, customer_price = :customer_price,
                 stock_qty = :stock_qty, opening_stock = :opening_stock, low_stock_threshold = :low_stock_threshold,
                 min_stock = :min_stock, max_stock = :max_stock, track_serial = :track_serial,
                 pos_enabled = :pos_enabled, online_enabled = :online_enabled, is_returnable = :is_returnable,
-                attributes = :attributes
-             WHERE id = :id'
+                attributes = :attributes{$mfgSet}{$expSet}
+             WHERE id = :id"
         );
-        $stmt->execute([
+
+        $params = [
             'business_type' => $body['business_type'],
             'name' => $body['name'],
             'description' => $body['description'] ?? null,
@@ -394,8 +417,6 @@ class ProductController
             'tax_inclusive' => !empty($body['tax_inclusive']) ? 1 : 0,
             'supplier_id' => $body['supplier_id'] ?? null,
             'barcode' => $barcode,
-            'mfg_date' => !empty($body['mfg_date']) ? $body['mfg_date'] : null,
-            'exp_date' => !empty($body['exp_date']) ? $body['exp_date'] : null,
             'sku' => $body['sku'] ?? null,
             'hsn_code' => $body['hsn_code'] ?? null,
             'purchase_price' => $purchasePrice,
@@ -408,6 +429,23 @@ class ProductController
             'opening_stock' => $openingStock,
             'low_stock_threshold' => $body['low_stock_threshold'] ?? null,
             'min_stock' => $body['min_stock'] ?? null,
+            'max_stock' => $body['max_stock'] ?? null,
+            'track_serial' => $trackSerial ? 1 : 0,
+            'pos_enabled' => isset($body['pos_enabled']) ? (!empty($body['pos_enabled']) ? 1 : 0) : 1,
+            'online_enabled' => isset($body['online_enabled']) ? (!empty($body['online_enabled']) ? 1 : 0) : 1,
+            'is_returnable' => isset($body['is_returnable']) ? (!empty($body['is_returnable']) ? 1 : 0) : 1,
+            'attributes' => $attributesJson,
+            'id' => $id,
+        ];
+
+        if ($hasMfg) {
+            $params['mfg_date'] = !empty($body['mfg_date']) ? $body['mfg_date'] : null;
+        }
+        if ($hasExp) {
+            $params['exp_date'] = !empty($body['exp_date']) ? $body['exp_date'] : null;
+        }
+
+        $stmt->execute($params);
             'max_stock' => $body['max_stock'] ?? null,
             'track_serial' => !empty($body['track_serial']) ? 1 : 0,
             'pos_enabled' => isset($body['pos_enabled']) ? (!empty($body['pos_enabled']) ? 1 : 0) : 1,
@@ -519,6 +557,19 @@ class ProductController
         if ($row && $row['business_type'] !== $businessType) {
             throw new ValidationException('Category does not belong to the active business type');
         }
+    }
+
+    private function hasProductColumn(string $column): bool
+    {
+        static $cols = null;
+        if ($cols === null) {
+            try {
+                $cols = $this->pdo->query('DESCRIBE products')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            } catch (\Throwable) {
+                $cols = [];
+            }
+        }
+        return in_array($column, $cols, true);
     }
 
     private function assertBrandMatchesBusinessType(mixed $brandId, string $businessType): void
