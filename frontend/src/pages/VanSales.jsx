@@ -231,25 +231,30 @@ function OrdersTab({ vehicles, products, employees = [], eligibleOrders = [], on
     setLines([emptyLine()]);
   };
 
-  const buildPayload = () => ({
-    uuid: newUuid(),
-    vehicle_id: form.vehicle_id || null,
-    van_number: form.van_number?.trim() || null,
-    route_line: form.route_line?.trim() || null,
-    employee_id: form.employee_id || null,
-    order_id: form.order_id || null,
-    customer_id: form.customer_id || null,
-    order_date: form.order_date,
-    paid_amount: Number(form.paid_amount || 0),
-    notes: form.notes || null,
-    items: validLines.map((l) => ({
-      product_id: l.product_id,
-      qty: Number(l.qty),
-      unit_price: Number(l.unit_price),
-      discount_amount: Number(l.discount_amount || 0),
-      tax_amount: Number(l.qty) * Number(l.unit_price) * (Number(l.tax_percent || 0) / 100),
-    })),
-  });
+  const buildPayload = () => {
+    // If no vehicle selected, default to the first active vehicle ID so backend never gets null
+    const effectiveVehicleId = form.vehicle_id || (vehicles.length > 0 ? vehicles[0].id : null);
+
+    return {
+      uuid: newUuid(),
+      vehicle_id: effectiveVehicleId,
+      van_number: form.van_number?.trim() || (vehicles.find((v) => v.id === effectiveVehicleId)?.registration_no ?? null),
+      route_line: form.route_line?.trim() || null,
+      employee_id: form.employee_id || null,
+      order_id: form.order_id || null,
+      customer_id: form.customer_id || null,
+      order_date: form.order_date,
+      paid_amount: Number(form.paid_amount || 0),
+      notes: form.notes || null,
+      items: validLines.map((l) => ({
+        product_id: l.product_id,
+        qty: Number(l.qty),
+        unit_price: Number(l.unit_price),
+        discount_amount: Number(l.discount_amount || 0),
+        tax_amount: Number(l.qty) * Number(l.unit_price) * (Number(l.tax_percent || 0) / 100),
+      })),
+    };
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
