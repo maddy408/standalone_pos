@@ -103,7 +103,9 @@ class OrderController
             AuditLogger::log($this->pdo, $claims, 'create', 'orders', $id, ['order_no' => $this->fetchOrder($id)['order_no']]);
             Response::json($this->fetchOrder($id), 201);
         } catch (\Throwable $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             Response::error($e->getMessage(), 422);
         }
     }
@@ -131,7 +133,9 @@ class OrderController
             AuditLogger::log($this->pdo, $claims, 'update', 'orders', (int) $id);
             Response::json($this->fetchOrder((int) $id));
         } catch (\Throwable $e) {
-            $this->pdo->rollBack();
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             Response::error($e->getMessage(), 422);
         }
     }
