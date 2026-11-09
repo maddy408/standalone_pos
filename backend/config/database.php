@@ -21,10 +21,13 @@ function get_pdo(): PDO
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
     if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
-        $options[PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci';
+        $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci, sort_buffer_size = 4194304";
     }
 
     $pdo = new PDO($dsn, $db['username'], $db['password'], $options);
+    try {
+        $pdo->exec("SET SESSION sort_buffer_size = 4194304");
+    } catch (\Throwable) {}
 
     return $pdo;
 }

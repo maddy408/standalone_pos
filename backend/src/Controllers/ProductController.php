@@ -46,7 +46,14 @@ class ProductController
             $params['updated_since'] = $_GET['updated_since'];
         }
 
-        $sql = "SELECT p.*, c.name AS category_name, b.name AS brand_name, u.short_code AS unit_code,
+        $sql = "SELECT p.id, p.uuid, p.business_type, p.name, p.category_id, p.brand_id, p.unit_id,
+                       p.tax_rate_id, p.tax_inclusive, p.supplier_id, p.barcode, p.hsn_code, p.sku,
+                       p.purchase_price, p.selling_price, p.mrp, p.retail_price, p.wholesale_price,
+                       p.customer_price, p.stock_qty, p.opening_stock, p.low_stock_threshold,
+                       p.min_stock, p.max_stock, p.track_serial, p.pos_enabled, p.online_enabled,
+                       p.is_returnable, p.is_active, p.created_at, p.updated_at,
+                       p.attributes, p.images,
+                       c.name AS category_name, b.name AS brand_name, u.short_code AS unit_code,
                        t.percent AS tax_percent
                 FROM products p
                 LEFT JOIN categories c ON c.id = p.category_id
@@ -54,7 +61,7 @@ class ProductController
                 LEFT JOIN units u ON u.id = p.unit_id
                 LEFT JOIN tax_rates t ON t.id = p.tax_rate_id
                 {$where}
-                ORDER BY p.name ASC
+                ORDER BY p.id DESC
                 LIMIT 500";
 
         $stmt = $this->pdo->prepare($sql);
