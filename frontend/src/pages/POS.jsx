@@ -320,23 +320,29 @@ export default function POS() {
     return Number(product.selling_price || product.retail_price || product.mrp || 0);
   };
 
-  // Category items with matching icons (Only Top-Level Parent Categories, No Subcategories)
+  // Category items with matching icons (Strictly Filtered by Current business_type)
   const categoriesWithIcons = useMemo(() => {
-    // Collect subcategory IDs/names that have a parent_id to exclude them
+    const bt = settings?.business_type;
+
+    // Filter dbCategories strictly by active business_type
+    const relevantDbCats = dbCategories.filter((c) => !bt || !c.business_type || c.business_type === bt);
+
+    // Collect subcategory IDs/names that have a parent_id to exclude them from top bar
     const subcategoryNames = new Set(
-      dbCategories
+      relevantDbCats
         .filter((c) => Boolean(c.parent_id))
         .map((c) => c.name.toLowerCase().trim())
     );
 
-    // Filter dbCategories to only parent categories (parent_id is null / 0 / empty)
-    const parentDbCategories = dbCategories
+    // Only top-level parent categories for current business_type
+    const parentDbCategories = relevantDbCats
       .filter((c) => !c.parent_id)
       .map((c) => c.name)
       .filter(Boolean);
 
-    // From products, also only include category_name if it is not a known subcategory
+    // From current business_type products, only include category_name if it is not a known subcategory
     const productParentCategories = products
+      .filter((p) => !bt || !p.business_type || p.business_type === bt)
       .map((p) => p.category_name)
       .filter((name) => Boolean(name) && !subcategoryNames.has(name.toLowerCase().trim()));
 
@@ -371,7 +377,7 @@ export default function POS() {
         return { id: cat, name: cat, icon: Icon };
       }),
     ];
-  }, [dbCategories, products]);
+  }, [dbCategories, products, settings?.business_type]);
 
   // Filter products by search and category
   const filteredProducts = useMemo(() => {
@@ -389,8 +395,8 @@ export default function POS() {
       : [];
 
     return products.filter((p) => {
-      // If business_type matches or is not set on product, or device is offline
-      if (bt && p.business_type && p.business_type !== bt && navigator.onLine) return false;
+      // Must match active business_type (e.g. food / furniture / mobile)
+      if (bt && p.business_type && p.business_type !== bt) return false;
       const pName = (p.name || '').toLowerCase();
       const pBarcode = (p.barcode || '').toLowerCase();
       const pSku = (p.sku || '').toLowerCase();
