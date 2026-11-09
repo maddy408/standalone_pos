@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
 import { useSettings } from '../hooks/useSettings';
@@ -46,7 +46,7 @@ export default function Invoices() {
 
   const load = () => {
     const params = {
-      limit: 100,
+      limit: 200,
       search: search || undefined,
       customer_id: filterCustomer || undefined,
       from: filterFrom || undefined,
@@ -55,12 +55,29 @@ export default function Invoices() {
     api.get('/invoices', { params }).then(({ data }) => {
       const list = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
       setInvoices(list);
+    }).catch((err) => {
+      console.error(err);
+      setInvoices([]);
     });
   };
 
   useEffect(() => {
     load();
   }, [search, filterCustomer, filterFrom, filterTo]);
+
+  // Real-time client-side filter for instant, robust searching
+  const filteredInvoices = useMemo(() => {
+    const list = Array.isArray(invoices) ? invoices : [];
+    if (!search.trim()) return list;
+    const term = search.toLowerCase().trim();
+    return list.filter((inv) => {
+      const invNo = (inv.invoice_no || '').toLowerCase();
+      const custName = (inv.customer_name || '').toLowerCase();
+      const phone = (inv.customer_phone || '').toLowerCase();
+      const slogan = (inv.slogan || '').toLowerCase();
+      return invNo.includes(term) || custName.includes(term) || phone.includes(term) || slogan.includes(term);
+    });
+  }, [invoices, search]);
 
   useEffect(() => {
     api.get('/customers').then(({ data }) => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
@@ -209,7 +226,7 @@ export default function Invoices() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-            {invoices.map((inv) => (
+            {filteredInvoices.map((inv) => (
               <tr key={inv.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
                 <td className="px-3.5 py-2.5 font-mono font-medium">{inv.invoice_no}</td>
                 <td className="px-3.5 py-2.5">
@@ -301,7 +318,7 @@ export default function Invoices() {
                 </td>
               </tr>
             ))}
-            {invoices.length === 0 && (
+            {filteredInvoices.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                   {t('common.no_data')}
