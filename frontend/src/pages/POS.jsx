@@ -1067,21 +1067,20 @@ export default function POS() {
               const price = getProductPrice(p);
               const stock = Number(p.stock_qty || 0);
               const isOutOfStock = stock <= 0;
-              const imgUrl = getProductImage(p);
               const weightOrUnit = p.unit_code || p.attributes?.net_weight || (p.category_name === 'Dairy' ? '500ml' : p.category_name === 'Bakery' ? '400g' : '1kg');
 
               return (
                 <div
                   key={p.id}
                   onClick={() => !isOutOfStock && handleProductClick(p)}
-                  className={`rounded-2xl water-glass-card p-2.5 flex flex-col justify-between transition-all relative ${
+                  className={`rounded-2xl water-glass-card p-3 flex flex-col justify-between transition-all relative ${
                     isOutOfStock
                       ? 'opacity-60 grayscale-[40%] cursor-not-allowed select-none bg-slate-100/50 dark:bg-slate-900/40 border-dashed border-red-300 dark:border-red-900/40'
                       : 'hover:border-[#0A4174] dark:hover:border-[#4A8CD2] hover:shadow-lg cursor-pointer group'
                   }`}
                 >
                   {/* Top: Fresh / Discount badge or Out of stock badge */}
-                  <div className="absolute top-2 right-2 z-10">
+                  <div className="absolute top-2.5 right-2.5 z-10">
                     {isOutOfStock ? (
                       <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-red-600 text-white shadow-xs">
                         Unavailable
@@ -1093,33 +1092,25 @@ export default function POS() {
                     ) : null}
                   </div>
 
-                  {/* Image area with smooth glassy finish */}
-                  <div className="w-full h-24 mb-2 rounded-xl bg-white/60 dark:bg-[#0B131E]/60 flex items-center justify-center overflow-hidden border border-[#DCE5EF]/60 dark:border-[#22354B]/60">
-                    {imgUrl ? (
-                      <img
-                        src={imgUrl}
-                        alt={p.name}
-                        className={`w-full h-full object-contain p-1 transition-transform duration-200 ${
-                          isOutOfStock ? 'opacity-40' : 'group-hover:scale-105'
-                        }`}
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <ShoppingBag className="w-8 h-8 text-[#5A6B82] stroke-[1.5]" />
-                    )}
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="space-y-0.5">
-                    <h4 className="text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] line-clamp-1 group-hover:text-[#0A4174] dark:group-hover:text-[#4A8CD2] transition-colors">
+                  {/* Product Details (Clean text layout without image block) */}
+                  <div className="space-y-1 pr-6">
+                    <span className="text-[10px] font-semibold text-[#0A4174] dark:text-[#4A8CD2] uppercase tracking-wider block">
+                      {p.category_name || 'Item'}
+                    </span>
+                    <h4 className="text-xs sm:text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9] line-clamp-2 leading-tight group-hover:text-[#0A4174] dark:group-hover:text-[#4A8CD2] transition-colors">
                       {p.name}
                     </h4>
-                    <p className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
-                      {weightOrUnit}
-                    </p>
-                    <div className="pt-0.5">
+                    {p.barcode && (
+                      <div className="font-mono text-[9px] text-[#5A6B82] dark:text-[#94A3B8]">
+                        #{p.barcode}
+                      </div>
+                    )}
+                    <div className="pt-1 flex items-center gap-1.5 flex-wrap">
+                      {weightOrUnit && (
+                        <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
+                          {weightOrUnit}
+                        </span>
+                      )}
                       {isOutOfStock ? (
                         <span className="text-[9px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-950/60 px-1.5 py-0.5 rounded inline-block">
                           Out of Stock
@@ -1133,10 +1124,13 @@ export default function POS() {
                   </div>
 
                   {/* Bottom: Price + Circular (+) Button */}
-                  <div className="mt-2 pt-2 border-t border-[#DCE5EF]/60 dark:border-[#22354B]/60 flex items-center justify-between">
-                    <span className={`text-sm font-extrabold ${isOutOfStock ? 'text-slate-400' : 'text-[#0A4174] dark:text-[#4A8CD2]'}`}>
-                      {formatCurrency(price, currency)}
-                    </span>
+                  <div className="mt-3 pt-2 border-t border-[#DCE5EF]/60 dark:border-[#22354B]/60 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-[#5A6B82] block leading-none">Price</span>
+                      <span className={`text-sm sm:text-base font-extrabold ${isOutOfStock ? 'text-slate-400' : 'text-[#0A4174] dark:text-[#4A8CD2]'}`}>
+                        {formatCurrency(price, currency)}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       disabled={isOutOfStock}
@@ -1144,13 +1138,13 @@ export default function POS() {
                         e.stopPropagation();
                         if (!isOutOfStock) handleProductClick(p);
                       }}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center shadow-xs transition-all ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center shadow-xs transition-all ${
                         isOutOfStock
                           ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
                           : 'bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] active:scale-90 cursor-pointer'
                       }`}
                     >
-                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <Plus className="w-4 h-4 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>
