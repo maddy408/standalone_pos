@@ -1,32 +1,53 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'universal_pos_offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise = null;
 
 export function getDb() {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(db) {
-        const products = db.createObjectStore('products', { keyPath: 'id' });
-        products.createIndex('barcode', 'barcode');
-        products.createIndex('business_type', 'business_type');
+      upgrade(db, oldVersion) {
+        if (oldVersion < 1) {
+          const products = db.createObjectStore('products', { keyPath: 'id' });
+          products.createIndex('barcode', 'barcode');
+          products.createIndex('business_type', 'business_type');
 
-        db.createObjectStore('customers', { keyPath: 'id' });
+          db.createObjectStore('customers', { keyPath: 'id' });
 
-        // Offline write queue. client_id is the browser-generated uuid used
-        // for idempotency on the server, so a retried push never double-applies.
-        const outbox = db.createObjectStore('outbox', { keyPath: 'client_id' });
-        outbox.createIndex('status', 'status');
-        outbox.createIndex('created_at', 'created_at');
+          const outbox = db.createObjectStore('outbox', { keyPath: 'client_id' });
+          outbox.createIndex('status', 'status');
+          outbox.createIndex('created_at', 'created_at');
 
-        db.createObjectStore('held_bills_local', { keyPath: 'uuid' });
-        db.createObjectStore('meta', { keyPath: 'key' });
+          db.createObjectStore('held_bills_local', { keyPath: 'uuid' });
+          db.createObjectStore('meta', { keyPath: 'key' });
+        }
+        if (oldVersion < 2) {
+          if (!db.objectStoreNames.contains('categories')) {
+            db.createObjectStore('categories', { keyPath: 'id' });
+          }
+        }
       },
     });
   }
   return dbPromise;
+}
+
+// --- Categories cache -------------------------------------------------
+
+export async function cacheCategories(categories) {
+  const db = await getDb();
+  const tx = db.transaction('categories', 'readwrite');
+  for (const c of categories) {
+    await tx.store.put(c);
+  }
+  await tx.done;
+}
+
+export async function getCachedCategories() {
+  const db = await getDb();
+  return db.getAll('categories');
 }
 
 // --- Products cache ---------------------------------------------------

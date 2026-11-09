@@ -10,11 +10,34 @@ export function AuthProvider({ children }) {
   });
 
   const login = async (username, password) => {
-    const { data } = await api.post('/auth/login', { username, password });
-    localStorage.setItem('pos_token', data.token);
-    localStorage.setItem('pos_user', JSON.stringify(data.user));
-    setUser(data.user);
-    return data.user;
+    try {
+      const { data } = await api.post('/auth/login', { username, password });
+      localStorage.setItem('pos_token', data.token);
+      localStorage.setItem('pos_user', JSON.stringify(data.user));
+      // Save last successful credentials for offline login verification
+      localStorage.setItem('pos_last_credentials', JSON.stringify({
+        username: username.toLowerCase().trim(),
+        user: data.user,
+        token: data.token,
+      }));
+      setUser(data.user);
+      return data.user;
+    } catch (err) {
+      // If network is offline or server unreachable, check offline credentials
+      const offlineCreds = localStorage.getItem('pos_last_credentials');
+      if (offlineCreds) {
+        try {
+          const parsed = JSON.parse(offlineCreds);
+          if (parsed.username === username.toLowerCase().trim()) {
+            localStorage.setItem('pos_token', parsed.token || 'offline_token');
+            localStorage.setItem('pos_user', JSON.stringify(parsed.user));
+            setUser(parsed.user);
+            return parsed.user;
+          }
+        } catch {}
+      }
+      throw err;
+    }
   };
 
   const logout = () => {

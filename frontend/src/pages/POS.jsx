@@ -9,6 +9,8 @@ import {
   cacheProducts,
   getCachedCustomers,
   cacheCustomers,
+  getCachedCategories,
+  cacheCategories,
   addLocalCustomer,
   enqueueOutboxItem,
   applyLocalStockDelta,
@@ -170,9 +172,15 @@ export default function POS() {
       const bt = businessTypeOverride ?? settings?.business_type;
       const params = bt ? { business_type: bt } : {};
       const { data } = await api.get('/categories', { params });
-      if (Array.isArray(data)) setDbCategories(data);
+      if (Array.isArray(data)) {
+        setDbCategories(data);
+        cacheCategories(data);
+      }
     } catch {
-      // offline fallback
+      const cached = await getCachedCategories();
+      if (Array.isArray(cached) && cached.length > 0) {
+        setDbCategories(cached);
+      }
     }
   };
 
@@ -381,7 +389,8 @@ export default function POS() {
       : [];
 
     return products.filter((p) => {
-      if (bt && p.business_type && p.business_type !== bt) return false;
+      // If business_type matches or is not set on product, or device is offline
+      if (bt && p.business_type && p.business_type !== bt && navigator.onLine) return false;
       const pName = (p.name || '').toLowerCase();
       const pBarcode = (p.barcode || '').toLowerCase();
       const pSku = (p.sku || '').toLowerCase();
@@ -804,7 +813,11 @@ export default function POS() {
       loadProducts();
       return;
     } catch {
-      await enqueueOutboxItem('post', '/invoices', salePayload);
+      await enqueueOutboxItem({
+        client_id: uuid,
+        type: 'invoice',
+        payload: salePayload,
+      });
       refreshPendingCount();
     }
 

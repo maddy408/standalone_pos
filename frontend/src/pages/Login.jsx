@@ -24,7 +24,11 @@ export default function Login() {
       await login(username, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || t('auth.invalid_credentials'));
+      if (!navigator.onLine) {
+        setError('Device is offline. Please enter the username used during your last online login.');
+      } else {
+        setError(err.response?.data?.error || t('auth.invalid_credentials'));
+      }
     } finally {
       setLoading(false);
     }
