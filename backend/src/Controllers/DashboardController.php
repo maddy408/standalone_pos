@@ -20,9 +20,8 @@ class DashboardController
         $today = date('Y-m-d');
 
         // Realized Cash Collected Today:
-        // Includes:
-        // 1. Paid amount from direct invoices created today (excluding credit debt)
-        // 2. Customer credit collection payments received today
+        // Invoices store the paid_amount directly (which gets updated when collection payments are applied).
+        // Plus any extra income/collection payments that were not tied to invoices.
         $todayInvoicePaidStmt = $this->pdo->prepare(
             "SELECT COALESCE(SUM(paid_amount), 0) AS total, COUNT(*) AS count FROM invoices
              WHERE status = 'completed' AND DATE(created_at) = :today"
@@ -30,14 +29,8 @@ class DashboardController
         $todayInvoicePaidStmt->execute(['today' => $today]);
         $todayInvoicePaid = $todayInvoicePaidStmt->fetch();
 
-        $todayCreditCollectionsStmt = $this->pdo->prepare(
-            "SELECT COALESCE(SUM(amount), 0) AS total FROM customer_payments
-             WHERE DATE(created_at) = :today"
-        );
-        $todayCreditCollectionsStmt->execute(['today' => $today]);
-        $todayCreditCollections = (float) $todayCreditCollectionsStmt->fetchColumn();
-
-        $todayRealizedTotal = (float) $todayInvoicePaid['total'] + $todayCreditCollections;
+        // Direct Realized Total is simply the total paid across completed invoices
+        $todayRealizedTotal = (float) $todayInvoicePaid['total'];
 
         $lowStock = $this->pdo->query(
             "SELECT COUNT(*) FROM products p, business_settings s

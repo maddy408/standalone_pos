@@ -108,17 +108,14 @@ export default function Dashboard() {
   }, [customerPayments, dateFilter]);
 
   // Compute metrics from dynamically filtered data:
-  // Revenue reflects actual cash collected:
-  // 1. Direct invoice paid amounts (excludes unpaid credit balance)
-  // 2. Customer credit collection payments received
+  // Revenue reflects actual cash collected across completed invoices.
+  // When a credit invoice is paid later via Collection, the invoice's paid_amount is already updated.
+  // Hence we take paid_amount from invoices directly to avoid double counting collections.
   const totalSalesRevenue = useMemo(() => {
-    const directInvoicePaid = filteredInvoices
+    return filteredInvoices
       .filter((i) => i.status === 'completed')
-      .reduce((sum, i) => sum + Number(i.paid_amount ?? i.grand_total ?? 0), 0);
-    const collectionsPaid = filteredCustomerPayments
-      .reduce((sum, cp) => sum + Number(cp.amount || 0), 0);
-    return directInvoicePaid + collectionsPaid;
-  }, [filteredInvoices, filteredCustomerPayments]);
+      .reduce((sum, i) => sum + Number(i.paid_amount ?? 0), 0);
+  }, [filteredInvoices]);
 
   const totalIncomeAmount = useMemo(() => {
     return filteredIncome.reduce((sum, it) => sum + Number(it.amount || 0), 0);
