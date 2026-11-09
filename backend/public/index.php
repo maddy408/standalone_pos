@@ -82,6 +82,14 @@ try {
         $pdo->exec('ALTER TABLE brands ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER business_type');
     }
 
+    $catCols = $pdo->query('DESCRIBE categories')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('is_active', $catCols, true)) {
+        $pdo->exec('ALTER TABLE categories ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER parent_id');
+    }
+    if (!in_array('parent_id', $catCols, true)) {
+        $pdo->exec('ALTER TABLE categories ADD COLUMN parent_id INT NULL AFTER name');
+    }
+
     $orderCols = $pdo->query('DESCRIBE orders')->fetchAll(PDO::FETCH_COLUMN) ?: [];
     if (!in_array('van_order_id', $orderCols, true)) {
         $pdo->exec('ALTER TABLE orders ADD COLUMN van_order_id INT NULL AFTER invoice_id');
