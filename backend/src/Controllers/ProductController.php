@@ -22,6 +22,11 @@ class ProductController
     {
         $claims = AuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'products.view');
+        
+        try {
+            $this->pdo->exec("SET SESSION sort_buffer_size = 16777216");
+        } catch (\Throwable) {}
+
         $where = 'WHERE p.is_active = 1';
         $params = [];
 
@@ -46,13 +51,15 @@ class ProductController
             $params['updated_since'] = $_GET['updated_since'];
         }
 
+        // We avoid ORDER BY inside MySQL to prevent MySQL 1038 Out of sort memory
+        // on remote servers with strict sort_buffer limits when large text/JSON exists.
         $sql = "SELECT p.id, p.uuid, p.business_type, p.name, p.category_id, p.brand_id, p.unit_id,
                        p.tax_rate_id, p.tax_inclusive, p.supplier_id, p.barcode, p.hsn_code, p.sku,
                        p.purchase_price, p.selling_price, p.mrp, p.retail_price, p.wholesale_price,
                        p.customer_price, p.stock_qty, p.opening_stock, p.low_stock_threshold,
                        p.min_stock, p.max_stock, p.track_serial, p.pos_enabled, p.online_enabled,
                        p.is_returnable, p.is_active, p.created_at, p.updated_at,
-                       p.attributes, p.images,
+                       p.attributes,
                        c.name AS category_name, b.name AS brand_name, u.short_code AS unit_code,
                        t.percent AS tax_percent
                 FROM products p
@@ -61,12 +68,14 @@ class ProductController
                 LEFT JOIN units u ON u.id = p.unit_id
                 LEFT JOIN tax_rates t ON t.id = p.tax_rate_id
                 {$where}
-                ORDER BY p.id DESC
                 LIMIT 500";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         $products = $stmt->fetchAll();
+
+        // Sort in PHP memory where memory limit is high and never throws MySQL 1038
+        usort($products, fn($a, $b) => ($b['id'] ?? 0) <=> ($a['id'] ?? 0));
 
         // Attach variants, images, serials, and format attributes
         foreach ($products as &$p) {
