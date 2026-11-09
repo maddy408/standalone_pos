@@ -91,6 +91,25 @@ try {
     try {
         $pdo->exec('ALTER TABLE van_orders MODIFY COLUMN vehicle_id INT NULL');
     } catch (\Throwable) {}
+
+    // Ensure common payment methods exist in payment_methods table
+    try {
+        $pms = $pdo->query('SELECT code FROM payment_methods')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $requiredMethods = [
+            'cash' => 'Cash',
+            'upi' => 'UPI QR',
+            'card' => 'Card',
+            'wallet' => 'Wallet',
+            'split' => 'Split',
+            'credit' => 'Credit',
+        ];
+        foreach ($requiredMethods as $code => $name) {
+            if (!in_array($code, $pms, true)) {
+                $ins = $pdo->prepare('INSERT INTO payment_methods (code, name, is_active) VALUES (:c, :n, 1)');
+                $ins->execute(['c' => $code, 'n' => $name]);
+            }
+        }
+    } catch (\Throwable) {}
 } catch (\Throwable) {
     // Ignore if not permitted
 }

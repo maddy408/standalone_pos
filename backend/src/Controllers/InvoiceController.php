@@ -440,13 +440,22 @@ class InvoiceController
         $grandTotal = round($subtotal - $discountTotal + $taxTotal, 2);
 
         $payments = $body['payments'] ?? [];
+        if (empty($payments) && !empty($body['payment_method'])) {
+            $payments = [
+                [
+                    'payment_method' => $body['payment_method'],
+                    'amount' => $body['payment_method'] === 'credit' ? 0.0 : ((float) ($body['paid_amount'] ?? $grandTotal)),
+                ],
+            ];
+        }
+
         $paidAmount = 0.0;
         foreach ($payments as $p) {
             if (($p['payment_method'] ?? $p['code'] ?? '') !== 'credit') {
                 $paidAmount += (float) ($p['amount'] ?? 0);
             }
         }
-        $balanceAmount = round($grandTotal - $paidAmount, 2);
+        $balanceAmount = round(max(0, $grandTotal - $paidAmount), 2);
 
         // Offline clients send JS Date.toISOString() ('...T...Z'); MySQL DATETIME needs 'Y-m-d H:i:s'.
         $createdAt = date('Y-m-d H:i:s');

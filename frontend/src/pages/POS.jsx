@@ -1535,6 +1535,53 @@ export default function POS() {
             </span>
           </div>
 
+          {/* Payment Method Selector - Clearly Visible Above Pay Button */}
+          <div className="pt-2 border-t border-[#DCE5EF] dark:border-[#22354B] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#1C2736] dark:text-[#F1F5F9]">
+                Payment Method
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#E2EDF8] dark:bg-[#1A2A3D] text-[#0A4174] dark:text-[#4A8CD2]">
+                {paymentMethod.toUpperCase()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+              {[
+                { id: 'cash', label: 'Cash', icon: Banknote },
+                { id: 'upi', label: 'UPI QR', icon: Smartphone },
+                { id: 'card', label: 'Card', icon: CreditCard },
+                { id: 'wallet', label: 'Wallet', icon: ShoppingBag },
+                { id: 'split', label: 'Split', icon: Layers },
+                { id: 'credit', label: 'Credit', icon: RotateCcw },
+              ].map((m) => {
+                const Icon = m.icon;
+                const active = paymentMethod === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPaymentMethod(m.id)}
+                    className={`py-2 px-1 rounded-xl text-[11px] font-extrabold flex flex-col items-center justify-center gap-1 transition-all border cursor-pointer ${
+                      active
+                        ? 'bg-[#0A4174] border-[#0A4174] text-white dark:bg-[#4A8CD2] dark:border-[#4A8CD2] dark:text-[#0B131E] shadow-md ring-2 ring-[#0A4174]/20 scale-[1.02]'
+                        : 'border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/70 dark:bg-[#0B131E]/60 text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] hover:text-[#1C2736]'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate leading-none">{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {paymentMethod === 'credit' && !selectedCustomerId && (
+              <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-[10px] text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+                <span>⚠️ Please select a customer above for Credit billing!</span>
+              </div>
+            )}
+          </div>
+
           {/* Grand Total Row */}
           <div className="pt-2 border-t border-[#DCE5EF] dark:border-[#22354B] flex justify-between items-baseline">
             <span className="text-sm font-black text-[#1C2736] dark:text-[#F1F5F9]">Grand Total</span>
@@ -1558,42 +1605,12 @@ export default function POS() {
               type="button"
               onClick={completeSale}
               disabled={cart.length === 0}
-              className="flex-1 py-3 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-black text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+              className="flex-1 py-3 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-black text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
             >
               <CreditCard className="w-5 h-5" />
-              <span>PAY NOW</span>
+              <span>PAY NOW ({paymentMethod.toUpperCase()})</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </button>
-          </div>
-
-          {/* Payment Method Selector Pills Row matching Reference Screenshot */}
-          <div className="grid grid-cols-6 gap-1 pt-1.5">
-            {[
-              { id: 'cash', label: 'Cash', icon: Banknote },
-              { id: 'upi', label: 'UPI QR', icon: Smartphone },
-              { id: 'card', label: 'Card', icon: CreditCard },
-              { id: 'wallet', label: 'Wallet', icon: ShoppingBag },
-              { id: 'split', label: 'Split', icon: Layers },
-              { id: 'credit', label: 'Credit', icon: RotateCcw },
-            ].map((m) => {
-              const Icon = m.icon;
-              const active = paymentMethod === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setPaymentMethod(m.id)}
-                  className={`py-1.5 rounded-lg text-[10px] font-bold flex flex-col items-center gap-0.5 transition-all ${
-                    active
-                      ? 'bg-[#0A4174] text-white dark:bg-[#4A8CD2] dark:text-[#0B131E] shadow-xs'
-                      : 'border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] text-[#5A6B82] hover:bg-[#E2EDF8]'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="truncate">{m.label}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
       </div>
