@@ -1575,32 +1575,39 @@ export default function Products() {
             {/* Bottom Form Actions */}
             <div className="pt-4 border-t border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between gap-3">
               <div className="flex gap-2">
-                {activeFormSection !== 'basic' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sections = ['basic', 'pricing', 'inventory', 'specs', 'variants', ...(businessType === 'food' ? ['addons'] : []), 'settings'];
-                      const idx = sections.indexOf(activeFormSection);
-                      if (idx > 0) setActiveFormSection(sections[idx - 1]);
-                    }}
-                    className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
-                  >
-                    ← Previous
-                  </button>
-                )}
-                {activeFormSection !== 'settings' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const sections = ['basic', 'pricing', 'inventory', 'specs', 'variants', ...(businessType === 'food' ? ['addons'] : []), 'settings'];
-                      const idx = sections.indexOf(activeFormSection);
-                      if (idx < sections.length - 1) setActiveFormSection(sections[idx + 1]);
-                    }}
-                    className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
-                  >
-                    Next →
-                  </button>
-                )}
+                {(() => {
+                  const sections = [
+                    'basic',
+                    'pricing',
+                    'inventory',
+                    'variants',
+                    ...(businessType === 'food' ? ['addons'] : []),
+                    'settings',
+                  ];
+                  const idx = sections.indexOf(activeFormSection);
+                  return (
+                    <>
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveFormSection(sections[idx - 1])}
+                          className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
+                        >
+                          ← Previous
+                        </button>
+                      )}
+                      {idx < sections.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveFormSection(sections[idx + 1])}
+                          className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D]"
+                        >
+                          Next →
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="flex gap-2">

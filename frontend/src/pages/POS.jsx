@@ -857,7 +857,7 @@ export default function POS() {
   }, [products]);
 
   return (
-    <div className="h-[calc(100vh-8.5rem)] md:h-[calc(100vh-6.25rem)] w-full flex flex-col lg:flex-row gap-3.5 overflow-hidden font-sans select-none">
+    <div className="h-[calc(100vh-7.5rem)] md:h-[calc(100vh-6.25rem)] w-full flex flex-col lg:flex-row gap-3.5 overflow-hidden font-sans select-none">
       {/* Mobile Top View Switcher (Catalog vs Cart) */}
       <div className="lg:hidden flex items-center p-1 rounded-2xl bg-white/70 dark:bg-[#121E2C]/70 border border-[#DCE5EF] dark:border-[#22354B] flex-shrink-0">
         <button
