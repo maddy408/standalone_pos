@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
@@ -36,7 +36,7 @@ export default function Suppliers() {
   const currency = settings?.currency_symbol || '₹';
 
   const load = () => {
-    api.get('/suppliers', { params: { search: search || undefined } })
+    api.get('/suppliers')
       .then(({ data }) => setSuppliers(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : [])))
       .catch((err) => {
         console.error(err);
@@ -44,29 +44,21 @@ export default function Suppliers() {
       });
   };
 
-  const deleteSupplier = async (s) => {
-    if (!confirm(`Are you sure you want to delete supplier "${s.name}"?`)) return;
-    try {
-      await api.delete(`/suppliers/${s.id}`);
-      load();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to delete supplier');
-    }
-  };
-
-  const toggleStatus = async (s) => {
-    const nextStatus = s.is_active === 0 ? 1 : 0;
-    try {
-      await api.put(`/suppliers/${s.id}`, { is_active: nextStatus });
-      load();
-    } catch (err) {
-      alert(err.response?.data?.error || 'Failed to update status');
-    }
-  };
-
   useEffect(() => {
     load();
-  }, [search]);
+  }, []);
+
+  const filteredSuppliers = useMemo(() => {
+    const list = Array.isArray(suppliers) ? suppliers : [];
+    if (!search.trim()) return list;
+    const term = search.toLowerCase().trim();
+    return list.filter((s) => {
+      const name = (s.name || '').toLowerCase();
+      const phone = (s.phone || '').toLowerCase();
+      const email = (s.email || '').toLowerCase();
+      return name.includes(term) || phone.includes(term) || email.includes(term);
+    });
+  }, [suppliers, search]);
 
   // Validation
   const validate = () => {
@@ -183,7 +175,7 @@ export default function Suppliers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-              {suppliers.map((s) => {
+              {filteredSuppliers.map((s) => {
                 const bal = Math.max(0, Number(s.balance || 0));
                 return (
                   <tr key={s.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
@@ -256,7 +248,7 @@ export default function Suppliers() {
                   </tr>
                 );
               })}
-              {suppliers.length === 0 && (
+              {filteredSuppliers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                     No suppliers found

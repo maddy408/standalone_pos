@@ -45,7 +45,7 @@ export default function Purchases() {
   const currency = settings?.currency_symbol || '₹';
 
   const load = () => {
-    api.get('/purchases', { params: { search: search || undefined } })
+    api.get('/purchases')
       .then(({ data }) => setPurchases(Array.isArray(data) ? data : []))
       .catch(() => setPurchases([]));
   };
@@ -66,7 +66,7 @@ export default function Purchases() {
 
   useEffect(() => {
     load();
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     api.get('/suppliers').then(({ data }) => setSuppliers(data));

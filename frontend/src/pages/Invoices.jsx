@@ -46,8 +46,7 @@ export default function Invoices() {
 
   const load = () => {
     const params = {
-      limit: 200,
-      search: search || undefined,
+      limit: 500,
       customer_id: filterCustomer || undefined,
       from: filterFrom || undefined,
       to: filterTo || undefined,
@@ -63,7 +62,7 @@ export default function Invoices() {
 
   useEffect(() => {
     load();
-  }, [search, filterCustomer, filterFrom, filterTo]);
+  }, [filterCustomer, filterFrom, filterTo]);
 
   // Real-time client-side filter for instant, robust searching
   const filteredInvoices = useMemo(() => {

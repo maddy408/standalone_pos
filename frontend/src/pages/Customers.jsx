@@ -44,7 +44,7 @@ export default function Customers() {
   const currency = settings?.currency_symbol || '₹';
 
   const load = () => {
-    api.get('/customers', { params: { search: search || undefined } })
+    api.get('/customers')
       .then(({ data }) => setCustomers(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : [])))
       .catch((err) => {
         console.error(err);
@@ -54,7 +54,7 @@ export default function Customers() {
 
   useEffect(() => {
     load();
-  }, [search]);
+  }, []);
 
   // Instant client-side search filter as a backup / real-time filter
   const filteredCustomers = useMemo(() => {
