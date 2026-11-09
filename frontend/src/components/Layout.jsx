@@ -75,15 +75,17 @@ export default function Layout() {
     location.pathname.startsWith('/expenses') ||
     location.pathname.startsWith('/income');
 
+  const isTamil = i18n.language === 'ta';
+
   const navItemClass = ({ isActive }) =>
-    `h-8 px-1.5 xl:px-2.5 rounded-xl text-[11px] xl:text-xs font-semibold flex items-center justify-center gap-1 xl:gap-1.5 tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
+    `h-8 ${isTamil ? 'px-1 xl:px-1.5 text-[10px] xl:text-[11px] gap-1' : 'px-1.5 xl:px-2.5 text-[11px] xl:text-xs gap-1 xl:gap-1.5'} rounded-xl font-semibold flex items-center justify-center tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
       isActive
         ? 'bg-[#0A4174] text-white shadow-md font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
         : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/80 dark:hover:bg-[#1A2A3D]'
     }`;
 
   const customNavItemClass = (isActive) =>
-    `h-8 px-1.5 xl:px-2.5 rounded-xl text-[11px] xl:text-xs font-semibold flex items-center justify-center gap-1 xl:gap-1.5 tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
+    `h-8 ${isTamil ? 'px-1 xl:px-1.5 text-[10px] xl:text-[11px] gap-1' : 'px-1.5 xl:px-2.5 text-[11px] xl:text-xs gap-1 xl:gap-1.5'} rounded-xl font-semibold flex items-center justify-center tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
       isActive
         ? 'bg-[#0A4174] text-white shadow-md font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
         : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/80 dark:hover:bg-[#1A2A3D]'
