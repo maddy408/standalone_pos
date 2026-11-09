@@ -78,14 +78,14 @@ export default function Layout() {
   const isTamil = i18n.language === 'ta';
 
   const navItemClass = ({ isActive }) =>
-    `h-8 ${isTamil ? 'px-1 xl:px-1.5 text-[10px] xl:text-[11px] gap-1' : 'px-1.5 xl:px-2.5 text-[11px] xl:text-xs gap-1 xl:gap-1.5'} rounded-xl font-semibold flex items-center justify-center tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
+    `h-8 ${isTamil ? 'px-1 lg:px-1.5 xl:px-2 text-[9.5px] lg:text-[10.5px] xl:text-[11px] gap-1' : 'px-1.5 xl:px-2.5 text-[11px] xl:text-xs gap-1 xl:gap-1.5'} rounded-xl font-semibold flex items-center justify-center tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
       isActive
         ? 'bg-[#0A4174] text-white shadow-md font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
         : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/80 dark:hover:bg-[#1A2A3D]'
     }`;
 
   const customNavItemClass = (isActive) =>
-    `h-8 ${isTamil ? 'px-1 xl:px-1.5 text-[10px] xl:text-[11px] gap-1' : 'px-1.5 xl:px-2.5 text-[11px] xl:text-xs gap-1 xl:gap-1.5'} rounded-xl font-semibold flex items-center justify-center tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
+    `h-8 ${isTamil ? 'px-1 lg:px-1.5 xl:px-2 text-[9.5px] lg:text-[10.5px] xl:text-[11px] gap-1' : 'px-1.5 xl:px-2.5 text-[11px] xl:text-xs gap-1 xl:gap-1.5'} rounded-xl font-semibold flex items-center justify-center tracking-tight transition-all flex-shrink-0 whitespace-nowrap ${
       isActive
         ? 'bg-[#0A4174] text-white shadow-md font-bold dark:bg-[#4A8CD2] dark:text-[#0B131E]'
         : 'text-[#5A6B82] dark:text-[#94A3B8] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] hover:bg-[#E2EDF8]/80 dark:hover:bg-[#1A2A3D]'
@@ -204,7 +204,7 @@ export default function Layout() {
       </header>
 
       {/* Second Row – Main Desktop Navigation Navbar (Water Glass Nav) */}
-      <nav className="hidden md:flex h-11 water-glass-header px-2 sm:px-4 md:px-6 items-center justify-between gap-0.5 xl:gap-1 w-full flex-shrink-0 z-20 overflow-hidden">
+      <nav className={`hidden md:flex h-11 water-glass-header ${isTamil ? 'px-1 sm:px-2 md:px-3 gap-0.5' : 'px-2 sm:px-4 md:px-6 gap-0.5 xl:gap-1'} items-center justify-between w-full flex-shrink-0 z-20 overflow-hidden`}>
         {/* 1. Dashboard */}
         <NavLink to="/" end className={navItemClass}>
           <LayoutDashboard className="w-3.5 h-3.5 flex-shrink-0" />
