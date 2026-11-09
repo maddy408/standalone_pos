@@ -94,6 +94,9 @@ try {
     if (!in_array('is_active', $supCols, true)) {
         $pdo->exec('ALTER TABLE suppliers ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER balance');
     }
+    if (!in_array('opening_balance', $supCols, true)) {
+        $pdo->exec('ALTER TABLE suppliers ADD COLUMN opening_balance DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER gstin');
+    }
 
     $custCols = $pdo->query('DESCRIBE customers')->fetchAll(PDO::FETCH_COLUMN) ?: [];
     if (!in_array('is_active', $custCols, true)) {

@@ -69,18 +69,42 @@ class SupplierController
             Response::error('Supplier name is required', 422);
         }
 
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO suppliers (uuid, name, phone, email, address, gstin)
-             VALUES (:uuid, :name, :phone, :email, :address, :gstin)'
-        );
-        $stmt->execute([
-            'uuid' => $body['uuid'] ?? UuidHelper::v4(),
-            'name' => $body['name'],
-            'phone' => $body['phone'] ?? null,
-            'email' => $body['email'] ?? null,
-            'address' => $body['address'] ?? null,
-            'gstin' => $body['gstin'] ?? null,
-        ]);
+        $openingBalance = (float) ($body['opening_balance'] ?? 0);
+        $initialBalance = (float) ($body['balance'] ?? $openingBalance);
+
+        $cols = $this->pdo->query('DESCRIBE suppliers')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $hasOpening = in_array('opening_balance', $cols, true);
+
+        if ($hasOpening) {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO suppliers (uuid, name, phone, email, address, gstin, opening_balance, balance)
+                 VALUES (:uuid, :name, :phone, :email, :address, :gstin, :opening_balance, :balance)'
+            );
+            $stmt->execute([
+                'uuid' => $body['uuid'] ?? UuidHelper::v4(),
+                'name' => $body['name'],
+                'phone' => $body['phone'] ?? null,
+                'email' => $body['email'] ?? null,
+                'address' => $body['address'] ?? null,
+                'gstin' => $body['gstin'] ?? null,
+                'opening_balance' => $openingBalance,
+                'balance' => $initialBalance,
+            ]);
+        } else {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO suppliers (uuid, name, phone, email, address, gstin, balance)
+                 VALUES (:uuid, :name, :phone, :email, :address, :gstin, :balance)'
+            );
+            $stmt->execute([
+                'uuid' => $body['uuid'] ?? UuidHelper::v4(),
+                'name' => $body['name'],
+                'phone' => $body['phone'] ?? null,
+                'email' => $body['email'] ?? null,
+                'address' => $body['address'] ?? null,
+                'gstin' => $body['gstin'] ?? null,
+                'balance' => $initialBalance,
+            ]);
+        }
         Response::json(['id' => (int) $this->pdo->lastInsertId()], 201);
     }
 
@@ -106,6 +130,16 @@ class SupplierController
             'gstin' => $body['gstin'] ?? null,
             'id' => $id,
         ];
+
+        if (in_array('opening_balance', $cols, true) && isset($body['opening_balance'])) {
+            $sets[] = 'opening_balance = :opening_balance';
+            $params['opening_balance'] = (float) $body['opening_balance'];
+        }
+
+        if (isset($body['balance'])) {
+            $sets[] = 'balance = :balance';
+            $params['balance'] = (float) $body['balance'];
+        }
 
         if (in_array('is_active', $cols, true)) {
             $sets[] = 'is_active = COALESCE(:is_active, is_active)';

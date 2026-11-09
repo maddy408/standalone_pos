@@ -21,7 +21,7 @@ import {
   Eye,
 } from 'lucide-react';
 
-const BLANK = { id: null, name: '', phone: '', email: '', address: '', gstin: '' };
+const BLANK = { id: null, name: '', phone: '', email: '', address: '', gstin: '', opening_balance: '' };
 
 export default function Suppliers() {
   const { t } = useTranslation();
@@ -94,6 +94,7 @@ export default function Suppliers() {
       email: form.email?.trim() || null,
       address: form.address?.trim() || null,
       gstin: form.gstin?.trim() || null,
+      opening_balance: form.opening_balance === '' ? 0 : Number(form.opening_balance),
     };
 
     try {
@@ -119,6 +120,7 @@ export default function Suppliers() {
       email: s.email || '',
       address: s.address || '',
       gstin: s.gstin || '',
+      opening_balance: s.opening_balance !== undefined && s.opening_balance !== null ? String(s.opening_balance) : '',
     });
     setIsEditing(true);
     setErrors({});
@@ -182,7 +184,7 @@ export default function Suppliers() {
             </thead>
             <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
               {suppliers.map((s) => {
-                const bal = Number(s.balance || 0);
+                const bal = Math.max(0, Number(s.balance || 0));
                 return (
                   <tr key={s.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
                     <td className="px-3.5 py-2.5 font-medium">
@@ -211,7 +213,7 @@ export default function Suppliers() {
                       )}
                     </td>
                     <td className="px-3.5 py-2.5 text-right font-bold">
-                      <span className={bal > 0 ? 'text-[#0A4174] dark:text-[#4A8CD2] bg-[#E2EDF8] dark:bg-[#1A2A3D] px-2 py-0.5 rounded' : 'text-[#5A6B82] dark:text-[#94A3B8]'}>
+                      <span className={bal > 0 ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/50' : 'text-[#5A6B82] dark:text-[#94A3B8]'}>
                         {formatCurrency(bal, currency)}
                       </span>
                     </td>
@@ -395,6 +397,22 @@ export default function Suppliers() {
               placeholder="e.g. 33AAAAA0000A1Z5"
               className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174] uppercase"
             />
+          </div>
+
+          <div>
+            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
+              Opening Balance ({currency})
+            </label>
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={form.opening_balance}
+              onChange={(e) => setForm({ ...form, opening_balance: e.target.value })}
+              placeholder="0.00 (Previous balance owed to supplier)"
+              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#0A4174] font-semibold"
+            />
+            <p className="mt-1 text-[10px] text-[#5A6B82]">Initial pending amount we owe to this supplier before using this POS.</p>
           </div>
 
           <div>
