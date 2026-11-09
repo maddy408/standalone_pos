@@ -1232,9 +1232,9 @@ export default function POS() {
       {/* ======================================================== */}
       {/* RIGHT COLUMN: Cart / Customer / Totals / Payments         */}
       {/* ======================================================== */}
-      <div className={`w-full lg:w-[460px] xl:w-[480px] flex-shrink-0 flex flex-col water-glass-card rounded-2xl overflow-hidden shadow-sm ${activeTab === 'cart' ? 'flex' : 'hidden lg:flex'}`}>
+      <div className={`w-full lg:w-[460px] xl:w-[480px] flex-shrink-0 flex flex-col h-full water-glass-card rounded-2xl overflow-hidden shadow-sm ${activeTab === 'cart' ? 'flex' : 'hidden lg:flex'}`}>
         {/* Cart Top Header: Current Bill #POS-XXXX + + New Customer */}
-        <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40">
+        <div className="px-3 py-2 border-b border-[#DCE5EF] dark:border-[#22354B] flex items-center justify-between bg-white/40 dark:bg-[#121E2C]/40 flex-shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-black text-xs text-[#1C2736] dark:text-[#F1F5F9]">
               Current Bill
@@ -1270,7 +1270,7 @@ export default function POS() {
         </div>
 
         {/* Customer Info Card matching Nova Retail */}
-        <div className="px-3 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/20 dark:bg-[#0B131E]/20">
+        <div className="px-3 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-white/20 dark:bg-[#0B131E]/20 flex-shrink-0">
           <div className="relative">
             <div className="flex items-center justify-between p-1.5 rounded-xl water-glass-pill">
               <div className="flex items-center gap-2 min-w-0">
@@ -1353,7 +1353,7 @@ export default function POS() {
         </div>
 
         {/* Cart Items Table Header - Clean layout with full product name space */}
-        <div className="px-2.5 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/40 flex items-center text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8]">
+        <div className="px-2.5 py-1.5 border-b border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/50 dark:bg-[#0B131E]/40 flex items-center text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] flex-shrink-0">
           <div className="w-5 text-center flex-shrink-0">#</div>
           <div className="flex-1 min-w-0 pr-1">Product</div>
           <div className="w-18 text-center flex-shrink-0">Qty</div>
@@ -1476,8 +1476,8 @@ export default function POS() {
         </div>
 
 
-        {/* Price Breakdown Summary */}
-        <div className="p-3 border-t border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-1.5 text-xs">
+        {/* Price Breakdown Summary & Payment Section */}
+        <div className="p-3 border-t border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-1.5 text-xs flex-shrink-0">
           <div className="flex justify-between text-[#5A6B82] dark:text-[#94A3B8]">
             <span>Subtotal ({totals.totalItems} items)</span>
             <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">
@@ -1546,7 +1546,7 @@ export default function POS() {
               </span>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+            <div className="grid grid-cols-6 gap-1">
               {[
                 { id: 'cash', label: 'Cash', icon: Banknote },
                 { id: 'upi', label: 'UPI QR', icon: Smartphone },
@@ -1562,30 +1562,30 @@ export default function POS() {
                     key={m.id}
                     type="button"
                     onClick={() => setPaymentMethod(m.id)}
-                    className={`py-2 px-1 rounded-xl text-[11px] font-extrabold flex flex-col items-center justify-center gap-1 transition-all border cursor-pointer ${
+                    className={`py-1.5 px-0.5 rounded-lg text-[10px] font-extrabold flex flex-col items-center justify-center gap-0.5 transition-all border cursor-pointer ${
                       active
-                        ? 'bg-[#0A4174] border-[#0A4174] text-white dark:bg-[#4A8CD2] dark:border-[#4A8CD2] dark:text-[#0B131E] shadow-md ring-2 ring-[#0A4174]/20 scale-[1.02]'
+                        ? 'bg-[#0A4174] border-[#0A4174] text-white dark:bg-[#4A8CD2] dark:border-[#4A8CD2] dark:text-[#0B131E] shadow-sm scale-[1.02]'
                         : 'border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/70 dark:bg-[#0B131E]/60 text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] hover:text-[#1C2736]'
                     }`}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
-                    <span className="truncate leading-none">{m.label}</span>
+                    <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate leading-none text-[9px]">{m.label}</span>
                   </button>
                 );
               })}
             </div>
 
             {paymentMethod === 'credit' && !selectedCustomerId && (
-              <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-[10px] text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1.5">
+              <div className="p-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-[9px] text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1">
                 <span>⚠️ Please select a customer above for Credit billing!</span>
               </div>
             )}
           </div>
 
           {/* Grand Total Row */}
-          <div className="pt-2 border-t border-[#DCE5EF] dark:border-[#22354B] flex justify-between items-baseline">
-            <span className="text-sm font-black text-[#1C2736] dark:text-[#F1F5F9]">Grand Total</span>
-            <span className="text-2xl font-black text-[#0A4174] dark:text-[#4A8CD2]">
+          <div className="pt-1.5 border-t border-[#DCE5EF] dark:border-[#22354B] flex justify-between items-baseline">
+            <span className="text-xs font-black text-[#1C2736] dark:text-[#F1F5F9]">Grand Total</span>
+            <span className="text-xl font-black text-[#0A4174] dark:text-[#4A8CD2]">
               {formatCurrency(totals.grandTotal, currency)}
             </span>
           </div>
@@ -1597,7 +1597,7 @@ export default function POS() {
               onClick={holdBill}
               disabled={cart.length === 0}
               title="Hold Bill"
-              className="px-3 py-2.5 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] text-[#5A6B82] disabled:opacity-40 transition-colors flex items-center justify-center font-bold text-xs"
+              className="px-3 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] text-[#5A6B82] disabled:opacity-40 transition-colors flex items-center justify-center font-bold text-xs"
             >
               <Pause className="w-4 h-4" />
             </button>
@@ -1605,9 +1605,9 @@ export default function POS() {
               type="button"
               onClick={completeSale}
               disabled={cart.length === 0}
-              className="flex-1 py-3 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-black text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
+              className="flex-1 py-2.5 rounded-xl bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-black text-sm tracking-wide shadow-md transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
             >
-              <CreditCard className="w-5 h-5" />
+              <CreditCard className="w-4 h-4" />
               <span>PAY NOW ({paymentMethod.toUpperCase()})</span>
               <ArrowRight className="w-4 h-4 ml-1" />
             </button>
