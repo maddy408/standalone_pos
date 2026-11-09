@@ -374,17 +374,17 @@ export default function Dashboard() {
         <div className="relative z-10 max-w-lg space-y-2">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-sm">
-              Welcome back, {user?.full_name || 'Administrator'}!
+              {t('nav.welcome_back')}, {user?.full_name || 'Administrator'}!
             </h1>
             <span className="text-2xl animate-bounce">👋</span>
           </div>
           <p className="text-blue-100 text-sm font-medium">
-            Here's your store performance overview.
+            {t('nav.store_overview')}
           </p>
           <div className="pt-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs font-semibold text-white shadow-xs">
               <Calendar className="w-3.5 h-3.5" />
-              <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' })}</span>
+              <span>{new Date().toLocaleDateString(t('common.date') === 'தேதி' ? 'ta-IN' : 'en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' })}</span>
             </div>
           </div>
         </div>
@@ -410,7 +410,7 @@ export default function Dashboard() {
                 <TrendingUp className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                Total Revenue
+                {t('nav.total_revenue')}
               </span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
@@ -418,7 +418,7 @@ export default function Dashboard() {
             </div>
             <div className={`flex items-center gap-1.5 text-xs font-bold ${revenueGrowth.isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
               <span>{revenueGrowth.isPositive ? '↑' : '↓'} {revenueGrowth.percent}%</span>
-              <span className="text-[10px] text-slate-400 font-normal">vs previous period</span>
+              <span className="text-[10px] text-slate-400 font-normal">{t('nav.vs_prev_period')}</span>
             </div>
           </div>
           <div className="flex-shrink-0 pl-2">
@@ -439,14 +439,14 @@ export default function Dashboard() {
                 <FileText className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                Total Invoices
+                {t('nav.total_invoices')}
               </span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {filteredInvoices.length}
             </div>
             <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-              <span>↑ {orderStats.completed} Completed</span>
+              <span>↑ {orderStats.completed} {t('nav.completed')}</span>
             </div>
           </div>
           <div className="flex-shrink-0 pl-2">
@@ -467,14 +467,14 @@ export default function Dashboard() {
                 <Users className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                Customers
+                {t('nav.customers_title')}
               </span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {customers.length}
             </div>
             <div className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-              <span>↑ Active</span>
+              <span>↑ {t('nav.active')}</span>
             </div>
           </div>
           <div className="flex-shrink-0 pl-2">
@@ -495,14 +495,14 @@ export default function Dashboard() {
                 <Package className="w-5 h-5" />
               </div>
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                Active Products
+                {t('nav.active_products')}
               </span>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-tight pt-1">
               {products.length}
             </div>
             <div className="flex items-center gap-1 text-xs font-bold text-amber-600">
-              <span>↑ {outOfStockCount} Out of Stock</span>
+              <span>↑ {outOfStockCount} {t('nav.out_of_stock')}</span>
             </div>
           </div>
           <div className="flex-shrink-0 pl-2">
@@ -520,49 +520,49 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Today Sales</div>
+            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">{t('nav.today_sales')}</div>
             <div className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               {formatCurrency(summary?.today_sales_total ?? 0, currency)}
             </div>
           </div>
           <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/50">
-            Daily POS
+            {t('nav.daily_pos')}
           </span>
         </div>
 
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Net Profit</div>
+            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">{t('nav.net_profit')}</div>
             <div className="text-lg font-black text-[#0284C7] dark:text-[#38BDF8] mt-0.5">
               {formatCurrency(netProfit, currency)}
             </div>
           </div>
           <span className="text-xs font-bold text-[#0284C7] dark:text-[#38BDF8] bg-sky-50 dark:bg-sky-950/40 px-2.5 py-1 rounded-full border border-sky-200/50">
-            Income - Exp
+            {t('nav.income_minus_exp')}
           </span>
         </div>
 
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Total Expense</div>
+            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">{t('nav.total_expense')}</div>
             <div className="text-lg font-black text-rose-500 mt-0.5">
               {formatCurrency(totalExpenseAmount, currency)}
             </div>
           </div>
           <span className="text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-full border border-rose-200/50">
-            Expenses
+            {t('nav.expenses')}
           </span>
         </div>
 
         <div className="water-glass-card p-3.5 rounded-2xl flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">Low Stock Alert</div>
+            <div className="text-[10px] font-bold text-[#5A6B82] dark:text-[#94A3B8] uppercase">{t('nav.low_stock_alert')}</div>
             <div className="text-lg font-black text-amber-500 mt-0.5">
-              {summary?.low_stock_count ?? 0} Items
+              {summary?.low_stock_count ?? 0} {t('common.items') || 'Items'}
             </div>
           </div>
           <span className="text-xs font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-full border border-amber-200/50">
-            Reorder
+            {t('nav.reorder')}
           </span>
         </div>
       </div>
@@ -577,11 +577,11 @@ export default function Dashboard() {
                 <TrendingUp className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Sales Overview</h2>
+                <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">{t('nav.sales_overview')}</h2>
               </div>
             </div>
             <div className="flex items-center gap-1 text-xs text-[#5A6B82] dark:text-[#94A3B8] water-glass-pill px-3 py-1 rounded-full font-semibold">
-              <span>Last 7 Days</span>
+              <span>{t('nav.last_7_days')}</span>
               <ChevronDown className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -696,7 +696,7 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950/40 text-[#2563EB] flex items-center justify-center">
                 <ShoppingCart className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Order Status</h2>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">{t('nav.order_status')}</h2>
             </div>
           </div>
 
@@ -767,7 +767,7 @@ export default function Dashboard() {
                 {orderStats.total}
               </span>
               <span className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8] uppercase font-bold mt-0.5">
-                Total Orders
+                {t('nav.total_orders')}
               </span>
             </div>
           </div>
@@ -812,10 +812,10 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-[#7C3AED] flex items-center justify-center">
                 <Zap className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Quick Navigation</h2>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">{t('nav.quick_nav')}</h2>
             </div>
             <Link to="/products" className="text-[11px] font-bold text-[#4F46E5] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
+              <span>{t('nav.view_all')}</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -829,7 +829,7 @@ export default function Dashboard() {
               <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <PlusCircle className="w-4 h-4" />
               </div>
-              <span className="text-[11px] font-extrabold leading-tight">Add New Product</span>
+              <span className="text-[11px] font-extrabold leading-tight">{t('nav.add_new_product')}</span>
             </Link>
 
             {/* 2. Manage Invoices (Vibrant Purple Card) */}
@@ -840,7 +840,7 @@ export default function Dashboard() {
               <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <FileText className="w-4 h-4" />
               </div>
-              <span className="text-[11px] font-extrabold leading-tight">Manage Invoices</span>
+              <span className="text-[11px] font-extrabold leading-tight">{t('nav.manage_invoices')}</span>
             </Link>
 
             {/* 3. Store Reports (Vibrant Green Card) */}
@@ -851,7 +851,7 @@ export default function Dashboard() {
               <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <span className="text-[11px] font-extrabold leading-tight">Store Reports</span>
+              <span className="text-[11px] font-extrabold leading-tight">{t('nav.store_reports')}</span>
             </Link>
 
             {/* 4. Customer Ledgers (Vibrant Orange Card) */}
@@ -862,7 +862,7 @@ export default function Dashboard() {
               <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center mb-1.5">
                 <Users className="w-4 h-4" />
               </div>
-              <span className="text-[11px] font-extrabold leading-tight">Customer Ledgers</span>
+              <span className="text-[11px] font-extrabold leading-tight">{t('nav.customer_ledgers')}</span>
             </Link>
 
             {/* 5. New Order (Vibrant Teal Card) */}
@@ -890,10 +890,10 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-[#F59E0B] flex items-center justify-center">
                 <Crown className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Top Products</h2>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">{t('nav.top_products')}</h2>
             </div>
             <Link to="/products" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
+              <span>{t('nav.view_all')}</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
@@ -906,8 +906,8 @@ export default function Dashboard() {
                   className="p-2.5 rounded-2xl bg-white/70 dark:bg-[#121E2C]/70 border border-[#DCE5EF]/60 flex items-center justify-between hover:bg-white transition-all shadow-xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center font-black text-sm flex-shrink-0 shadow-md shadow-orange-500/20">
-                      {idx === 0 ? '🍗' : idx === 1 ? '📱' : idx === 2 ? '🧃' : '📦'}
+                    <div className="w-8 h-8 rounded-xl bg-[#0A4174]/10 dark:bg-[#4A8CD2]/20 text-[#0A4174] dark:text-[#4A8CD2] flex items-center justify-center font-bold text-xs flex-shrink-0">
+                      #{idx + 1}
                     </div>
                     <div className="min-w-0">
                       <div className="font-bold text-xs text-[#1C2736] dark:text-[#F1F5F9] truncate">
@@ -943,10 +943,10 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/40 text-[#7C3AED] flex items-center justify-center">
                 <Clock className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Recent Activity</h2>
+              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">{t('nav.recent_activity')}</h2>
             </div>
             <Link to="/invoices" className="text-xs font-bold text-[#0A4174] dark:text-[#4A8CD2] hover:underline flex items-center gap-0.5">
-              <span>View All</span>
+              <span>{t('nav.view_all')}</span>
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
