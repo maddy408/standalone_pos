@@ -65,6 +65,17 @@ try {
     if (!in_array('exp_date', $cols, true)) {
         $pdo->exec('ALTER TABLE products ADD COLUMN exp_date DATE NULL AFTER mfg_date');
     }
+
+    $smCols = $pdo->query('DESCRIBE stock_movements')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('mfg_date', $smCols, true)) {
+        $pdo->exec('ALTER TABLE stock_movements ADD COLUMN mfg_date DATE NULL AFTER notes');
+    }
+    if (!in_array('exp_date', $smCols, true)) {
+        $pdo->exec('ALTER TABLE stock_movements ADD COLUMN exp_date DATE NULL AFTER mfg_date');
+    }
+    if (!in_array('barcode', $smCols, true)) {
+        $pdo->exec('ALTER TABLE stock_movements ADD COLUMN barcode VARCHAR(50) NULL AFTER exp_date');
+    }
 } catch (\Throwable) {
     // Ignore if not permitted
 }

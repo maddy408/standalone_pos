@@ -134,19 +134,42 @@ class StockController
                 }
             }
 
-            $this->pdo->prepare(
-                "INSERT INTO stock_movements (uuid, product_id, qty_change, movement_type, ref_type, notes, mfg_date, exp_date, barcode, user_id)
-                 VALUES (:uuid, :pid, :qty, 'adjustment', 'manual', :notes, :mfg, :exp, :barcode, :user_id)"
-            )->execute([
+            // Dynamically check columns on stock_movements
+            $smCols = $this->pdo->query('DESCRIBE stock_movements')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $hasSmMfg = in_array('mfg_date', $smCols, true);
+            $hasSmExp = in_array('exp_date', $smCols, true);
+            $hasSmBarcode = in_array('barcode', $smCols, true);
+
+            $extraCols = '';
+            $extraVals = '';
+            $insertParams = [
                 'uuid' => $uuid,
                 'pid' => $productId,
                 'qty' => $qtyChange,
                 'notes' => $body['reason'] ?? null,
-                'mfg' => $mfgDate,
-                'exp' => $expDate,
-                'barcode' => $barcode,
                 'user_id' => $claims['uid'],
-            ]);
+            ];
+
+            if ($hasSmMfg) {
+                $extraCols .= ', mfg_date';
+                $extraVals .= ', :mfg';
+                $insertParams['mfg'] = $mfgDate;
+            }
+            if ($hasSmExp) {
+                $extraCols .= ', exp_date';
+                $extraVals .= ', :exp';
+                $insertParams['exp'] = $expDate;
+            }
+            if ($hasSmBarcode) {
+                $extraCols .= ', barcode';
+                $extraVals .= ', :barcode';
+                $insertParams['barcode'] = $barcode;
+            }
+
+            $this->pdo->prepare(
+                "INSERT INTO stock_movements (uuid, product_id, qty_change, movement_type, ref_type, notes, user_id{$extraCols})
+                 VALUES (:uuid, :pid, :qty, 'adjustment', 'manual', :notes, :user_id{$extraVals})"
+            )->execute($insertParams);
             $this->pdo->commit();
             return [['ok' => true], 201];
         } catch (\Throwable $e) {
