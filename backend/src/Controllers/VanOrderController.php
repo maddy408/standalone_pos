@@ -100,8 +100,7 @@ class VanOrderController
             return [$this->fetchOrder((int) $row['id']), 200];
         }
 
-        // Vehicle selection is optional: can use existing vehicle_id, or specify van_number/route_line directly.
-        // If van_number is provided without vehicle_id, auto-create/find a matching vehicle record.
+        // Vehicle selection: can use existing vehicle_id, specify van_number/route_line, or default to first active vehicle/General Delivery Van.
         $vehicleId = !empty($body['vehicle_id']) ? (int) $body['vehicle_id'] : null;
         $vanNumber = !empty($body['van_number']) ? trim((string) $body['van_number']) : null;
         $routeLine = !empty($body['route_line']) ? trim((string) $body['route_line']) : null;
@@ -120,6 +119,25 @@ class VanOrderController
                     'name' => 'Van ' . $vanNumber,
                     'reg' => $vanNumber,
                     'driver' => $routeLine ? ("Route: " . $routeLine) : null,
+                ]);
+                $vehicleId = (int) $this->pdo->lastInsertId();
+            }
+        }
+
+        // If still no vehicle assigned, assign to default / first available vehicle
+        if (!$vehicleId) {
+            $defV = $this->pdo->query('SELECT id FROM vehicles WHERE is_active = 1 ORDER BY id ASC LIMIT 1');
+            if ($row = $defV->fetch()) {
+                $vehicleId = (int) $row['id'];
+            } else {
+                $vIns = $this->pdo->prepare(
+                    'INSERT INTO vehicles (uuid, name, registration_no, driver_name) VALUES (:uuid, :name, :reg, :driver)'
+                );
+                $vIns->execute([
+                    'uuid' => UuidHelper::v4(),
+                    'name' => 'General Delivery Van',
+                    'reg' => 'VAN-DEFAULT',
+                    'driver' => 'Standard Driver',
                 ]);
                 $vehicleId = (int) $this->pdo->lastInsertId();
             }
