@@ -55,6 +55,20 @@ if (!str_starts_with($uri, '/api') && $uri !== '/') {
 }
 
 $pdo = get_pdo();
+
+// Auto-heal missing columns if remote database schema is outdated
+try {
+    $cols = $pdo->query('DESCRIBE products')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('mfg_date', $cols, true)) {
+        $pdo->exec('ALTER TABLE products ADD COLUMN mfg_date DATE NULL AFTER barcode');
+    }
+    if (!in_array('exp_date', $cols, true)) {
+        $pdo->exec('ALTER TABLE products ADD COLUMN exp_date DATE NULL AFTER mfg_date');
+    }
+} catch (\Throwable) {
+    // Ignore if not permitted
+}
+
 $router = new Router();
 
 $router->get('/', fn () => Response::json(['status' => 'ok', 'app' => 'Universal POS API', 'version' => '1.0.0', 'commit' => '000fe47']));
