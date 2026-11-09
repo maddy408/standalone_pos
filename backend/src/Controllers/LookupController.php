@@ -46,13 +46,16 @@ class LookupController
         $res = $this->resource($key);
 
         if ($key === 'brands') {
+            $brandCols = $this->pdo->query('DESCRIBE brands')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            $hasIsActive = in_array('is_active', $brandCols, true);
+
             $where = 'WHERE 1=1';
             $params = [];
             if (!empty($_GET['business_type'])) {
                 $where .= ' AND (business_type = :bt OR business_type IS NULL)';
                 $params['bt'] = $_GET['business_type'];
             }
-            if (isset($_GET['is_active']) && $_GET['is_active'] !== '') {
+            if ($hasIsActive && isset($_GET['is_active']) && $_GET['is_active'] !== '') {
                 $where .= ' AND is_active = :ia';
                 $params['ia'] = (int) $_GET['is_active'];
             }

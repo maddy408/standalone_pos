@@ -76,6 +76,11 @@ try {
     if (!in_array('barcode', $smCols, true)) {
         $pdo->exec('ALTER TABLE stock_movements ADD COLUMN barcode VARCHAR(50) NULL AFTER exp_date');
     }
+
+    $brandCols = $pdo->query('DESCRIBE brands')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('is_active', $brandCols, true)) {
+        $pdo->exec('ALTER TABLE brands ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER business_type');
+    }
 } catch (\Throwable) {
     // Ignore if not permitted
 }
