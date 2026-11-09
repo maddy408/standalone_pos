@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../config/api';
@@ -45,13 +45,29 @@ export default function Customers() {
 
   const load = () => {
     api.get('/customers', { params: { search: search || undefined } })
-      .then(({ data }) => setCustomers(data))
-      .catch((err) => console.error(err));
+      .then(({ data }) => setCustomers(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : [])))
+      .catch((err) => {
+        console.error(err);
+        setCustomers([]);
+      });
   };
 
   useEffect(() => {
     load();
   }, [search]);
+
+  // Instant client-side search filter as a backup / real-time filter
+  const filteredCustomers = useMemo(() => {
+    const list = Array.isArray(customers) ? customers : [];
+    if (!search.trim()) return list;
+    const term = search.toLowerCase().trim();
+    return list.filter((c) => {
+      const name = (c.name || '').toLowerCase();
+      const phone = (c.phone || '').toLowerCase();
+      const email = (c.email || '').toLowerCase();
+      return name.includes(term) || phone.includes(term) || email.includes(term);
+    });
+  }, [customers, search]);
 
   // Validation
   const validate = () => {
@@ -181,7 +197,7 @@ export default function Customers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-              {customers.map((c) => {
+              {filteredCustomers.map((c) => {
                 const bal = Number(c.balance || 0);
                 return (
                   <tr key={c.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
@@ -234,7 +250,7 @@ export default function Customers() {
                   </tr>
                 );
               })}
-              {customers.length === 0 && (
+              {filteredCustomers.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                     No customers found
