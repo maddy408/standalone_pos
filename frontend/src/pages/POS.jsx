@@ -857,7 +857,7 @@ export default function POS() {
   }, [products]);
 
   return (
-    <div className="h-[calc(100vh-7.5rem)] md:h-[calc(100vh-6.25rem)] w-full flex flex-col lg:flex-row gap-3.5 overflow-hidden font-sans select-none">
+    <div className="h-full w-full flex flex-col lg:flex-row gap-2.5 overflow-hidden font-sans select-none">
       {/* Mobile Top View Switcher (Catalog vs Cart) */}
       <div className="lg:hidden flex items-center p-1 rounded-2xl bg-white/70 dark:bg-[#121E2C]/70 border border-[#DCE5EF] dark:border-[#22354B] flex-shrink-0">
         <button
@@ -1370,7 +1370,7 @@ export default function POS() {
         </div>
 
         {/* Cart Items Scrollable List - Full product name visible, wrapped if needed */}
-        <div className="flex-1 min-h-[160px] max-h-[40vh] lg:max-h-none overflow-y-auto px-2.5 py-1 space-y-1 scrollbar-thin divide-y divide-[#DCE5EF]/40 dark:divide-[#22354B]/40">
+        <div className="flex-1 min-h-0 overflow-y-auto px-2.5 py-1 space-y-1 scrollbar-thin divide-y divide-[#DCE5EF]/40 dark:divide-[#22354B]/40">
           {cart.map((line, idx) => (
             <div key={line.key} className="pt-1.5 first:pt-0 flex items-center text-[11px] group">
               {/* No. */}
@@ -1477,7 +1477,7 @@ export default function POS() {
 
 
         {/* Price Breakdown Summary & Payment Section */}
-        <div className="p-3 border-t border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-1.5 text-xs flex-shrink-0">
+        <div className="p-2 sm:p-2.5 border-t border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] space-y-1 text-xs flex-shrink-0">
           <div className="flex justify-between text-[#5A6B82] dark:text-[#94A3B8]">
             <span>Subtotal ({totals.totalItems} items)</span>
             <span className="font-semibold text-[#1C2736] dark:text-[#F1F5F9]">
@@ -1536,7 +1536,7 @@ export default function POS() {
           </div>
 
           {/* Payment Method Selector - Clearly Visible Above Pay Button */}
-          <div className="pt-2 border-t border-[#DCE5EF] dark:border-[#22354B] space-y-1.5">
+          <div className="pt-1.5 border-t border-[#DCE5EF] dark:border-[#22354B] space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-[#1C2736] dark:text-[#F1F5F9]">
                 Payment Method
@@ -1562,7 +1562,7 @@ export default function POS() {
                     key={m.id}
                     type="button"
                     onClick={() => setPaymentMethod(m.id)}
-                    className={`py-1.5 px-0.5 rounded-lg text-[10px] font-extrabold flex flex-col items-center justify-center gap-0.5 transition-all border cursor-pointer ${
+                    className={`py-1 px-0.5 rounded-lg text-[10px] font-extrabold flex flex-col items-center justify-center gap-0.5 transition-all border cursor-pointer ${
                       active
                         ? 'bg-[#0A4174] border-[#0A4174] text-white dark:bg-[#4A8CD2] dark:border-[#4A8CD2] dark:text-[#0B131E] shadow-sm scale-[1.02]'
                         : 'border-[#DCE5EF] dark:border-[#22354B] bg-[#F4F7FB]/70 dark:bg-[#0B131E]/60 text-[#5A6B82] dark:text-[#94A3B8] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] hover:text-[#1C2736]'
@@ -1583,7 +1583,7 @@ export default function POS() {
           </div>
 
           {/* Grand Total Row */}
-          <div className="pt-1.5 border-t border-[#DCE5EF] dark:border-[#22354B] flex justify-between items-baseline">
+          <div className="pt-1 border-t border-[#DCE5EF] dark:border-[#22354B] flex justify-between items-baseline">
             <span className="text-xs font-black text-[#1C2736] dark:text-[#F1F5F9]">Grand Total</span>
             <span className="text-xl font-black text-[#0A4174] dark:text-[#4A8CD2]">
               {formatCurrency(totals.grandTotal, currency)}
