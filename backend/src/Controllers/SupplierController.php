@@ -22,8 +22,11 @@ class SupplierController
         $where = 'WHERE 1=1';
         $params = [];
         if (!empty($_GET['search'])) {
-            $where .= ' AND (name LIKE :s OR phone LIKE :s OR email LIKE :s)';
-            $params['s'] = '%' . $_GET['search'] . '%';
+            $term = '%' . trim($_GET['search']) . '%';
+            $where .= ' AND (name LIKE :s1 OR phone LIKE :s2 OR email LIKE :s3)';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
         }
         $stmt = $this->pdo->prepare("SELECT * FROM suppliers {$where} ORDER BY name ASC");
         $stmt->execute($params);

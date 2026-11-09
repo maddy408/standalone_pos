@@ -22,11 +22,25 @@ class InvoiceController
     public function index(): void
     {
         AuthMiddleware::authenticate();
+        $cols = $this->pdo->query('DESCRIBE invoices')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $hasCustNameCol = in_array('customer_name', $cols, true);
+
         $where = 'WHERE 1=1';
         $params = [];
         if (!empty($_GET['search'])) {
-            $where .= ' AND (i.invoice_no LIKE :s OR c.name LIKE :s OR i.customer_name LIKE :s)';
-            $params['s'] = '%' . $_GET['search'] . '%';
+            $term = '%' . trim($_GET['search']) . '%';
+            if ($hasCustNameCol) {
+                $where .= ' AND (i.invoice_no LIKE :s1 OR c.name LIKE :s2 OR c.phone LIKE :s3 OR i.customer_name LIKE :s4)';
+                $params['s1'] = $term;
+                $params['s2'] = $term;
+                $params['s3'] = $term;
+                $params['s4'] = $term;
+            } else {
+                $where .= ' AND (i.invoice_no LIKE :s1 OR c.name LIKE :s2 OR c.phone LIKE :s3)';
+                $params['s1'] = $term;
+                $params['s2'] = $term;
+                $params['s3'] = $term;
+            }
         }
         if (!empty($_GET['status'])) {
             $where .= ' AND i.status = :status';

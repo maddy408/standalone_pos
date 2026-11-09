@@ -100,6 +100,11 @@ try {
         $pdo->exec('ALTER TABLE customers ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER balance');
     }
 
+    $invCols = $pdo->query('DESCRIBE invoices')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('customer_name', $invCols, true)) {
+        $pdo->exec('ALTER TABLE invoices ADD COLUMN customer_name VARCHAR(150) NULL AFTER customer_id');
+    }
+
     $orderCols = $pdo->query('DESCRIBE orders')->fetchAll(PDO::FETCH_COLUMN) ?: [];
     if (!in_array('van_order_id', $orderCols, true)) {
         $pdo->exec('ALTER TABLE orders ADD COLUMN van_order_id INT NULL AFTER invoice_id');
@@ -213,6 +218,8 @@ $purchases = new PurchaseController($pdo);
 $router->get('/api/purchases', fn () => $purchases->index());
 $router->get('/api/purchases/{id}', fn ($id) => $purchases->show($id));
 $router->post('/api/purchases', fn () => $purchases->store());
+$router->put('/api/purchases/{id}', fn ($id) => $purchases->update($id));
+$router->post('/api/purchases/{id}/pay', fn ($id) => $purchases->recordPayment($id));
 $router->delete('/api/purchases/{id}', fn ($id) => $purchases->destroy($id));
 
 $orders = new OrderController($pdo);

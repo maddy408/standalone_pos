@@ -17,6 +17,8 @@ import {
   Eye,
   Printer,
   History,
+  Edit2,
+  CreditCard,
 } from 'lucide-react';
 
 export default function Purchases() {
@@ -30,6 +32,11 @@ export default function Purchases() {
   const [items, setItems] = useState([{ product_id: '', qty: 1, unit_price: '', mrp: '', discount: 0, serials_text: '' }]);
   const [paidAmount, setPaidAmount] = useState('');
   const [error, setError] = useState('');
+  const [editingPurchase, setEditingPurchase] = useState(null);
+  const [payingPurchase, setPayingPurchase] = useState(null);
+  const [payForm, setPayForm] = useState({ amount: '', payment_method: 'cash', notes: '' });
+  const [payingError, setPayingError] = useState('');
+  const [payingLoading, setPayingLoading] = useState(false);
   const [returning, setReturning] = useState(null);
   const [returnQtys, setReturnQtys] = useState({});
   const [viewingPurchase, setViewingPurchase] = useState(null);
@@ -109,6 +116,93 @@ export default function Purchases() {
     setPaidAmount(String(grandTotal.toFixed(2)));
   };
 
+  const startEdit = async (p) => {
+    setError('');
+    try {
+      const { data } = await api.get(`/purchases/${p.id}`);
+      setEditingPurchase(data);
+      setSupplierId(String(data.supplier_id));
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        setItems(
+          data.items.map((it) => {
+            let serials_text = '';
+            if (it.serials) {
+              try {
+                const parsed = typeof it.serials === 'string' ? JSON.parse(it.serials) : it.serials;
+                if (Array.isArray(parsed)) {
+                  serials_text = parsed.map((s) => s.imei1 || s.serial_no || s).filter(Boolean).join(', ');
+                }
+              } catch {}
+            }
+            return {
+              product_id: String(it.product_id),
+              qty: it.qty,
+              unit_price: String(it.unit_price),
+              mrp: '',
+              discount: it.discount_amount || 0,
+              serials_text,
+            };
+          })
+        );
+      } else {
+        setItems([{ product_id: '', qty: 1, unit_price: '', mrp: '', discount: 0, serials_text: '' }]);
+      }
+      setPaidAmount(String(data.paid_amount || 0));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to load purchase for edit');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingPurchase(null);
+    setSupplierId('');
+    setItems([{ product_id: '', qty: 1, unit_price: '', mrp: '', discount: 0, serials_text: '' }]);
+    setPaidAmount('');
+    setError('');
+  };
+
+  const openPayModal = (p) => {
+    setPayingPurchase(p);
+    setPayForm({
+      amount: String(p.balance_amount || ''),
+      payment_method: 'cash',
+      notes: `Payment for ${p.purchase_no}`,
+    });
+    setPayingError('');
+  };
+
+  const submitPayment = async (e) => {
+    e.preventDefault();
+    if (!payingPurchase) return;
+    setPayingError('');
+    const amt = Number(payForm.amount);
+    if (!amt || amt <= 0) {
+      setPayingError('Please enter a valid payment amount greater than 0');
+      return;
+    }
+    const maxDue = Number(payingPurchase.balance_amount || 0);
+    if (amt > maxDue) {
+      setPayingError(`Amount cannot exceed current due balance of ${formatCurrency(maxDue, currency)}`);
+      return;
+    }
+    setPayingLoading(true);
+    try {
+      await api.post(`/purchases/${payingPurchase.id}/pay`, {
+        amount: amt,
+        payment_method: payForm.payment_method,
+        notes: payForm.notes,
+      });
+      setPayingPurchase(null);
+      load();
+      api.get('/suppliers').then(({ data }) => setSuppliers(data));
+    } catch (err) {
+      setPayingError(err.response?.data?.error || 'Failed to record payment');
+    } finally {
+      setPayingLoading(false);
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setError('');
@@ -144,16 +238,26 @@ export default function Purchases() {
     }
 
     try {
-      await api.post('/purchases', {
-        supplier_id: Number(supplierId),
-        items: payloadItems,
-        paid_amount: paidAmount === '' ? grandTotal : Number(paidAmount),
-      });
+      if (editingPurchase) {
+        await api.put(`/purchases/${editingPurchase.id}`, {
+          supplier_id: Number(supplierId),
+          items: payloadItems,
+          paid_amount: paidAmount === '' ? grandTotal : Number(paidAmount),
+        });
+      } else {
+        await api.post('/purchases', {
+          supplier_id: Number(supplierId),
+          items: payloadItems,
+          paid_amount: paidAmount === '' ? grandTotal : Number(paidAmount),
+        });
+      }
+      setEditingPurchase(null);
       setSupplierId('');
       setItems([{ product_id: '', qty: 1, unit_price: '', serials_text: '' }]);
       setPaidAmount('');
       load();
       loadProducts();
+      api.get('/suppliers').then(({ data }) => setSuppliers(data));
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to save purchase');
     }
@@ -294,64 +398,94 @@ export default function Purchases() {
                 <th className="px-3.5 py-2.5">{t('purchases.supplier')}</th>
                 <th className="px-3.5 py-2.5 text-right">{t('purchases.grand_total')}</th>
                 <th className="px-3.5 py-2.5 text-right">{t('purchases.paid_amount')}</th>
+                <th className="px-3.5 py-2.5 text-right">Balance Due</th>
                 <th className="px-3.5 py-2.5 text-center">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-              {purchases.map((p) => (
-                <tr key={p.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
-                  <td className="px-3.5 py-2.5 font-mono font-medium">{p.purchase_no}</td>
-                  <td className="px-3.5 py-2.5">{p.supplier_name}</td>
-                  <td className="px-3.5 py-2.5 text-right font-bold text-[#1C2736] dark:text-[#F1F5F9]">
-                    {formatCurrency(p.grand_total, currency)}
-                  </td>
-                  <td className="px-3.5 py-2.5 text-right text-emerald-600 font-semibold">
-                    {formatCurrency(p.paid_amount, currency)}
-                  </td>
-                  <td className="px-3.5 py-2.5 text-center">
-                    <div className="flex items-center justify-center gap-1.5">
-                      <button
-                        onClick={() => openView(p)}
-                        title="View Purchase Details"
-                        className="p-1.5 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => printPurchase(p)}
-                        title="Print Purchase Voucher"
-                        className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => openHistory(p)}
-                        title="View Timeline / History"
-                        className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
-                      >
-                        <History className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => openReturn(p)}
-                        title="Return items"
-                        className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => deletePurchase(p)}
-                        title="Delete Purchase"
-                        className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {purchases.map((p) => {
+                const bal = Number(p.balance_amount || 0);
+                return (
+                  <tr key={p.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
+                    <td className="px-3.5 py-2.5 font-mono font-medium">{p.purchase_no}</td>
+                    <td className="px-3.5 py-2.5">{p.supplier_name}</td>
+                    <td className="px-3.5 py-2.5 text-right font-bold text-[#1C2736] dark:text-[#F1F5F9]">
+                      {formatCurrency(p.grand_total, currency)}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-right text-emerald-600 font-semibold">
+                      {formatCurrency(p.paid_amount, currency)}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-right">
+                      {bal > 0 ? (
+                        <div className="inline-flex items-center gap-1.5">
+                          <span className="font-bold text-rose-600">{formatCurrency(bal, currency)}</span>
+                          <button
+                            onClick={() => openPayModal(p)}
+                            title="Pay Due / Installment"
+                            className="px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-xs flex items-center gap-0.5"
+                          >
+                            <CreditCard className="w-2.5 h-2.5" />
+                            Pay
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Paid
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3.5 py-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => startEdit(p)}
+                          title="Edit Purchase (Items & Quantities)"
+                          className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openView(p)}
+                          title="View Purchase Details"
+                          className="p-1.5 text-[#0A4174] dark:text-[#4A8CD2] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => printPurchase(p)}
+                          title="Print Purchase Voucher"
+                          className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openHistory(p)}
+                          title="View Timeline / History"
+                          className="p-1.5 text-[#5A6B82] hover:text-[#1C2736] hover:bg-[#E2EDF8] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openReturn(p)}
+                          title="Return items"
+                          className="p-1.5 text-[#0A4174] hover:text-[#062E52] dark:text-[#4A8CD2] dark:hover:text-[#6BA3E0] hover:bg-[#E2EDF8] dark:bg-[#1A2A3D] dark:hover:bg-[#1A2A3D] rounded-lg transition-colors"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => deletePurchase(p)}
+                          title="Delete Purchase"
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {purchases.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
+                  <td colSpan={6} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                     No purchases recorded yet
                   </td>
                 </tr>
@@ -399,12 +533,33 @@ export default function Purchases() {
         </div>
       )}
 
-      {/* New Purchase Form */}
+      {/* Purchase Form (Create or Edit) */}
       <div className="rounded-xl bg-white dark:bg-[#121E2C] p-5 shadow-sm border border-[#DCE5EF] dark:border-[#22354B] space-y-4 self-start">
-        <h2 className="font-bold text-sm flex items-center gap-2 pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
-          <Plus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
-          {t('purchases.new_purchase')}
-        </h2>
+        <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+          <h2 className="font-bold text-sm flex items-center gap-2">
+            {editingPurchase ? (
+              <>
+                <Edit2 className="w-4 h-4 text-amber-500" />
+                <span>Edit Purchase — {editingPurchase.purchase_no}</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                <span>{t('purchases.new_purchase')}</span>
+              </>
+            )}
+          </h2>
+          {editingPurchase && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="text-xs text-[#5A6B82] hover:text-[#1C2736] dark:hover:text-white flex items-center gap-1 font-semibold"
+            >
+              <X className="w-3.5 h-3.5" />
+              Cancel Edit
+            </button>
+          )}
+        </div>
 
         {error && (
           <div className="rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-2 text-xs text-red-600 border border-red-200 dark:border-red-800">
@@ -596,9 +751,13 @@ export default function Purchases() {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] font-bold py-2.5 transition-colors shadow-sm text-xs mt-2"
+            className={`w-full rounded-lg text-white font-bold py-2.5 transition-colors shadow-sm text-xs mt-2 ${
+              editingPurchase
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] dark:text-[#0B131E]'
+            }`}
           >
-            Save Purchase
+            {editingPurchase ? 'Update Purchase & Stock' : 'Save Purchase'}
           </button>
         </form>
       </div>
@@ -709,6 +868,128 @@ export default function Purchases() {
             >
               Close History
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Pay Due / Installment Modal */}
+      {payingPurchase && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#121E2C] p-5 shadow-2xl border border-[#DCE5EF] dark:border-[#22354B] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
+              <h3 className="font-bold text-sm text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-emerald-600" />
+                Record Supplier Payment
+              </h3>
+              <button onClick={() => setPayingPurchase(null)} className="text-[#5A6B82] hover:text-[#1C2736]">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="rounded-xl bg-[#F4F7FB] dark:bg-[#1A2A3D] p-3 text-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-[#5A6B82]">Voucher No:</span>
+                <span className="font-mono font-bold">{payingPurchase.purchase_no}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#5A6B82]">Supplier:</span>
+                <span className="font-semibold">{payingPurchase.supplier_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#5A6B82]">Grand Total:</span>
+                <span className="font-semibold">{formatCurrency(payingPurchase.grand_total, currency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#5A6B82]">Already Paid:</span>
+                <span className="font-semibold text-emerald-600">{formatCurrency(payingPurchase.paid_amount, currency)}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-[#DCE5EF] dark:border-[#22354B] font-bold">
+                <span className="text-rose-600">Current Due Balance:</span>
+                <span className="text-rose-600 text-sm">{formatCurrency(payingPurchase.balance_amount || 0, currency)}</span>
+              </div>
+            </div>
+
+            {payingError && (
+              <div className="rounded-lg bg-red-50 dark:bg-red-900/30 px-3 py-2 text-xs text-red-600 border border-red-200 dark:border-red-800">
+                {payingError}
+              </div>
+            )}
+
+            <form onSubmit={submitPayment} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold mb-1 text-[#1C2736] dark:text-[#94A3B8]">
+                  Payment Amount ({currency}) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="any"
+                    required
+                    min="1"
+                    max={payingPurchase.balance_amount || undefined}
+                    value={payForm.amount}
+                    onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
+                    placeholder="Enter amount (partial or full)"
+                    className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 font-bold text-emerald-600 text-sm focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPayForm({ ...payForm, amount: String(payingPurchase.balance_amount || 0) })}
+                    className="absolute right-2 top-2 text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-2 py-0.5 rounded"
+                  >
+                    Pay Full Due
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-[#1C2736] dark:text-[#94A3B8]">
+                  Payment Method
+                </label>
+                <select
+                  value={payForm.payment_method}
+                  onChange={(e) => setPayForm({ ...payForm, payment_method: e.target.value })}
+                  className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="bank_transfer">Bank Transfer / NEFT</option>
+                  <option value="upi">UPI / GPay / PhonePe</option>
+                  <option value="card">Debit / Credit Card</option>
+                  <option value="cheque">Cheque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-[#1C2736] dark:text-[#94A3B8]">
+                  Notes / Reference
+                </label>
+                <input
+                  type="text"
+                  value={payForm.notes}
+                  onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
+                  placeholder="e.g. UTR # or Cheque # or remarks"
+                  className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={payingLoading}
+                  className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <DollarSign className="w-3.5 h-3.5" />
+                  {payingLoading ? 'Processing...' : 'Record Payment'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPayingPurchase(null)}
+                  className="px-4 py-2 rounded-xl border border-[#DCE5EF] dark:border-[#22354B] text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

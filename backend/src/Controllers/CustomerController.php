@@ -23,8 +23,11 @@ class CustomerController
         $where = 'WHERE 1=1';
         $params = [];
         if (!empty($_GET['search'])) {
-            $where .= ' AND (name LIKE :s OR phone LIKE :s OR email LIKE :s)';
-            $params['s'] = '%' . $_GET['search'] . '%';
+            $term = '%' . trim($_GET['search']) . '%';
+            $where .= ' AND (name LIKE :s1 OR phone LIKE :s2 OR email LIKE :s3)';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
         }
         if (!empty($_GET['updated_since'])) {
             $where .= ' AND created_at > :updated_since';
