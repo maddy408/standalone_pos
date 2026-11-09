@@ -47,6 +47,7 @@ export default function Dashboard() {
   const [customers, setCustomers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [income, setIncome] = useState([]);
+  const [customerPayments, setCustomerPayments] = useState([]);
   const [dateFilter, setDateFilter] = useState('all_time');
 
   useEffect(() => {
@@ -58,6 +59,7 @@ export default function Dashboard() {
     api.get('/products').then(({ data }) => setProducts(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/categories').then(({ data }) => setCategories(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/customers').then(({ data }) => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
+    api.get('/customer-payments').then(({ data }) => setCustomerPayments(Array.isArray(data) ? data : [])).catch(() => {});
     api.get('/expenses').then(({ data }) => setExpenses(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
     api.get('/income').then(({ data }) => setIncome(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []))).catch(() => {});
   }, []);
@@ -101,12 +103,22 @@ export default function Dashboard() {
     return income.filter((inc) => isDateInFilter(inc.income_date || inc.date, dateFilter));
   }, [income, dateFilter]);
 
-  // Compute metrics from dynamically filtered data
+  const filteredCustomerPayments = useMemo(() => {
+    return customerPayments.filter((cp) => isDateInFilter(cp.created_at, dateFilter));
+  }, [customerPayments, dateFilter]);
+
+  // Compute metrics from dynamically filtered data:
+  // Revenue reflects actual cash collected:
+  // 1. Direct invoice paid amounts (excludes unpaid credit balance)
+  // 2. Customer credit collection payments received
   const totalSalesRevenue = useMemo(() => {
-    return filteredInvoices
+    const directInvoicePaid = filteredInvoices
       .filter((i) => i.status === 'completed')
-      .reduce((sum, i) => sum + Number(i.grand_total || 0), 0);
-  }, [filteredInvoices]);
+      .reduce((sum, i) => sum + Number(i.paid_amount ?? i.grand_total ?? 0), 0);
+    const collectionsPaid = filteredCustomerPayments
+      .reduce((sum, cp) => sum + Number(cp.amount || 0), 0);
+    return directInvoicePaid + collectionsPaid;
+  }, [filteredInvoices, filteredCustomerPayments]);
 
   const totalIncomeAmount = useMemo(() => {
     return filteredIncome.reduce((sum, it) => sum + Number(it.amount || 0), 0);
@@ -225,8 +237,30 @@ export default function Dashboard() {
         }
         const match = days.find((d) => d.dateKey === key);
         if (match) {
-          match.total += Number(inv.grand_total || 0);
+          match.total += Number(inv.paid_amount ?? inv.grand_total ?? 0);
           match.orderCount += 1;
+        }
+      }
+    });
+
+    customerPayments.forEach((cp) => {
+      if (cp.created_at) {
+        let key = '';
+        try {
+          const cpDate = new Date(cp.created_at);
+          if (!isNaN(cpDate.getTime())) {
+            const year = cpDate.getFullYear();
+            const month = String(cpDate.getMonth() + 1).padStart(2, '0');
+            const day = String(cpDate.getDate()).padStart(2, '0');
+            key = `${year}-${month}-${day}`;
+          }
+        } catch {}
+        if (!key) {
+          key = cp.created_at.split('T')[0] || cp.created_at.split(' ')[0];
+        }
+        const match = days.find((d) => d.dateKey === key);
+        if (match) {
+          match.total += Number(cp.amount || 0);
         }
       }
     });

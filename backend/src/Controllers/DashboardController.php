@@ -19,12 +19,25 @@ class DashboardController
         AuthMiddleware::authenticate();
         $today = date('Y-m-d');
 
-        $todaySalesStmt = $this->pdo->prepare(
-            "SELECT COALESCE(SUM(grand_total),0) AS total, COUNT(*) AS count FROM invoices
+        // Realized Cash Collected Today:
+        // Includes:
+        // 1. Paid amount from direct invoices created today (excluding credit debt)
+        // 2. Customer credit collection payments received today
+        $todayInvoicePaidStmt = $this->pdo->prepare(
+            "SELECT COALESCE(SUM(paid_amount), 0) AS total, COUNT(*) AS count FROM invoices
              WHERE status = 'completed' AND DATE(created_at) = :today"
         );
-        $todaySalesStmt->execute(['today' => $today]);
-        $todaySales = $todaySalesStmt->fetch();
+        $todayInvoicePaidStmt->execute(['today' => $today]);
+        $todayInvoicePaid = $todayInvoicePaidStmt->fetch();
+
+        $todayCreditCollectionsStmt = $this->pdo->prepare(
+            "SELECT COALESCE(SUM(amount), 0) AS total FROM customer_payments
+             WHERE DATE(created_at) = :today"
+        );
+        $todayCreditCollectionsStmt->execute(['today' => $today]);
+        $todayCreditCollections = (float) $todayCreditCollectionsStmt->fetchColumn();
+
+        $todayRealizedTotal = (float) $todayInvoicePaid['total'] + $todayCreditCollections;
 
         $lowStock = $this->pdo->query(
             "SELECT COUNT(*) FROM products p, business_settings s
@@ -37,8 +50,8 @@ class DashboardController
         $productCount = $this->pdo->query('SELECT COUNT(*) FROM products WHERE is_active = 1')->fetchColumn();
 
         Response::json([
-            'today_sales_total' => (float) $todaySales['total'],
-            'today_invoice_count' => (int) $todaySales['count'],
+            'today_sales_total' => $todayRealizedTotal,
+            'today_invoice_count' => (int) $todayInvoicePaid['count'],
             'low_stock_count' => (int) $lowStock,
             'outstanding_from_customers' => (float) $outstandingCustomers,
             'outstanding_to_suppliers' => (float) $outstandingSuppliers,
