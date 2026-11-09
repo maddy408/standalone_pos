@@ -57,8 +57,8 @@ if (!str_starts_with($uri, '/api') && $uri !== '/') {
 $pdo = get_pdo();
 $router = new Router();
 
-$router->get('/', fn () => Response::json(['status' => 'ok', 'app' => 'Universal POS API', 'version' => '1.0.0']));
-$router->get('/api', fn () => Response::json(['status' => 'ok', 'app' => 'Universal POS API', 'version' => '1.0.0']));
+$router->get('/', fn () => Response::json(['status' => 'ok', 'app' => 'Universal POS API', 'version' => '1.0.0', 'commit' => '000fe47']));
+$router->get('/api', fn () => Response::json(['status' => 'ok', 'app' => 'Universal POS API', 'version' => '1.0.0', 'commit' => '000fe47']));
 
 $auth = new AuthController($pdo);
 $router->post('/api/auth/login', fn () => $auth->login());
