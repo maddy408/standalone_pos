@@ -37,6 +37,10 @@ use App\Middleware\CorsMiddleware;
 
 CorsMiddleware::handle();
 
+set_exception_handler(function (\Throwable $e) {
+    Response::error($e->getMessage(), 500);
+});
+
 $method = $_SERVER['REQUEST_METHOD'];
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/';
 
