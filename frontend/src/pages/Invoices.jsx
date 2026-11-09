@@ -152,14 +152,28 @@ export default function Invoices() {
           <input
             type="date"
             value={filterFrom}
-            onChange={(e) => setFilterFrom(e.target.value)}
+            max={filterTo || undefined}
+            onChange={(e) => {
+              const newFrom = e.target.value;
+              setFilterFrom(newFrom);
+              if (filterTo && newFrom > filterTo) {
+                setFilterTo(newFrom);
+              }
+            }}
             className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
           />
           <span>To:</span>
           <input
             type="date"
             value={filterTo}
-            onChange={(e) => setFilterTo(e.target.value)}
+            min={filterFrom || undefined}
+            onChange={(e) => {
+              const newTo = e.target.value;
+              if (filterFrom && newTo < filterFrom) {
+                return;
+              }
+              setFilterTo(newTo);
+            }}
             className="rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
           />
         </div>

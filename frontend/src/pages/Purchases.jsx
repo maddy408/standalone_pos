@@ -112,6 +112,16 @@ export default function Purchases() {
   );
 
   // Auto set paidAmount to grandTotal if empty or matching previous total
+  const filteredPurchases = useMemo(() => {
+    if (!search.trim()) return purchases;
+    const term = search.toLowerCase().trim();
+    return purchases.filter((p) => {
+      const vNo = (p.purchase_no || '').toLowerCase();
+      const sName = (p.supplier_name || '').toLowerCase();
+      return vNo.includes(term) || sName.includes(term);
+    });
+  }, [purchases, search]);
+
   const handleAutoFillPaid = () => {
     setPaidAmount(String(grandTotal.toFixed(2)));
   };
@@ -403,7 +413,7 @@ export default function Purchases() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#DCE5EF] dark:divide-[#22354B]">
-              {purchases.map((p) => {
+              {filteredPurchases.map((p) => {
                 const bal = Number(p.balance_amount || 0);
                 return (
                   <tr key={p.id} className="hover:bg-[#F4F7FB]/50 dark:hover:bg-[#1A2A3D]/40 transition-colors">
@@ -483,7 +493,7 @@ export default function Purchases() {
                   </tr>
                 );
               })}
-              {purchases.length === 0 && (
+              {filteredPurchases.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-3 py-8 text-center text-[#5A6B82] dark:text-[#94A3B8]">
                     No purchases recorded yet

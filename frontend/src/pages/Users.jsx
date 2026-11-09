@@ -66,7 +66,7 @@ export default function Users() {
     setForm({
       id: u.id,
       username: u.username,
-      password: '',
+      password: u.password || '',
       full_name: u.full_name,
       role: u.role,
       is_active: u.is_active,

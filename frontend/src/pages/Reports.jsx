@@ -111,9 +111,33 @@ export default function Reports() {
 
       {needsDateRange && (
         <div className="mb-3 flex items-center gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm" />
+          <input
+            type="date"
+            value={from}
+            max={to || undefined}
+            onChange={(e) => {
+              const newFrom = e.target.value;
+              setFrom(newFrom);
+              if (to && newFrom > to) {
+                setTo(newFrom);
+              }
+            }}
+            className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm"
+          />
           <span className="text-sm">{t('reports.to')}</span>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm" />
+          <input
+            type="date"
+            value={to}
+            min={from || undefined}
+            onChange={(e) => {
+              const newTo = e.target.value;
+              if (from && newTo < from) {
+                return;
+              }
+              setTo(newTo);
+            }}
+            className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm"
+          />
           <button onClick={load} className="rounded-md bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] px-4 py-1.5 font-bold text-xs shadow-sm">{t('reports.apply')}</button>
         </div>
       )}
@@ -517,9 +541,33 @@ function SalesReportsSection({ currency }) {
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm" />
+        <input
+          type="date"
+          value={from}
+          max={to || undefined}
+          onChange={(e) => {
+            const newFrom = e.target.value;
+            setFrom(newFrom);
+            if (to && newFrom > to) {
+              setTo(newFrom);
+            }
+          }}
+          className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm"
+        />
         <span className="text-sm">{t('reports.to')}</span>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm" />
+        <input
+          type="date"
+          value={to}
+          min={from || undefined}
+          onChange={(e) => {
+            const newTo = e.target.value;
+            if (from && newTo < from) {
+              return;
+            }
+            setTo(newTo);
+          }}
+          className="rounded-md border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-2 py-1 text-sm"
+        />
         <button onClick={load} className="rounded-md bg-[#0A4174] hover:bg-[#062E52] dark:bg-[#4A8CD2] dark:hover:bg-[#6BA3E0] text-white dark:text-[#0B131E] px-4 py-1.5 font-bold text-xs shadow-sm">{t('reports.apply')}</button>
         <button onClick={resetDates} className="text-xs font-bold text-[#5A6B82] dark:text-[#94A3B8] hover:underline">{t('reports.reset')}</button>
 

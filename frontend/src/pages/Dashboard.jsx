@@ -167,7 +167,156 @@ export default function Dashboard() {
     };
   }, [invoices, dateFilter]);
 
-  // Order status distribution dynamically calculated
+  const [revenueExpenseFilter, setRevenueExpenseFilter] = useState('this_month');
+  const [animProgress, setAnimProgress] = useState(0);
+
+  // Smooth 0 to target animation on mount / render
+  useEffect(() => {
+    setAnimProgress(0);
+    const duration = 1200; // 1.2s
+    const startTime = performance.now();
+    let animationFrame;
+
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutCubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setAnimProgress(ease);
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [dateFilter, revenueExpenseFilter]);
+
+  // Compute 6-point dynamic curve for Revenue & Expense Wave based on selected filter
+  const revExpChartData = useMemo(() => {
+    // Generate 6 time buckets
+    const points = [];
+    const now = new Date();
+    const isYear = revenueExpenseFilter === 'this_year';
+    const isMonth = revenueExpenseFilter === 'this_month';
+    const count = 6;
+
+    for (let i = count - 1; i >= 0; i--) {
+      let label = '';
+      let startD, endD;
+      if (isYear) {
+        // Last 6 months
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        startD = d;
+        endD = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+        label = d.toLocaleDateString('en-US', { month: 'short' });
+      } else if (isMonth) {
+        // 5-day intervals in month
+        const d = new Date(now.getFullYear(), now.getMonth(), 1 + (count - 1 - i) * 5);
+        startD = d;
+        endD = new Date(now.getFullYear(), now.getMonth(), 1 + (count - 1 - i) * 5 + 4, 23, 59, 59);
+        label = `Day ${(count - 1 - i) * 5 + 1}-${Math.min((count - 1 - i) * 5 + 5, 30)}`;
+      } else {
+        // Last 6 days
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        startD = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+        endD = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+        label = d.toLocaleDateString('en-US', { weekday: 'short' });
+      }
+      points.push({ label, startD, endD, rev: 0, exp: 0 });
+    }
+
+    invoices.forEach((inv) => {
+      if (inv.status !== 'completed' || !inv.created_at) return;
+      const d = new Date(inv.created_at);
+      const amt = Number(inv.paid_amount ?? inv.grand_total ?? 0);
+      points.forEach((p) => {
+        if (d >= p.startD && d <= p.endD) {
+          p.rev += amt;
+        }
+      });
+    });
+
+    customerPayments.forEach((cp) => {
+      if (!cp.created_at) return;
+      const d = new Date(cp.created_at);
+      const amt = Number(cp.amount || 0);
+      points.forEach((p) => {
+        if (d >= p.startD && d <= p.endD) {
+          p.rev += amt;
+        }
+      });
+    });
+
+    expenses.forEach((e) => {
+      const dStr = e.expense_date || e.date || e.created_at;
+      if (!dStr) return;
+      const d = new Date(dStr);
+      const amt = Number(e.amount || 0);
+      points.forEach((p) => {
+        if (d >= p.startD && d <= p.endD) {
+          p.exp += amt;
+        }
+      });
+    });
+
+    const maxVal = Math.max(
+      ...points.map((p) => p.rev),
+      ...points.map((p) => p.exp),
+      100
+    );
+
+    // Build SVG paths (width: 350, height: 110)
+    const stepX = 350 / (count - 1);
+    const revCoords = points.map((p, idx) => {
+      const x = idx * stepX;
+      const y = 95 - (p.rev / maxVal) * 75 * animProgress;
+      return { x, y };
+    });
+    const expCoords = points.map((p, idx) => {
+      const x = idx * stepX;
+      const y = 95 - (p.exp / maxVal) * 75 * animProgress;
+      return { x, y };
+    });
+
+    // Helper to create smooth bezier line
+    const createSpline = (coords) => {
+      if (coords.length === 0) return '';
+      let path = `M ${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const p0 = coords[i];
+        const p1 = coords[i + 1];
+        const cp1x = p0.x + (p1.x - p0.x) / 2;
+        const cp1y = p0.y;
+        const cp2x = p0.x + (p1.x - p0.x) / 2;
+        const cp2y = p1.y;
+        path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+      }
+      return path;
+    };
+
+    const revLine = createSpline(revCoords);
+    const revFill = `${revLine} L 350 110 L 0 110 Z`;
+    const expLine = createSpline(expCoords);
+    const expFill = `${expLine} L 350 110 L 0 110 Z`;
+
+    const totalRev = points.reduce((s, p) => s + p.rev, 0);
+    const totalExp = points.reduce((s, p) => s + p.exp, 0);
+
+    return {
+      points,
+      maxVal,
+      revLine,
+      revFill,
+      expLine,
+      expFill,
+      revCoords,
+      expCoords,
+      totalRev,
+      totalExp,
+    };
+  }, [invoices, customerPayments, expenses, revenueExpenseFilter, animProgress]);
   const orderStats = useMemo(() => {
     const total = filteredInvoices.length;
     const completed = filteredInvoices.filter((i) => i.status === 'completed').length;
@@ -177,10 +326,10 @@ export default function Dashboard() {
 
     // Compute Donut SVG parameters (r = 45 -> circumference ~ 282.74)
     const C = 2 * Math.PI * 45; // ~ 282.74
-    const compPct = total > 0 ? completed / total : 0;
-    const procPct = total > 0 ? processing / total : 0;
-    const pendPct = total > 0 ? pending / total : 0;
-    const cancPct = total > 0 ? cancelled / total : 0;
+    const compPct = total > 0 ? (completed / total) * animProgress : 0;
+    const procPct = total > 0 ? (processing / total) * animProgress : 0;
+    const pendPct = total > 0 ? (pending / total) * animProgress : 0;
+    const cancPct = total > 0 ? (cancelled / total) * animProgress : 0;
 
     const compDash = `${compPct * C} ${C}`;
     const procDash = `${procPct * C} ${C}`;
@@ -205,7 +354,7 @@ export default function Dashboard() {
       pendOffset,
       cancOffset,
     };
-  }, [filteredInvoices]);
+  }, [filteredInvoices, animProgress]);
 
   // Dynamic 7-day velocity points for chart
   const salesChartData = useMemo(() => {
@@ -937,73 +1086,132 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 2. Revenue & Expense Analytics (5 cols) */}
+        {/* 2. Revenue & Expense Analytics (5 cols) - Fully Dynamic */}
         <div className="lg:col-span-5 water-glass-card p-5 rounded-3xl flex flex-col justify-between">
           <div className="flex items-center justify-between pb-2 border-b border-[#DCE5EF] dark:border-[#22354B]">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/40 text-[#4F46E5] flex items-center justify-center">
                 <BarChart3 className="w-4 h-4" />
               </div>
-              <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Revenue & Expense</h2>
+              <div>
+                <h2 className="text-sm font-bold text-[#1C2736] dark:text-[#F1F5F9]">Revenue & Expense</h2>
+                <div className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8]">
+                  Real-time income vs expense trend
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-[#5A6B82] dark:text-[#94A3B8] water-glass-pill px-2.5 py-1 rounded-full font-semibold">
-              <span>This Month</span>
-              <ChevronDown className="w-3 h-3" />
-            </div>
+            <select
+              value={revenueExpenseFilter}
+              onChange={(e) => setRevenueExpenseFilter(e.target.value)}
+              className="text-[11px] text-[#0A4174] dark:text-[#4A8CD2] bg-white/80 dark:bg-[#121E2C]/80 border border-[#DCE5EF] dark:border-[#22354B] rounded-xl px-2.5 py-1 font-bold focus:outline-none cursor-pointer shadow-2xs"
+            >
+              <option value="this_week">Last 6 Days</option>
+              <option value="this_month">This Month</option>
+              <option value="this_year">Last 6 Months</option>
+            </select>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-semibold pt-2">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7]" />
-              <span className="text-[#5A6B82]">Revenue</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
-              <span className="text-[#5A6B82]">Expense</span>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-4 text-xs font-semibold">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0284C7] shadow-sm" />
+                <span className="text-[#5A6B82] dark:text-[#94A3B8]">
+                  Revenue: <strong className="text-[#0284C7] font-bold">{formatCurrency(revExpChartData.totalRev, currency)}</strong>
+                </span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] shadow-sm" />
+                <span className="text-[#5A6B82] dark:text-[#94A3B8]">
+                  Expense: <strong className="text-amber-600 font-bold">{formatCurrency(revExpChartData.totalExp, currency)}</strong>
+                </span>
+              </span>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200">
+              {Math.round(animProgress * 100)}%
             </span>
           </div>
 
-          {/* Dual Smooth Area Waves SVG */}
+          {/* Dual Smooth Area Waves SVG - Fully Dynamic with 0 to 100% Anim */}
           <div className="py-2">
-            <div className="w-full h-28 relative">
-              <svg viewBox="0 0 350 100" className="w-full h-full overflow-visible">
+            <div className="w-full h-32 relative">
+              <svg viewBox="0 0 350 110" className="w-full h-full overflow-visible">
                 <defs>
                   <linearGradient id="revGradWave" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0284C7" stopOpacity="0.30" />
+                    <stop offset="0%" stopColor="#0284C7" stopOpacity="0.40" />
                     <stop offset="100%" stopColor="#0284C7" stopOpacity="0.0" />
                   </linearGradient>
                   <linearGradient id="expGradWave" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.25" />
+                    <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.35" />
                     <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.0" />
                   </linearGradient>
                 </defs>
 
+                {/* Horizontal Guide Lines */}
+                <line x1="0" y1="20" x2="350" y2="20" stroke="rgba(220, 229, 239, 0.4)" strokeDasharray="3 3" />
+                <line x1="0" y1="60" x2="350" y2="60" stroke="rgba(220, 229, 239, 0.4)" strokeDasharray="3 3" />
+                <line x1="0" y1="95" x2="350" y2="95" stroke="rgba(220, 229, 239, 0.6)" />
+
                 {/* Revenue Wave Fill & Stroke */}
-                <path
-                  d="M 0 75 Q 70 30 140 65 T 280 40 T 350 55 L 350 100 L 0 100 Z"
-                  fill="url(#revGradWave)"
-                />
-                <path
-                  d="M 0 75 Q 70 30 140 65 T 280 40 T 350 55"
-                  fill="none"
-                  stroke="#0284C7"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
+                {revExpChartData.revFill && (
+                  <path d={revExpChartData.revFill} fill="url(#revGradWave)" />
+                )}
+                {revExpChartData.revLine && (
+                  <path
+                    d={revExpChartData.revLine}
+                    fill="none"
+                    stroke="#0284C7"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                )}
 
                 {/* Expense Wave Fill & Stroke */}
-                <path
-                  d="M 0 90 Q 75 80 150 70 T 290 85 T 350 75 L 350 100 L 0 100 Z"
-                  fill="url(#expGradWave)"
-                />
-                <path
-                  d="M 0 90 Q 75 80 150 70 T 290 85 T 350 75"
-                  fill="none"
-                  stroke="#F59E0B"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
+                {revExpChartData.expFill && (
+                  <path d={revExpChartData.expFill} fill="url(#expGradWave)" />
+                )}
+                {revExpChartData.expLine && (
+                  <path
+                    d={revExpChartData.expLine}
+                    fill="none"
+                    stroke="#F59E0B"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                )}
+
+                {/* Dots on Curves */}
+                {revExpChartData.revCoords.map((c, i) => (
+                  <circle
+                    key={`r-${i}`}
+                    cx={c.x}
+                    cy={c.y}
+                    r="3.5"
+                    fill="#0284C7"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
+                  />
+                ))}
+                {revExpChartData.expCoords.map((c, i) => (
+                  <circle
+                    key={`e-${i}`}
+                    cx={c.x}
+                    cy={c.y}
+                    r="3"
+                    fill="#F59E0B"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
+                  />
+                ))}
               </svg>
+            </div>
+
+            {/* X-axis date labels */}
+            <div className="flex justify-between text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-semibold mt-1 px-1">
+              {revExpChartData.points.map((p, idx) => (
+                <span key={idx} className="truncate max-w-[50px] text-center">
+                  {p.label}
+                </span>
+              ))}
             </div>
           </div>
         </div>
