@@ -90,6 +90,16 @@ try {
         $pdo->exec('ALTER TABLE categories ADD COLUMN parent_id INT NULL AFTER name');
     }
 
+    $supCols = $pdo->query('DESCRIBE suppliers')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('is_active', $supCols, true)) {
+        $pdo->exec('ALTER TABLE suppliers ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER balance');
+    }
+
+    $custCols = $pdo->query('DESCRIBE customers')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    if (!in_array('is_active', $custCols, true)) {
+        $pdo->exec('ALTER TABLE customers ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER balance');
+    }
+
     $orderCols = $pdo->query('DESCRIBE orders')->fetchAll(PDO::FETCH_COLUMN) ?: [];
     if (!in_array('van_order_id', $orderCols, true)) {
         $pdo->exec('ALTER TABLE orders ADD COLUMN van_order_id INT NULL AFTER invoice_id');

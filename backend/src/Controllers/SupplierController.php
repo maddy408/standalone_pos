@@ -87,25 +87,31 @@ class SupplierController
         PermissionMiddleware::require($claims, 'suppliers.manage');
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
 
-        $stmt = $this->pdo->prepare(
-            'UPDATE suppliers SET 
-                name = COALESCE(:name, name),
-                phone = :phone,
-                email = :email,
-                address = :address,
-                gstin = :gstin,
-                is_active = COALESCE(:is_active, is_active)
-             WHERE id = :id'
-        );
-        $stmt->execute([
+        $cols = $this->pdo->query('DESCRIBE suppliers')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $sets = [
+            'name = COALESCE(:name, name)',
+            'phone = :phone',
+            'email = :email',
+            'address = :address',
+            'gstin = :gstin',
+        ];
+        $params = [
             'name' => isset($body['name']) ? $body['name'] : null,
             'phone' => $body['phone'] ?? null,
             'email' => $body['email'] ?? null,
             'address' => $body['address'] ?? null,
             'gstin' => $body['gstin'] ?? null,
-            'is_active' => isset($body['is_active']) ? (int) $body['is_active'] : null,
             'id' => $id,
-        ]);
+        ];
+
+        if (in_array('is_active', $cols, true)) {
+            $sets[] = 'is_active = COALESCE(:is_active, is_active)';
+            $params['is_active'] = isset($body['is_active']) ? (int) $body['is_active'] : null;
+        }
+
+        $sql = 'UPDATE suppliers SET ' . implode(', ', $sets) . ' WHERE id = :id';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
         Response::json(['ok' => true]);
     }
 
