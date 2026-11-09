@@ -36,7 +36,9 @@ import {
   ChevronRight,
   Eye,
   Clock,
-  TrendingUp
+  TrendingUp,
+  Upload,
+  Camera
 } from 'lucide-react';
 
 const BLANK_FORM = {
@@ -943,6 +945,95 @@ export default function Products() {
                     placeholder="Enter detailed description, key specifications, or highlights..."
                     className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
                   />
+                </div>
+
+                {/* Product Image Add (Post only) */}
+                <div className="p-3.5 rounded-xl bg-[#F4F7FB]/60 dark:bg-[#1A2A3D]/40 border border-[#DCE5EF]/80 dark:border-[#22354B] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-[#1C2736] dark:text-[#94A3B8] flex items-center gap-1.5 text-xs">
+                      <ImageIcon className="w-4 h-4 text-[#0A4174] dark:text-[#4A8CD2]" />
+                      Product Image (Upload / URL)
+                    </label>
+                    <span className="text-[10px] text-[#5A6B82]">(Saved with product payload)</span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    {/* File upload input */}
+                    <label className="w-full sm:w-auto flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl border border-dashed border-[#0A4174] dark:border-[#4A8CD2] bg-white dark:bg-[#121E2C] text-[#0A4174] dark:text-[#4A8CD2] hover:bg-blue-50/50 dark:hover:bg-blue-950/20 cursor-pointer font-semibold transition-colors flex-shrink-0 text-xs">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Image File</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 2 * 1024 * 1024) {
+                              alert('Image size should be less than 2MB');
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const base64 = evt.target.result;
+                              setForm((prev) => ({
+                                ...prev,
+                                images: [base64],
+                              }));
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <span className="text-[11px] text-[#5A6B82] font-medium">or</span>
+
+                    {/* Image URL input */}
+                    <div className="flex-1 w-full">
+                      <input
+                        type="url"
+                        value={form.images?.[0] && !form.images[0].startsWith('data:') ? form.images[0] : ''}
+                        onChange={(e) => {
+                          const url = e.target.value.trim();
+                          setForm((prev) => ({
+                            ...prev,
+                            images: url ? [url] : [],
+                          }));
+                        }}
+                        placeholder="Paste image URL (https://...)"
+                        className="w-full rounded-xl border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#121E2C] px-3 py-2 text-xs focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Selected Image preview in form while creating/editing */}
+                  {form.images?.length > 0 && form.images[0] && (
+                    <div className="flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-[#121E2C] border border-[#DCE5EF] dark:border-[#22354B] mt-2">
+                      <img
+                        src={form.images[0]}
+                        alt="Product preview"
+                        className="w-12 h-12 object-cover rounded-lg border border-[#DCE5EF] dark:border-[#22354B] flex-shrink-0"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-bold text-emerald-600 block">✓ Image attached to product</span>
+                        <span className="text-[10px] text-[#5A6B82] truncate block">
+                          {form.images[0].startsWith('data:') ? 'Base64 image ready to save' : form.images[0]}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, images: [] }))}
+                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 text-xs font-bold"
+                        title="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
 
