@@ -86,6 +86,11 @@ try {
     if (!in_array('van_order_id', $orderCols, true)) {
         $pdo->exec('ALTER TABLE orders ADD COLUMN van_order_id INT NULL AFTER invoice_id');
     }
+
+    // Allow vehicle_id to be NULL on van_orders for direct manual route dispatch
+    try {
+        $pdo->exec('ALTER TABLE van_orders MODIFY COLUMN vehicle_id INT NULL');
+    } catch (\Throwable) {}
 } catch (\Throwable) {
     // Ignore if not permitted
 }
