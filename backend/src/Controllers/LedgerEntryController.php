@@ -98,6 +98,38 @@ class LedgerEntryController
         return [['id' => (int) $this->pdo->lastInsertId(), 'uuid' => $uuid], 201];
     }
 
+    public function update(string $kind, string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, $this->permissionFor($kind));
+        $k = self::KINDS[$kind];
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+        $amount = (float) ($body['amount'] ?? 0);
+        if ($amount <= 0) {
+            Response::error('Amount must be greater than zero', 422);
+        }
+
+        $dateCol = $k['date_col'];
+        $dateVal = $body['date'] ?? $body[$dateCol] ?? date('Y-m-d');
+        $stmt = $this->pdo->prepare(
+            "UPDATE {$k['table']} SET
+                category_id = :category_id,
+                amount = :amount,
+                notes = :notes,
+                {$dateCol} = :date
+             WHERE id = :id"
+        );
+        $stmt->execute([
+            'category_id' => !empty($body['category_id']) ? $body['category_id'] : null,
+            'amount' => $amount,
+            'notes' => $body['notes'] ?? null,
+            'date' => $dateVal,
+            'id' => $id,
+        ]);
+        Response::json(['ok' => true]);
+    }
+
     public function destroy(string $kind, string $id): void
     {
         $claims = AuthMiddleware::authenticate();

@@ -198,11 +198,24 @@ export default function Purchases() {
     }
     setPayingLoading(true);
     try {
-      await api.post(`/purchases/${payingPurchase.id}/pay`, {
-        amount: amt,
-        payment_method: payForm.payment_method,
-        notes: payForm.notes,
-      });
+      try {
+        await api.post(`/purchases/${payingPurchase.id}/pay`, {
+          amount: amt,
+          payment_method: payForm.payment_method,
+          notes: payForm.notes,
+        });
+      } catch (postErr) {
+        // Fallback for older backend versions that don't have /purchases/{id}/pay endpoint
+        const currentPaid = Number(payingPurchase.paid_amount || 0);
+        const newPaid = currentPaid + amt;
+        const newBalance = Math.max(0, Number(payingPurchase.grand_total || 0) - newPaid);
+        await api.put(`/purchases/${payingPurchase.id}`, {
+          paid_amount: newPaid,
+          balance_amount: newBalance,
+          payment_method: payForm.payment_method,
+          notes: payForm.notes,
+        });
+      }
       setPayingPurchase(null);
       load();
       api.get('/suppliers').then(({ data }) => setSuppliers(data));

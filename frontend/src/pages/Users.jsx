@@ -10,7 +10,9 @@ import {
   PowerOff,
   Power,
   ShieldCheck,
-  X
+  X,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const BLANK = { id: null, username: '', password: '', full_name: '', role: 'cashier', is_active: 1 };
@@ -20,6 +22,7 @@ export default function Users() {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(BLANK);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const load = () => api.get('/users').then(({ data }) => setUsers(data));
@@ -66,12 +69,13 @@ export default function Users() {
     setForm({
       id: u.id,
       username: u.username,
-      password: u.password || '',
+      password: '',
       full_name: u.full_name,
       role: u.role,
       is_active: u.is_active,
     });
     setIsEditing(true);
+    setShowPassword(false);
     setError('');
   };
 
@@ -235,15 +239,33 @@ export default function Users() {
           </div>
 
           <div>
-            <label className="mb-1 block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
-              {t('auth.password')} {form.id && <span className="text-[10px] text-[#5A6B82] dark:text-[#94A3B8] font-normal">({t('users.leave_blank_password')})</span>}
-            </label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent px-3 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block font-semibold text-[#1C2736] dark:text-[#94A3B8]">
+                {t('auth.password')}
+              </label>
+              {form.id && (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                  (Type to update password, or leave blank to keep current)
+                </span>
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                placeholder={form.id ? '••••••••  (Enter new password to change)' : 'Enter password'}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                className="w-full rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-transparent pl-3 pr-10 py-2 focus:ring-1 focus:ring-[#0A4174] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#5A6B82] hover:text-[#0A4174] dark:hover:text-[#4A8CD2] p-1 transition-colors"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
 
           <div>

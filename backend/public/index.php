@@ -283,9 +283,11 @@ $router->post('/api/day-closings/{id}/reopen', fn ($id) => $dayClosings->reopen(
 $ledger = new LedgerEntryController($pdo);
 $router->get('/api/expenses', fn () => $ledger->index('expenses'));
 $router->post('/api/expenses', fn () => $ledger->store('expenses'));
+$router->put('/api/expenses/{id}', fn ($id) => $ledger->update('expenses', $id));
 $router->delete('/api/expenses/{id}', fn ($id) => $ledger->destroy('expenses', $id));
 $router->get('/api/income', fn () => $ledger->index('income'));
 $router->post('/api/income', fn () => $ledger->store('income'));
+$router->put('/api/income/{id}', fn ($id) => $ledger->update('income', $id));
 $router->delete('/api/income/{id}', fn ($id) => $ledger->destroy('income', $id));
 
 $sync = new SyncController($pdo);
