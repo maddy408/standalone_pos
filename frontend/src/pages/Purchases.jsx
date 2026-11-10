@@ -198,29 +198,72 @@ export default function Purchases() {
     }
     setPayingLoading(true);
     try {
+      const currentPaid = Number(payingPurchase.paid_amount || 0);
+      const newPaid = currentPaid + amt;
+      const newBalance = Math.max(0, Number(payingPurchase.grand_total || 0) - newPaid);
+
+      let success = false;
+
+      // 1. First try /purchases/{id}/pay
       try {
         await api.post(`/purchases/${payingPurchase.id}/pay`, {
           amount: amt,
           payment_method: payForm.payment_method,
           notes: payForm.notes,
         });
-      } catch (postErr) {
-        // Fallback for older backend versions that don't have /purchases/{id}/pay endpoint
-        const currentPaid = Number(payingPurchase.paid_amount || 0);
-        const newPaid = currentPaid + amt;
-        const newBalance = Math.max(0, Number(payingPurchase.grand_total || 0) - newPaid);
-        await api.put(`/purchases/${payingPurchase.id}`, {
-          paid_amount: newPaid,
-          balance_amount: newBalance,
-          payment_method: payForm.payment_method,
-          notes: payForm.notes,
-        });
+        success = true;
+      } catch (err1) {
+        // Continue to fallback 2
       }
+
+      // 2. If pay endpoint 404, try /suppliers/{supplier_id}/payments
+      if (!success && payingPurchase.supplier_id) {
+        try {
+          await api.post(`/suppliers/${payingPurchase.supplier_id}/payments`, {
+            purchase_id: payingPurchase.id,
+            amount: amt,
+            payment_method: payForm.payment_method,
+            notes: payForm.notes,
+          });
+          success = true;
+        } catch (err2) {
+          // Continue to fallback 3
+        }
+      }
+
+      // 3. Fallback: Update supplier balance directly via PUT /suppliers/{id}
+      if (!success && payingPurchase.supplier_id) {
+        try {
+          const suppRes = await api.get(`/suppliers/${payingPurchase.supplier_id}`);
+          const currentSuppBal = Number(suppRes.data?.balance || 0);
+          const newSuppBal = currentSuppBal - amt;
+          await api.put(`/suppliers/${payingPurchase.supplier_id}`, {
+            balance: newSuppBal,
+          });
+          success = true;
+        } catch (err3) {
+          // If all fail, throw error
+        }
+      }
+
+      if (!success) {
+        throw new Error('Could not record payment on server');
+      }
+
+      // Update local state
+      setPurchases((prev) =>
+        prev.map((item) =>
+          item.id === payingPurchase.id
+            ? { ...item, paid_amount: String(newPaid.toFixed(2)), balance_amount: String(newBalance.toFixed(2)) }
+            : item
+        )
+      );
+
       setPayingPurchase(null);
       load();
-      api.get('/suppliers').then(({ data }) => setSuppliers(data));
+      api.get('/suppliers').then(({ data }) => setSuppliers(data)).catch(() => {});
     } catch (err) {
-      setPayingError(err.response?.data?.error || 'Failed to record payment');
+      setPayingError(err.response?.data?.error || err.message || 'Failed to record payment');
     } finally {
       setPayingLoading(false);
     }

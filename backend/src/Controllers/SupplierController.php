@@ -168,4 +168,95 @@ class SupplierController
         $stmt->execute(['id' => $id]);
         Response::json(['ok' => true]);
     }
+
+    public function recordPayment(string $id): void
+    {
+        $claims = AuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'suppliers.manage');
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $amount = (float) ($body['amount'] ?? 0);
+        if ($amount <= 0) {
+            Response::error('Amount must be positive', 422);
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare('SELECT balance FROM suppliers WHERE id = :id FOR UPDATE');
+            $stmt->execute(['id' => $id]);
+            $supplier = $stmt->fetch();
+            if (!$supplier) {
+                $this->pdo->rollBack();
+                Response::error('Supplier not found', 404);
+            }
+
+            $purchaseId = !empty($body['purchase_id']) ? (int) $body['purchase_id'] : null;
+
+            // 1. Update purchase balance if purchase_id given
+            if ($purchaseId) {
+                $pStmt = $this->pdo->prepare('SELECT balance_amount, paid_amount FROM purchases WHERE id = :pid AND supplier_id = :sid FOR UPDATE');
+                $pStmt->execute(['pid' => $purchaseId, 'sid' => $id]);
+                $pRow = $pStmt->fetch();
+                if ($pRow) {
+                    $pBal = (float) $pRow['balance_amount'];
+                    $pPaid = (float) $pRow['paid_amount'];
+                    $reduceAmt = min($amount, $pBal);
+                    $newPBal = max(0.0, $pBal - $reduceAmt);
+                    $newPPaid = $pPaid + $reduceAmt;
+                    $this->pdo->prepare('UPDATE purchases SET balance_amount = :bal, paid_amount = :paid WHERE id = :pid')
+                        ->execute(['bal' => $newPBal, 'paid' => $newPPaid, 'pid' => $purchaseId]);
+                }
+            } else {
+                // FIFO settlement across open unpaid purchases of this supplier
+                $openStmt = $this->pdo->prepare('SELECT id, balance_amount, paid_amount FROM purchases WHERE supplier_id = :sid AND balance_amount > 0 ORDER BY id ASC FOR UPDATE');
+                $openStmt->execute(['sid' => $id]);
+                $openPurchases = $openStmt->fetchAll();
+                $remainingSettlement = $amount;
+                foreach ($openPurchases as $oP) {
+                    if ($remainingSettlement <= 0) break;
+                    $oBal = (float) $oP['balance_amount'];
+                    $oPaid = (float) $oP['paid_amount'];
+                    $alloc = min($remainingSettlement, $oBal);
+                    $newOBal = max(0.0, $oBal - $alloc);
+                    $newOPaid = $oPaid + $alloc;
+                    $this->pdo->prepare('UPDATE purchases SET balance_amount = :bal, paid_amount = :paid WHERE id = :pid')
+                        ->execute(['bal' => $newOBal, 'paid' => $newOPaid, 'pid' => $oP['id']]);
+                    $remainingSettlement -= $alloc;
+                }
+            }
+
+            // 2. Adjust supplier balance
+            $this->pdo->prepare('UPDATE suppliers SET balance = balance - :amount WHERE id = :id')
+                ->execute(['amount' => $amount, 'id' => $id]);
+
+            // 3. Resolve payment method id
+            $pmCode = $body['payment_method'] ?? 'cash';
+            $pmStmt = $this->pdo->prepare('SELECT id FROM payment_methods WHERE code = :code');
+            $pmStmt->execute(['code' => $pmCode]);
+            $pmId = $pmStmt->fetchColumn() ?: 1;
+
+            // 4. Record supplier payment ledger entry
+            $spayUuid = UuidHelper::v4();
+            $this->pdo->prepare(
+                'INSERT INTO supplier_payments (uuid, supplier_id, purchase_id, amount, payment_method_id, notes)
+                 VALUES (:uuid, :sid, :pid, :amount, :pm, :notes)'
+            )->execute([
+                'uuid' => $spayUuid,
+                'sid' => $id,
+                'pid' => $purchaseId,
+                'amount' => $amount,
+                'pm' => $pmId,
+                'notes' => $body['notes'] ?? 'Supplier payment recorded',
+            ]);
+
+            $this->pdo->commit();
+            Response::json([
+                'ok' => true,
+                'payment_id' => $this->pdo->lastInsertId(),
+                'uuid' => $spayUuid,
+            ]);
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            Response::error($e->getMessage(), 500);
+        }
+    }
 }
