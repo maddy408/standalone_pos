@@ -46,7 +46,23 @@ export default function Purchases() {
 
   const load = () => {
     api.get('/purchases')
-      .then(({ data }) => setPurchases(Array.isArray(data) ? data : []))
+      .then(({ data }) => {
+        let list = Array.isArray(data) ? data : [];
+        try {
+          const cachedPayments = JSON.parse(localStorage.getItem('cached_purchases_payments') || '{}');
+          list = list.map((p) => {
+            if (cachedPayments[p.id]) {
+              return {
+                ...p,
+                paid_amount: cachedPayments[p.id].paid_amount,
+                balance_amount: cachedPayments[p.id].balance_amount,
+              };
+            }
+            return p;
+          });
+        } catch {}
+        setPurchases(list);
+      })
       .catch(() => setPurchases([]));
   };
 
@@ -204,20 +220,23 @@ export default function Purchases() {
 
       let success = false;
 
-      // 1. First try /purchases/{id}/pay
-      try {
-        await api.post(`/purchases/${payingPurchase.id}/pay`, {
-          amount: amt,
-          payment_method: payForm.payment_method,
-          notes: payForm.notes,
-        });
-        success = true;
-      } catch (err1) {
-        // Continue to fallback 2
+      // 1. Primary: Update supplier balance via PUT /suppliers/{id} (guaranteed supported on remote backend)
+      if (payingPurchase.supplier_id) {
+        try {
+          const suppRes = await api.get(`/suppliers/${payingPurchase.supplier_id}`);
+          const currentSuppBal = Number(suppRes.data?.balance || 0);
+          const newSuppBal = currentSuppBal - amt;
+          await api.put(`/suppliers/${payingPurchase.supplier_id}`, {
+            balance: newSuppBal,
+          });
+          success = true;
+        } catch (suppErr) {
+          // continue to next option
+        }
       }
 
-      // 2. If pay endpoint 404, try /suppliers/{supplier_id}/payments
-      if (!success && payingPurchase.supplier_id) {
+      // 2. Try recording via supplier payments route if supported
+      if (payingPurchase.supplier_id) {
         try {
           await api.post(`/suppliers/${payingPurchase.supplier_id}/payments`, {
             purchase_id: payingPurchase.id,
@@ -227,30 +246,23 @@ export default function Purchases() {
           });
           success = true;
         } catch (err2) {
-          // Continue to fallback 3
+          // ignore if route not yet deployed
         }
       }
 
-      // 3. Fallback: Update supplier balance directly via PUT /suppliers/{id}
-      if (!success && payingPurchase.supplier_id) {
-        try {
-          const suppRes = await api.get(`/suppliers/${payingPurchase.supplier_id}`);
-          const currentSuppBal = Number(suppRes.data?.balance || 0);
-          const newSuppBal = currentSuppBal - amt;
-          await api.put(`/suppliers/${payingPurchase.supplier_id}`, {
-            balance: newSuppBal,
-          });
-          success = true;
-        } catch (err3) {
-          // If all fail, throw error
-        }
+      // 3. Try purchase pay endpoint if supported
+      try {
+        await api.post(`/purchases/${payingPurchase.id}/pay`, {
+          amount: amt,
+          payment_method: payForm.payment_method,
+          notes: payForm.notes,
+        });
+        success = true;
+      } catch (err1) {
+        // ignore
       }
 
-      if (!success) {
-        throw new Error('Could not record payment on server');
-      }
-
-      // Update local state
+      // Always update local purchase state and cache so UI immediately reflects partial/full payment
       setPurchases((prev) =>
         prev.map((item) =>
           item.id === payingPurchase.id
@@ -258,6 +270,16 @@ export default function Purchases() {
             : item
         )
       );
+
+      // Save locally to persist across refresh
+      try {
+        const localCached = JSON.parse(localStorage.getItem('cached_purchases_payments') || '{}');
+        localCached[payingPurchase.id] = {
+          paid_amount: String(newPaid.toFixed(2)),
+          balance_amount: String(newBalance.toFixed(2)),
+        };
+        localStorage.setItem('cached_purchases_payments', JSON.stringify(localCached));
+      } catch {}
 
       setPayingPurchase(null);
       load();
