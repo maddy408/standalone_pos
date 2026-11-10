@@ -95,6 +95,7 @@ export default function POS() {
   // Payment method
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paidAmount, setPaidAmount] = useState('');
+  const [splitAmounts, setSplitAmounts] = useState({ cash: '', upi: '', credit: '' });
 
   // Discount Type: fixed (₹) or percent (%)
   const [discountType, setDiscountType] = useState('fixed');
@@ -627,10 +628,14 @@ export default function POS() {
   useEffect(() => {
     if (paymentMethod === 'credit') {
       setPaidAmount('0.00');
+    } else if (paymentMethod === 'split') {
+      const c = parseFloat(splitAmounts.cash) || 0;
+      const u = parseFloat(splitAmounts.upi) || 0;
+      setPaidAmount((c + u).toFixed(2));
     } else {
       setPaidAmount(totals.grandTotal.toFixed(2));
     }
-  }, [totals.grandTotal, paymentMethod]);
+  }, [totals.grandTotal, paymentMethod, splitAmounts]);
 
   const holdBill = async () => {
     if (cart.length === 0) return;
@@ -704,6 +709,7 @@ export default function POS() {
     clearCart();
     setDiscountValue('');
     setPaymentMethod('cash');
+    setSplitAmounts({ cash: '', upi: '', credit: '' });
     setSelectedCustomerId('');
     setCustomerSearch('');
   };
@@ -776,21 +782,59 @@ export default function POS() {
       return;
     }
 
+    // Validation: If Split payment with credit portion > 0, customer selection is mandatory!
+    let splitCash = 0;
+    let splitUpi = 0;
+    let splitCredit = 0;
+    let paymentsPayload = undefined;
+
+    if (paymentMethod === 'split') {
+      splitCash = Math.max(0, parseFloat(splitAmounts.cash) || 0);
+      splitUpi = Math.max(0, parseFloat(splitAmounts.upi) || 0);
+      splitCredit = Math.max(0, parseFloat(splitAmounts.credit) || 0);
+      const splitTotal = Math.round((splitCash + splitUpi + splitCredit) * 100) / 100;
+      const targetTotal = Math.round(totals.grandTotal * 100) / 100;
+
+      if (Math.abs(splitTotal - targetTotal) > 0.05) {
+        alert(`Split total (${splitTotal}) must equal Grand Total (${targetTotal})! Please adjust Cash, UPI QR, or Credit amount.`);
+        setMessage(`Split total (${splitTotal}) does not match Grand Total (${targetTotal})`);
+        return;
+      }
+
+      if (splitCredit > 0 && !selectedCustomerId) {
+        alert('Please select a customer because part of this Split sale is on Credit!');
+        setMessage('Error: Customer required for credit balance.');
+        return;
+      }
+
+      paymentsPayload = [];
+      if (splitCash > 0) paymentsPayload.push({ payment_method: 'cash', amount: splitCash });
+      if (splitUpi > 0) paymentsPayload.push({ payment_method: 'upi', amount: splitUpi });
+      if (splitCredit > 0) paymentsPayload.push({ payment_method: 'credit', amount: splitCredit });
+    }
+
     const createdAt = new Date().toISOString();
     const uuid = newUuid();
+
+    const salePaidAmount = paymentMethod === 'split'
+      ? (splitCash + splitUpi)
+      : paymentMethod === 'credit'
+      ? 0
+      : Number(paidAmount || totals.grandTotal);
 
     const salePayload = {
       uuid,
       customer_id: selectedCustomerId || null,
       customer_name: activeCustomer?.name || 'Walk-in Customer',
       payment_method: paymentMethod,
-      paid_amount: Number(paidAmount || totals.grandTotal),
+      paid_amount: salePaidAmount,
       subtotal: totals.subtotal,
       discount_amount: totals.couponDiscount + totals.itemDiscount,
       tax_amount: totals.tax,
       grand_total: totals.grandTotal,
       status: 'completed',
       source: 'offline',
+      payments: paymentsPayload,
       items: cart.map((l) => ({
         product_id: l.product_id,
         variant_id: l.variant_id || null,
@@ -1591,6 +1635,143 @@ export default function POS() {
             {paymentMethod === 'credit' && !selectedCustomerId && (
               <div className="p-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 text-[9px] text-amber-700 dark:text-amber-300 font-semibold flex items-center gap-1">
                 <span>⚠️ Please select a customer above for Credit billing!</span>
+              </div>
+            )}
+
+            {/* Split Payment Controls */}
+            {paymentMethod === 'split' && (
+              <div className="p-2 rounded-xl bg-[#E2EDF8]/50 dark:bg-[#1A2A3D]/70 border border-[#0A4174]/20 dark:border-[#4A8CD2]/30 space-y-2 mt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-[#0A4174] dark:text-[#4A8CD2] uppercase tracking-wide">
+                    Split Breakdown
+                  </span>
+                  <span className="text-[9px] text-[#5A6B82] dark:text-[#94A3B8]">
+                    Must sum to {formatCurrency(totals.grandTotal, currency)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5">
+                  {/* Cash input */}
+                  <div>
+                    <label className="text-[9px] font-bold text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-0.5 mb-0.5">
+                      <Banknote className="w-2.5 h-2.5 text-emerald-600" /> Cash
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#5A6B82]">
+                        {currency}
+                      </span>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="0"
+                        value={splitAmounts.cash}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSplitAmounts((prev) => ({ ...prev, cash: val === '' ? '' : val.replace(/^0+(?=\d)/, '') }));
+                        }}
+                        className="w-full pl-4 pr-1 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#0B131E] text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* UPI QR input */}
+                  <div>
+                    <label className="text-[9px] font-bold text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-0.5 mb-0.5">
+                      <Smartphone className="w-2.5 h-2.5 text-blue-600" /> UPI QR
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#5A6B82]">
+                        {currency}
+                      </span>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="0"
+                        value={splitAmounts.upi}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSplitAmounts((prev) => ({ ...prev, upi: val === '' ? '' : val.replace(/^0+(?=\d)/, '') }));
+                        }}
+                        className="w-full pl-4 pr-1 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#0B131E] text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Credit input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[9px] font-bold text-[#1C2736] dark:text-[#F1F5F9] flex items-center gap-0.5">
+                        <RotateCcw className="w-2.5 h-2.5 text-amber-600" /> Credit
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const c = parseFloat(splitAmounts.cash) || 0;
+                          const u = parseFloat(splitAmounts.upi) || 0;
+                          const rem = Math.max(0, Math.round((totals.grandTotal - c - u) * 100) / 100);
+                          setSplitAmounts((prev) => ({ ...prev, credit: String(rem) }));
+                        }}
+                        className="text-[8px] font-extrabold text-[#0A4174] dark:text-[#4A8CD2] hover:underline cursor-pointer"
+                        title="Auto fill remaining as credit"
+                      >
+                        Auto
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-[#5A6B82]">
+                        {currency}
+                      </span>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="0"
+                        value={splitAmounts.credit}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSplitAmounts((prev) => ({ ...prev, credit: val === '' ? '' : val.replace(/^0+(?=\d)/, '') }));
+                        }}
+                        className="w-full pl-4 pr-1 py-1 rounded-lg border border-[#DCE5EF] dark:border-[#22354B] bg-white dark:bg-[#0B131E] text-xs font-bold text-[#1C2736] dark:text-[#F1F5F9] focus:outline-none focus:ring-1 focus:ring-[#0A4174]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Validation summary bar */}
+                {(() => {
+                  const c = parseFloat(splitAmounts.cash) || 0;
+                  const u = parseFloat(splitAmounts.upi) || 0;
+                  const cr = parseFloat(splitAmounts.credit) || 0;
+                  const sum = Math.round((c + u + cr) * 100) / 100;
+                  const diff = Math.round((totals.grandTotal - sum) * 100) / 100;
+                  const isExact = Math.abs(diff) <= 0.05;
+
+                  return (
+                    <div className="flex items-center justify-between pt-1 border-t border-[#DCE5EF] dark:border-[#22354B]/50 text-[10px]">
+                      <span className="font-semibold text-[#5A6B82] dark:text-[#94A3B8]">
+                        Entered: <strong className="text-[#1C2736] dark:text-[#F1F5F9]">{formatCurrency(sum, currency)}</strong>
+                      </span>
+                      {isExact ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-0.5">
+                          ✓ Balanced
+                        </span>
+                      ) : (
+                        <span className="text-rose-600 dark:text-rose-400 font-bold">
+                          {diff > 0 ? `${formatCurrency(diff, currency)} remaining` : `${formatCurrency(Math.abs(diff), currency)} excess`}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Prompt customer selection if credit > 0 */}
+                {parseFloat(splitAmounts.credit) > 0 && !selectedCustomerId && (
+                  <div className="p-1 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 text-[9px] font-semibold">
+                    ⚠️ Select customer above for the Credit balance of {formatCurrency(parseFloat(splitAmounts.credit) || 0, currency)}
+                  </div>
+                )}
               </div>
             )}
           </div>
